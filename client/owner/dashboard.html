@@ -27,8 +27,16 @@
       <li><a href="/owner/plans.html"      class="nav-link"><i class="bi bi-stars"></i>Plans</a></li>
       <li><a href="/owner/courts.html"     class="nav-link"><i class="bi bi-geo-alt"></i>Courts</a></li>
     </ul>
-    <div class="p-3 border-top border-secondary" style="border-color:rgba(255,255,255,.1)!important">
-      <span id="userNameSidebar" class="small text-muted d-block mb-2"></span>
+    <div class="p-3 border-top border-secondary border-opacity-25">
+      <div class="d-flex align-items-center gap-2 mb-2 p-2 rounded" style="background:rgba(255,255,255,0.08);">
+        <div class="rounded-circle bg-warning text-dark fw-bold d-flex align-items-center justify-content-center" style="width:32px; height:32px; font-size:0.85rem;" id="userInitial">
+          O
+        </div>
+        <div class="overflow-hidden">
+          <span id="userNameSidebar" class="fw-semibold text-white d-block text-truncate small" style="max-width:140px;">Club Owner</span>
+          <span id="userRoleBadge" class="badge bg-warning text-dark py-0 px-1" style="font-size:0.68rem;">Club Owner</span>
+        </div>
+      </div>
       <button id="logoutBtn" class="btn btn-sm btn-outline-light w-100">
         <i class="bi bi-box-arrow-right me-1"></i>Logout
       </button>
@@ -146,7 +154,8 @@
   if (!user || user.role !== 'owner') {
     window.location.href = '/shared/login.html'; return;
   }
-  document.getElementById('userNameSidebar').textContent = user.full_name;
+  document.getElementById('userNameSidebar').textContent = user.full_name || 'Owner';
+  if (document.getElementById('userInitial')) document.getElementById('userInitial').textContent = (user.full_name || 'O').charAt(0).toUpperCase();
   document.getElementById('todayDate').textContent =
     new Date().toLocaleDateString('en-IN', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
 

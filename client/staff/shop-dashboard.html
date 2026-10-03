@@ -120,9 +120,17 @@
       <li><a href="#" class="nav-link" data-target="orders-section"><i class="bi bi-bag"></i>Orders & Sales</a></li>
       <li><a href="#" class="nav-link" data-target="profile-section"><i class="bi bi-person"></i>Staff Profile</a></li>
     </ul>
-    <div class="p-3">
-      <span id="userNameSidebar" class="small text-muted d-block mb-2">Staff Member (Shop)</span>
-      <a href="/shared/login.html" class="btn btn-sm btn-outline-light w-100"><i class="bi bi-box-arrow-right me-1"></i>Logout</a>
+    <div class="p-3 border-top border-secondary border-opacity-25">
+      <div class="d-flex align-items-center gap-2 mb-2 p-2 rounded" style="background:rgba(255,255,255,0.08);">
+        <div class="rounded-circle bg-warning text-dark fw-bold d-flex align-items-center justify-content-center" style="width:32px; height:32px; font-size:0.85rem;" id="userInitial">
+          S
+        </div>
+        <div class="overflow-hidden">
+          <span id="userNameSidebar" class="fw-semibold text-white d-block text-truncate small" style="max-width:140px;">Shop Staff</span>
+          <span id="userRoleBadge" class="badge bg-warning text-dark py-0 px-1" style="font-size:0.68rem;">Shop Staff</span>
+        </div>
+      </div>
+      <button id="logoutBtn" class="btn btn-sm btn-outline-light w-100"><i class="bi bi-box-arrow-right me-1"></i>Logout</button>
     </div>
   </nav>
 
@@ -1026,8 +1034,9 @@ async function loadAllData() {
   try {
     const user = await loadSession(false);
     if (user) {
-      document.getElementById('userNameSidebar').textContent = user.full_name || 'Staff Member';
-      document.getElementById('profileNameDisplay').textContent = user.full_name || 'Staff Member';
+      document.getElementById('userNameSidebar').textContent = user.full_name || 'Shop Staff';
+      if (document.getElementById('userInitial')) document.getElementById('userInitial').textContent = (user.full_name || 'S').charAt(0).toUpperCase();
+      document.getElementById('profileNameDisplay').textContent = user.full_name || 'Shop Staff';
       document.getElementById('profileEmailDisplay').textContent = user.email || 'shop@championsclub.com';
       if (user.phone) document.getElementById('profilePhoneDisplay').textContent = user.phone;
     }
@@ -1617,8 +1626,11 @@ async function handleSaveProfile() {
   document.getElementById('profilePhoneDisplay').textContent = phone;
   document.getElementById('userNameSidebar').textContent = fullName;
 
-  bootstrap.Modal.getInstance(document.getElementById('editProfileModal')).hide();
-}
+  document.getElementById('logoutBtn')?.addEventListener('click', async () => {
+    await api.post('/api/auth/logout');
+    window.location.href = '/shared/login.html';
+  });
+})();
 </script>
 </body>
 </html>

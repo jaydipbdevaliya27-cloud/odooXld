@@ -14,10 +14,11 @@ router.get('/', requireLogin, async (req, res, next) => {
 
     if (u.role === 'member') {
       const [rows] = await db.query(
-        `SELECT b.*, c.name AS court_name, c.sport, c.surface_type
+        `SELECT b.*, c.name AS court_name, c.sport, c.surface_type, c.base_price_per_hour
            FROM cc_bookings b JOIN cc_courts c ON b.court_id = c.id
-          WHERE b.user_id = ? ORDER BY b.booking_date DESC, b.start_time DESC LIMIT 50`,
-        [u.id]
+          WHERE (b.user_id = ? OR b.booked_by_user_id = ?) 
+          ORDER BY b.booking_date DESC, b.start_time DESC LIMIT 100`,
+        [u.id, u.id]
       );
       return res.json(rows);
     }
@@ -115,7 +116,7 @@ router.post('/', requireLogin, async (req, res, next) => {
     const basePrice = parseFloat((court.base_price_per_hour * hours).toFixed(2));
 
     // Resolve user ID & member discount
-    let finalUserId = user_id || null;
+    let finalUserId = user_id || (req.session.user.role === 'member' ? req.session.user.id : null);
     let discount_pct = 0;
     let memberId = null;
 
