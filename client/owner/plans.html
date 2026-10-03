@@ -1,201 +1,250 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Plans – Champions Club</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Membership Plans – The Champions Club</title>
+  <meta name="description" content="Configure club membership tiers, discounts, junior plans, and entitlement limits.">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="/css/main.css">
 </head>
 <body>
-<div class="cc-wrapper">
-  <nav class="cc-sidebar d-flex flex-column">
-    <div class="brand"><i class="bi bi-trophy-fill me-2 text-warning"></i>Champions Club</div>
-    <ul class="nav flex-column mt-2 flex-grow-1">
-      <li><a href="/owner/dashboard.html" class="nav-link"><i class="bi bi-speedometer2"></i>Dashboard</a></li>
-      <li><a href="/owner/staff.html"     class="nav-link"><i class="bi bi-person-badge"></i>Staff Management</a></li>
-      <li><a href="/owner/members.html"   class="nav-link"><i class="bi bi-people"></i>Members</a></li>
-      <li><a href="/owner/bookings.html"  class="nav-link"><i class="bi bi-calendar-check"></i>Bookings</a></li>
-      <li><a href="/owner/orders.html"    class="nav-link"><i class="bi bi-bag"></i>Orders</a></li>
-      <li><a href="/owner/products.html"  class="nav-link"><i class="bi bi-box-seam"></i>Products</a></li>
-      <li><a href="/owner/payments.html"  class="nav-link"><i class="bi bi-credit-card"></i>Payments</a></li>
-      <li><a href="/owner/plans.html"     class="nav-link active"><i class="bi bi-stars"></i>Plans</a></li>
-      <li><a href="/owner/courts.html"    class="nav-link"><i class="bi bi-geo-alt"></i>Courts</a></li>
-    </ul>
-    <div class="p-3 border-top border-secondary border-opacity-25">
-      <div class="d-flex align-items-center gap-2 mb-2 p-2 rounded" style="background:rgba(255,255,255,0.08);">
-        <div class="rounded-circle bg-warning text-dark fw-bold d-flex align-items-center justify-content-center" style="width:32px; height:32px; font-size:0.85rem;" id="userInitial">
-          O
-        </div>
-        <div class="overflow-hidden">
-          <span id="userNameSidebar" class="fw-semibold text-white d-block text-truncate small" style="max-width:140px;">Club Owner</span>
-          <span id="userRoleBadge" class="badge bg-warning text-dark py-0 px-1" style="font-size:0.68rem;">Club Owner</span>
-        </div>
-      </div>
-      <button id="logoutBtn" class="btn btn-sm btn-outline-light w-100"><i class="bi bi-box-arrow-right me-1"></i>Logout</button>
-    </div>
-  </nav>
+  <div class="app-layout">
+    <div id="app-shell"></div>
 
-  <div class="d-flex flex-column flex-grow-1">
-    <div class="cc-topbar">
-      <h5 class="page-title"><i class="bi bi-stars me-2 text-cc"></i>Membership Plans</h5>
-      <button class="btn btn-cc btn-sm" id="addPlanBtn" data-bs-toggle="modal" data-bs-target="#planModal">
-        <i class="bi bi-plus-circle-fill me-1"></i>Add Plan
-      </button>
-    </div>
+    <main class="app-main">
+      <div class="table-card">
+        <div class="table-card-header">
+          <div>
+            <h5 class="table-card-title"><i class="bi bi-award"></i> Membership Plans &amp; Tiers</h5>
+            <p class="table-card-subtitle">Manage annual fees, duration, sports discounts &amp; booking quotas</p>
+          </div>
+          <button class="btn btn-accent btn-sm" data-bs-toggle="modal" data-bs-target="#planModal" onclick="clearPlanForm()">
+            <i class="bi bi-plus-lg me-1"></i> Create Plan Tier
+          </button>
+        </div>
 
-    <main class="cc-main">
-      <div class="row g-3" id="plansGrid">
-        <div class="col-12 text-center text-muted py-5">Loading…</div>
+        <div class="table-responsive">
+          <table class="cc-table" id="plansTable">
+            <thead>
+              <tr>
+                <th>Tier / Code</th>
+                <th>Plan Name</th>
+                <th>Annual Fee</th>
+                <th>Duration</th>
+                <th>Court Discount</th>
+                <th>Shop Discount</th>
+                <th>Bar Discount</th>
+                <th>Daily Limit</th>
+                <th>Status</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="10" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading plans…</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </main>
   </div>
-</div>
 
-<!-- Add/Edit Plan Modal -->
-<div class="modal fade" id="planModal" tabindex="-1">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="planModalTitle">Add Plan</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <input type="hidden" id="pl_id">
-        <div class="row g-3">
-          <div class="col-md-4"><label class="form-label">Code *</label>
-            <input type="text" id="pl_code" class="form-control" placeholder="GOLD"></div>
-          <div class="col-md-8"><label class="form-label">Name *</label>
-            <input type="text" id="pl_name" class="form-control" placeholder="Gold Membership"></div>
-          <div class="col-12"><label class="form-label">Description</label>
-            <textarea id="pl_desc" class="form-control" rows="2"></textarea></div>
-          <div class="col-md-4"><label class="form-label">Annual Fee (₹) *</label>
-            <input type="number" id="pl_fee" class="form-control" min="0" step="100"></div>
-          <div class="col-md-4"><label class="form-label">Duration (months)</label>
-            <input type="number" id="pl_dur" class="form-control" value="12" min="1"></div>
-          <div class="col-md-4"><label class="form-label">Max Bookings / Day</label>
-            <input type="number" id="pl_maxb" class="form-control" value="2" min="1"></div>
-          <div class="col-md-4"><label class="form-label">Court Discount (%)</label>
-            <input type="number" id="pl_court" class="form-control" value="0" min="0" max="100"></div>
-          <div class="col-md-4"><label class="form-label">Shop Discount (%)</label>
-            <input type="number" id="pl_shop" class="form-control" value="0" min="0" max="100"></div>
-          <div class="col-md-4"><label class="form-label">Bar Discount (%)</label>
-            <input type="number" id="pl_bar" class="form-control" value="0" min="0" max="100"></div>
+  <!-- ── Add/Edit Plan Modal ────────────────────────────────────────────────── -->
+  <div class="modal fade" id="planModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title d-flex align-items-center gap-2" id="planModalTitle">
+            <i class="bi bi-award text-accent"></i> Create Membership Plan
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <div id="planErr" class="alert alert-danger mt-3 d-none small py-2"></div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" id="planSaveBtn" class="btn btn-cc">Save Plan</button>
+        <div class="modal-body">
+          <form id="planForm" novalidate>
+            <input type="hidden" id="p_id">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label" for="pl_code">Plan Code *</label>
+                <input type="text" id="pl_code" name="code" class="form-control text-uppercase" placeholder="e.g. PLATINUM" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="pl_name">Plan Name *</label>
+                <input type="text" id="pl_name" name="name" class="form-control" placeholder="e.g. Platinum All-Access" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="pl_fee">Annual Fee (₹) *</label>
+                <input type="number" id="pl_fee" name="annual_fee" class="form-control" min="0" step="100" placeholder="25000" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="pl_dur">Duration (Months) *</label>
+                <input type="number" id="pl_dur" name="duration_months" class="form-control" min="1" max="60" value="12" required>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="pl_cd">Court Discount (%)</label>
+                <input type="number" id="pl_cd" name="court_discount_pct" class="form-control" min="0" max="100" value="0">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="pl_sd">Shop Discount (%)</label>
+                <input type="number" id="pl_sd" name="shop_discount_pct" class="form-control" min="0" max="100" value="0">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="pl_bd">Bar Discount (%)</label>
+                <input type="number" id="pl_bd" name="bar_discount_pct" class="form-control" min="0" max="100" value="0">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="pl_maxb">Max Bookings Per Day</label>
+                <input type="number" id="pl_maxb" name="max_bookings_per_day" class="form-control" min="1" max="10" value="2">
+              </div>
+              <div class="col-md-6 d-flex align-items-center pt-4">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="pl_junior">
+                  <label class="form-check-label fw-semibold" for="pl_junior">Junior Plan (Under 18 with guardian)</label>
+                </div>
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="pl_desc">Description &amp; Privileges</label>
+                <textarea id="pl_desc" name="description" class="form-control" rows="2" placeholder="Describe inclusions, court access, and member perks..."></textarea>
+              </div>
+            </div>
+            <div id="planErr" class="alert alert-danger d-none small py-2 mt-3"></div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-custom" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-accent" id="planSaveBtn">
+            <span id="planSpinner" class="spinner-border spinner-border-sm d-none me-1"></span>
+            Save Plan Tier
+          </button>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<div id="alert-bar"></div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="/js/api.js"></script>
-<script src="/js/utils.js"></script>
-<script>
-async function loadPlans() {
-  const plans = await api.get('/api/plans?all=1').catch(() => []);
-  const grid  = document.getElementById('plansGrid');
-  if (!plans.length) { grid.innerHTML='<div class="col-12 text-center text-muted py-5">No plans found</div>'; return; }
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/utils.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/validators.js"></script>
+  <script src="/js/shell.js"></script>
+  <script>
+    async function loadPlans() {
+      const tbody = document.querySelector('#plansTable tbody');
+      try {
+        const plans = await api.get('/api/plans?all=1');
+        tbody.innerHTML = plans.map(p => `
+          <tr>
+            <td>
+              <code class="fw-bold text-dark fs-6">${utils.escapeHtml(p.code)}</code>
+              ${p.is_junior ? '<span class="badge bg-info text-white ms-1">Junior Tier</span>' : ''}
+            </td>
+            <td>
+              <strong class="text-dark">${utils.escapeHtml(p.name)}</strong>
+              <div class="small text-muted">${utils.escapeHtml(p.description || '')}</div>
+            </td>
+            <td class="mono fw-bold">${utils.formatINR(p.annual_fee)}</td>
+            <td class="mono small">${p.duration_months} months</td>
+            <td><span class="badge bg-success bg-opacity-15 text-success">${p.court_discount_pct}%</span></td>
+            <td><span class="badge bg-success bg-opacity-15 text-success">${p.shop_discount_pct}%</span></td>
+            <td><span class="badge bg-success bg-opacity-15 text-success">${p.bar_discount_pct}%</span></td>
+            <td class="mono">${p.max_bookings_per_day} / day</td>
+            <td>${p.is_active ? utils.statusChip('active') : utils.statusChip('suspended')}</td>
+            <td class="text-end">
+              <button class="icon-btn" onclick="openEditPlanModal(${p.id})" title="Edit Plan">
+                <i class="bi bi-pencil"></i>
+              </button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="10" class="text-center py-4 text-danger">${utils.escapeHtml(err.message)}</td></tr>`;
+      }
+    }
 
-  grid.innerHTML = plans.map(p => `
-    <div class="col-md-4">
-      <div class="cc-card h-100">
-        <div class="d-flex justify-content-between align-items-start mb-2">
-          <div>
-            <span class="badge bg-warning text-dark me-1">${escHtml(p.code)}</span>
-            ${p.is_active ? '' : '<span class="badge badge-expired">Inactive</span>'}
-          </div>
-          <div>
-            <button class="btn btn-sm btn-outline-primary me-1 btn-edit-plan" data-p='${JSON.stringify(p)}'>Edit</button>
-            ${p.is_active ? `<button class="btn btn-sm btn-outline-danger btn-del-plan" data-id="${p.id}">Deactivate</button>` : ''}
-          </div>
-        </div>
-        <h5 class="mb-1">${escHtml(p.name)}</h5>
-        <p class="text-muted small mb-2">${escHtml(p.description || '')}</p>
-        <div class="fw-bold text-cc fs-5 mb-3">₹${Number(p.annual_fee).toLocaleString('en-IN')} / year</div>
-        <ul class="list-unstyled small mb-0">
-          <li><i class="bi bi-check-circle text-success me-1"></i>${p.court_discount_pct}% off court bookings</li>
-          <li><i class="bi bi-check-circle text-success me-1"></i>${p.shop_discount_pct}% off shop purchases</li>
-          <li><i class="bi bi-check-circle text-success me-1"></i>${p.bar_discount_pct}% off bar & dining</li>
-          <li><i class="bi bi-check-circle text-success me-1"></i>Up to ${p.max_bookings_per_day} bookings/day</li>
-        </ul>
-      </div>
-    </div>`).join('');
+    function clearPlanForm() {
+      document.getElementById('p_id').value = '';
+      document.getElementById('planForm').reset();
+      document.getElementById('pl_code').removeAttribute('readonly');
+      document.getElementById('planModalTitle').innerHTML = '<i class="bi bi-award text-accent"></i> Create Membership Plan';
+      document.getElementById('planErr').classList.add('d-none');
+    }
 
-  document.querySelectorAll('.btn-edit-plan').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const p = JSON.parse(btn.dataset.p);
-      document.getElementById('planModalTitle').textContent = 'Edit Plan';
-      document.getElementById('pl_id').value    = p.id;
-      document.getElementById('pl_code').value  = p.code;
-      document.getElementById('pl_name').value  = p.name;
-      document.getElementById('pl_desc').value  = p.description || '';
-      document.getElementById('pl_fee').value   = p.annual_fee;
-      document.getElementById('pl_dur').value   = p.duration_months;
-      document.getElementById('pl_maxb').value  = p.max_bookings_per_day;
-      document.getElementById('pl_court').value = p.court_discount_pct;
-      document.getElementById('pl_shop').value  = p.shop_discount_pct;
-      document.getElementById('pl_bar').value   = p.bar_discount_pct;
-      new bootstrap.Modal(document.getElementById('planModal')).show();
+    async function openEditPlanModal(id) {
+      try {
+        const p = await api.get(`/api/plans/${id}`);
+        document.getElementById('p_id').value = p.id;
+        document.getElementById('pl_code').value = p.code;
+        document.getElementById('pl_code').setAttribute('readonly', 'true');
+        document.getElementById('pl_name').value = p.name;
+        document.getElementById('pl_fee').value = p.annual_fee;
+        document.getElementById('pl_dur').value = p.duration_months;
+        document.getElementById('pl_cd').value = p.court_discount_pct;
+        document.getElementById('pl_sd').value = p.shop_discount_pct;
+        document.getElementById('pl_bd').value = p.bar_discount_pct;
+        document.getElementById('pl_maxb').value = p.max_bookings_per_day;
+        document.getElementById('pl_junior').checked = !!p.is_junior;
+        document.getElementById('pl_desc').value = p.description || '';
+        document.getElementById('planModalTitle').innerHTML = '<i class="bi bi-pencil text-accent"></i> Edit Membership Plan';
+        document.getElementById('planErr').classList.add('d-none');
+        ui.openModal('planModal');
+      } catch (err) {
+        ui.toast(err.message, 'error');
+      }
+    }
+
+    document.getElementById('planSaveBtn').addEventListener('click', async () => {
+      const id = document.getElementById('p_id').value;
+      const form = document.getElementById('planForm');
+      const errBox = document.getElementById('planErr');
+      const btn = document.getElementById('planSaveBtn');
+      const sp = document.getElementById('planSpinner');
+
+      errBox.classList.add('d-none');
+
+      const isValid = validators.validateForm(form, {
+        code: { required: true, minLength: 2, label: 'Plan code' },
+        name: { required: true, minLength: 2, label: 'Plan name' },
+        annual_fee: { required: true, label: 'Annual fee' }
+      });
+      if (!isValid) return;
+
+      btn.disabled = true;
+      sp.classList.remove('d-none');
+
+      try {
+        const payload = {
+          code: form.code.value.trim().toUpperCase(),
+          name: form.name.value.trim(),
+          annual_fee: parseFloat(form.annual_fee.value),
+          duration_months: parseInt(form.duration_months.value, 10),
+          court_discount_pct: parseFloat(form.court_discount_pct.value || 0),
+          shop_discount_pct: parseFloat(form.shop_discount_pct.value || 0),
+          bar_discount_pct: parseFloat(form.bar_discount_pct.value || 0),
+          max_bookings_per_day: parseInt(form.max_bookings_per_day.value || 2, 10),
+          is_junior: document.getElementById('pl_junior').checked ? 1 : 0,
+          description: form.description.value.trim() || undefined
+        };
+
+        if (id) {
+          await api.put(`/api/plans/${id}`, payload);
+          ui.toast('Plan updated successfully!', 'success');
+        } else {
+          await api.post('/api/plans', payload);
+          ui.toast('Plan created successfully!', 'success');
+        }
+
+        ui.closeModal('planModal');
+        loadPlans();
+      } catch (err) {
+        errBox.textContent = err.message;
+        errBox.classList.remove('d-none');
+      } finally {
+        btn.disabled = false;
+        sp.classList.add('d-none');
+      }
     });
-  });
-  document.querySelectorAll('.btn-del-plan').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      if (!confirm('Deactivate this plan?')) return;
-      try { await api.del(`/api/plans/${btn.dataset.id}`); showAlert('Plan deactivated'); loadPlans(); }
-      catch(e) { showAlert(e.message, 'danger'); }
-    });
-  });
-}
 
-document.getElementById('addPlanBtn').addEventListener('click', () => {
-  document.getElementById('planModalTitle').textContent = 'Add Plan';
-  ['pl_id','pl_code','pl_name','pl_desc'].forEach(id => document.getElementById(id).value='');
-  ['pl_fee','pl_dur','pl_maxb','pl_court','pl_shop','pl_bar'].forEach((id,i) =>
-    document.getElementById(id).value = [0,12,2,0,0,0][i]);
-});
-
-document.getElementById('planSaveBtn').addEventListener('click', async () => {
-  const id  = document.getElementById('pl_id').value;
-  const err = document.getElementById('planErr');
-  const body = {
-    code: document.getElementById('pl_code').value.trim().toUpperCase(),
-    name: document.getElementById('pl_name').value.trim(),
-    description: document.getElementById('pl_desc').value.trim() || undefined,
-    annual_fee: parseFloat(document.getElementById('pl_fee').value),
-    duration_months: parseInt(document.getElementById('pl_dur').value),
-    max_bookings_per_day: parseInt(document.getElementById('pl_maxb').value),
-    court_discount_pct: parseFloat(document.getElementById('pl_court').value),
-    shop_discount_pct: parseFloat(document.getElementById('pl_shop').value),
-    bar_discount_pct: parseFloat(document.getElementById('pl_bar').value),
-    is_active: 1
-  };
-  err.classList.add('d-none');
-  try {
-    if (id) { await api.put(`/api/plans/${id}`, body); }
-    else    { await api.post('/api/plans', body); }
-    bootstrap.Modal.getInstance(document.getElementById('planModal')).hide();
-    showAlert('Plan saved!');
-    loadPlans();
-  } catch(e) { err.textContent=e.message; err.classList.remove('d-none'); }
-});
-
-(async () => {
-  const user = await loadSession();
-  if (!user) return;
-  document.getElementById('userNameSidebar').textContent = user.full_name || 'Club Owner';
-  if (document.getElementById('userInitial')) document.getElementById('userInitial').textContent = (user.full_name || 'O').charAt(0).toUpperCase();
-  loadPlans();
-  document.getElementById('logoutBtn').addEventListener('click', async () => {
-    await api.post('/api/auth/logout');
-    window.location.href = '/shared/login.html';
-  });
-})();
-</script>
+    document.addEventListener('DOMContentLoaded', loadPlans);
+  </script>
 </body>
 </html>

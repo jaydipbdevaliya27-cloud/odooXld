@@ -1,520 +1,335 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cafeteria & Bar – Champions Club Staff</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <title>Kitchen Display & Bar Tabs - Champions Club</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  <link rel="stylesheet" href="/css/main.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="../css/main.css">
+  <style>
+    .kot-board {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.25rem;
+    }
+    .kot-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+    }
+    .kot-header {
+      padding: 0.75rem 1rem;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .kot-header.new-kot {
+      background: var(--warning-soft);
+      border-color: var(--warning);
+    }
+    .kot-body {
+      padding: 1rem;
+      flex: 1;
+    }
+    .kot-item-line {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.35rem 0;
+      border-bottom: 1px dashed var(--border);
+    }
+    .kot-footer {
+      padding: 0.75rem 1rem;
+      background: var(--surface-alt);
+      border-top: 1px solid var(--border);
+    }
+  </style>
 </head>
-
 <body>
-  <div class="cc-wrapper">
-    <nav class="cc-sidebar d-flex flex-column">
-      <div class="brand"><i class="bi bi-trophy-fill me-2 text-warning"></i>Champions Club</div>
-      <ul class="nav flex-column mt-2 flex-grow-1">
-        <li><a href="/staff/cafeteria.html" class="nav-link active"><i class="bi bi-cup-hot"></i>Bar & Cafeteria</a></li>
-      </ul>
-      <div class="p-3 border-top border-secondary border-opacity-25">
-        <div class="d-flex align-items-center gap-2 mb-2 p-2 rounded" style="background:rgba(255,255,255,0.08);">
-          <div class="rounded-circle bg-warning text-dark fw-bold d-flex align-items-center justify-content-center" style="width:32px; height:32px; font-size:0.85rem;" id="userInitial">
-            B
+  <div id="app-shell"></div>
+
+  <div class="content-container">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+      <div>
+        <h2 class="fw-bold mb-1">Kitchen Display System (KDS) & Bar Tabs</h2>
+        <p class="text-muted mb-0">Live order queue for baristas/chefs and open member bar tab settlement.</p>
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+        <span class="badge bg-light text-dark border p-2">
+          <i class="bi bi-arrow-repeat me-1 text-primary spin-hover" id="refreshIcon"></i> Live Auto-polling (10s)
+        </span>
+        <a href="cafeteria.html" class="btn btn-outline-secondary">
+          <i class="bi bi-grid-3x3-gap me-1"></i> Floor POS
+        </a>
+      </div>
+    </div>
+
+    <!-- Nav Tabs -->
+    <ul class="nav nav-pills mb-4 gap-2" id="kdsTabs" role="tablist">
+      <li class="nav-item">
+        <button class="nav-link active fw-semibold" id="kds-tab" data-bs-toggle="pill" data-bs-target="#kdsPane" type="button">
+          <i class="bi bi-fire me-1"></i> Live Kitchen Orders (<span id="kotCount">0</span>)
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link fw-semibold" id="tabs-tab" data-bs-toggle="pill" data-bs-target="#tabsPane" type="button" onclick="loadActiveTabs()">
+          <i class="bi bi-card-checklist me-1"></i> Open Bar Tabs (<span id="tabCount">0</span>)
+        </button>
+      </li>
+    </ul>
+
+    <div class="tab-content">
+      <!-- KDS Pane -->
+      <div class="tab-pane fade show active" id="kdsPane">
+        <div class="kot-board" id="kotBoard">
+          <!-- KOT Cards injected via JS -->
+        </div>
+      </div>
+
+      <!-- Open Tabs Pane -->
+      <div class="tab-pane fade" id="tabsPane">
+        <div class="table-card">
+          <div class="table-card-header">
+            <div>
+              <h5 class="table-card-title">Active Bar & Cafe Tabs</h5>
+              <p class="table-card-subtitle">Settle open tabs with member discount and split payment modes</p>
+            </div>
           </div>
-          <div class="overflow-hidden">
-            <span id="userNameSidebar" class="fw-semibold text-white d-block text-truncate small" style="max-width:140px;">Staff</span>
-            <span class="badge bg-warning text-dark py-0 px-1" style="font-size:0.68rem;">Cafe & Bar Staff</span>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Tab ID</th>
+                  <th>Customer</th>
+                  <th>Table</th>
+                  <th>Opened</th>
+                  <th>Current Total</th>
+                  <th>Status</th>
+                  <th class="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="openTabsTableBody">
+                <!-- Injected via JS -->
+              </tbody>
+            </table>
           </div>
         </div>
-        <button id="logoutBtn" class="btn btn-sm btn-outline-light w-100"><i class="bi bi-box-arrow-right me-1"></i>Logout</button>
       </div>
-    </nav>
-
-    <div class="d-flex flex-column flex-grow-1">
-      <div class="cc-topbar">
-        <h5 class="page-title"><i class="bi bi-cup-hot me-2 text-cc"></i>Cafeteria & Bar</h5>
-      </div>
-
-      <main class="cc-main">
-        <ul class="nav nav-tabs mb-4" id="cafeteriaTabs" role="tablist">
-          <li class="nav-item">
-            <button class="nav-link active" id="kitchen-tab" data-bs-toggle="tab" data-bs-target="#kitchen"
-              type="button" role="tab">Kitchen Queue</button>
-          </li>
-          <li class="nav-item">
-            <button class="nav-link" id="menu-tab" data-bs-toggle="tab" data-bs-target="#menu" type="button"
-              role="tab">Menu Management</button>
-          </li>
-          <li class="nav-item">
-            <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button"
-              role="tab">Order History</button>
-          </li>
-        </ul>
-
-        <div class="tab-content" id="myTabContent">
-          <!-- Kitchen Queue Tab -->
-          <div class="tab-pane fade show active" id="kitchen" role="tabpanel">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <h6 class="mb-0">Active Orders</h6>
-              <button class="btn btn-sm btn-outline-secondary" onclick="loadOrders()"><i
-                  class="bi bi-arrow-clockwise"></i> Refresh</button>
-            </div>
-            <div class="row g-3" id="ordersGrid">
-              <div class="col-12 text-muted">Loading orders...</div>
-            </div>
-          </div>
-
-          <!-- Menu Management Tab -->
-          <div class="tab-pane fade" id="menu" role="tabpanel">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <h6 class="mb-0">Menu Items</h6>
-              <button class="btn btn-sm btn-cc" onclick="openMenuCanvas()"><i class="bi bi-plus-lg"></i>
-                Add Item</button>
-            </div>
-            <div class="row g-3" id="menuGrid">
-              <div class="col-12 text-muted">Loading menu...</div>
-            </div>
-          </div>
-
-          <!-- Order History Tab -->
-          <div class="tab-pane fade" id="history" role="tabpanel">
-            <div class="row g-2 mb-3 bg-light p-2 rounded border">
-              <div class="col-md-3">
-                <label class="small text-muted mb-1 d-block fw-bold">Select Date</label>
-                <input type="date" class="form-control" id="filterDate">
-              </div>
-              <div class="col-md-4">
-                <label class="small text-muted mb-1 d-block fw-bold">Search by Item</label>
-                <input type="text" class="form-control" id="filterItem" placeholder="E.g. Chicken Burger">
-              </div>
-              <div class="col-md-3">
-                <label class="small text-muted mb-1 d-block fw-bold">Status</label>
-                <select class="form-select" id="filterStatus">
-                  <option value="">All Past Statuses</option>
-                  <option value="completed">Completed</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
-              </div>
-              <div class="col-md-2 d-flex align-items-end gap-1">
-                <button class="btn btn-cc w-100 fw-bold shadow-sm" onclick="applyHistoryFilters()"><i
-                    class="bi bi-funnel"></i></button>
-                <button class="btn btn-outline-secondary w-100 fw-bold shadow-sm" onclick="clearHistoryFilters()"><i
-                    class="bi bi-x-circle"></i></button>
-              </div>
-            </div>
-            <div class="row g-3" id="historyGrid">
-              <div class="col-12 text-muted">Loading history...</div>
-            </div>
-          </div>
-        </div>
-      </main>
     </div>
   </div>
 
-  <!-- Modern Offcanvas Overlay for Adding/Editing Items -->
-  <div class="offcanvas offcanvas-end shadow-sm" tabindex="-1" id="menuOffcanvas" style="width: 450px;">
-    <div class="offcanvas-header border-bottom">
-      <h5 class="fw-bold mb-0" id="menuCanvasTitle">Add Menu Item</h5>
-      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-    </div>
-    <div class="offcanvas-body">
-      <form id="menuForm" onsubmit="saveMenu(event)">
-        <input type="hidden" id="menuId">
+  <!-- Settle Tab Modal -->
+  <div class="modal fade" id="settleTabModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold"><i class="bi bi-credit-card text-primary me-2"></i>Settle Bar Tab</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="settleTabForm">
+          <div class="modal-body">
+            <input type="hidden" id="settleTabId" name="tab_id">
+            <div class="p-3 bg-light rounded-3 border mb-3">
+              <div class="d-flex justify-content-between mb-1">
+                <span class="text-muted small">Customer / Tab</span>
+                <span class="fw-semibold small" id="settleTabCustomer">-</span>
+              </div>
+              <div class="d-flex justify-content-between mb-1">
+                <span class="text-muted small">Table</span>
+                <span class="fw-semibold small" id="settleTabTable">-</span>
+              </div>
+              <div class="d-flex justify-content-between fw-bold fs-5 mt-2 pt-2 border-top">
+                <span>Total Amount Due</span>
+                <span class="text-primary font-monospace" id="settleTabAmount">₹0</span>
+              </div>
+            </div>
 
-        <div class="mb-3">
-          <label class="form-label text-muted small fw-bold mb-1">SKU Code</label>
-          <input type="text" class="form-control form-control-sm" id="menuSku" required>
-        </div>
-        <div class="mb-3">
-          <label class="form-label text-muted small fw-bold mb-1">Product Name</label>
-          <input type="text" class="form-control form-control-sm" id="menuName" required>
-        </div>
-        <div class="mb-3">
-          <label class="form-label text-muted small fw-bold mb-1">Category</label>
-          <select class="form-select form-select-sm" id="menuCategory" required>
-            <option value="Food">Food</option>
-            <option value="Drinks">Drinks</option>
-            <option value="Snacks">Snacks</option>
-          </select>
-        </div>
-
-        <div class="row mb-3">
-          <div class="col">
-            <label class="form-label text-muted small fw-bold mb-1">Price (₹)</label>
-            <input type="number" class="form-control form-control-sm" id="menuPrice" required>
+            <div class="mb-3">
+              <label class="form-label required">Payment Method</label>
+              <select class="form-select" id="settlePaymentMethod" name="payment_method" required>
+                <option value="cash">Cash Desk</option>
+                <option value="upi">UPI / QR Code</option>
+                <option value="card">Credit / Debit Card</option>
+              </select>
+            </div>
           </div>
-          <div class="col">
-            <label class="form-label text-muted small fw-bold mb-1">Cost (₹)</label>
-            <input type="number" class="form-control form-control-sm" id="menuCost" required>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-success">Complete Payment & Close Tab</button>
           </div>
-        </div>
-
-        <div class="row mb-3">
-          <div class="col">
-            <label class="form-label text-muted small fw-bold mb-1">Stock Qty</label>
-            <input type="number" class="form-control form-control-sm" id="menuStock" value="100">
-          </div>
-          <div class="col">
-            <label class="form-label text-muted small fw-bold mb-1">Status</label>
-            <select class="form-select form-select-sm" id="menuActive">
-              <option value="1">Active</option>
-              <option value="0">Inactive</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Multiple Images Section -->
-        <div class="mb-3 border rounded p-3 bg-light">
-          <label class="form-label fw-bold mb-2"><i class="bi bi-images me-1"></i> Product Images</label>
-          <div class="d-flex gap-2 mb-3">
-            <input type="text" class="form-control form-control-sm" id="newImgUrl" placeholder="Paste image URL here">
-            <button type="button" class="btn btn-sm btn-secondary" onclick="addImage()">Add</button>
-          </div>
-          <div id="imageList" class="d-flex flex-wrap gap-2"></div>
-        </div>
-
-        <div class="d-flex gap-2 mt-4">
-          <button type="submit" class="btn btn-cc flex-grow-1 py-2 fw-bold">Save Menu Item</button>
-          <button type="button" class="btn btn-danger py-2 px-3 shadow-sm fw-bold border-0" id="menuDeleteBtn"
-            onclick="deleteMenu()" style="display:none;"><i class="bi bi-trash"></i></button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   </div>
-
-  <div id="alert-bar"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="/js/api.js"></script>
-  <script src="/js/utils.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/validators.js"></script>
+  <script src="../js/shell.js"></script>
   <script>
-    let menuCanvas;
-    let currentImages = [];
+    let pollInterval = null;
+    let liveOrders = [];
+    let activeTabs = [];
 
-    (async () => {
-      const user = await loadSession();
-      if (!user || user.role === 'member') {
-        window.location.href = '/shared/login.html'; return;
-      }
-      document.getElementById('userNameSidebar').textContent = user.full_name || user.name || 'Bar Staff';
-      if (document.getElementById('userInitial')) {
-        document.getElementById('userInitial').textContent = (user.full_name || user.name || 'B').charAt(0).toUpperCase();
-      }
-      menuCanvas = new bootstrap.Offcanvas(document.getElementById('menuOffcanvas'));
+    document.addEventListener('DOMContentLoaded', () => {
+      loadKDS();
+      loadActiveTabs();
 
-      loadOrders();
-      loadMenu();
-      loadHistory();
+      // Poll every 10 seconds if page is visible
+      pollInterval = setInterval(() => {
+        if (!document.hidden) {
+          loadKDS(true);
+        }
+      }, 10000);
 
-      setInterval(loadOrders, 10000);
-      setInterval(loadHistory, 10000);
+      document.getElementById('settleTabForm').addEventListener('submit', handleSettleTab);
+    });
 
-      document.getElementById('logoutBtn').addEventListener('click', async () => {
-        await api.post('/api/auth/logout');
-        window.location.href = '/shared/login.html';
-      });
-    })();
-
-    async function loadOrders() {
+    async function loadKDS(isPoll = false) {
       try {
-        const orders = await api.get('/api/orders?dept=bar&status=open');
-        const container = document.getElementById('ordersGrid');
-        if (!orders.length) {
-          container.innerHTML = '<div class="col-12 text-muted">No open orders in the kitchen.</div>';
-          return;
-        }
-
-        let html = '';
-        for (const o of orders) {
-          let details;
-          try { details = await api.get('/api/orders/' + o.id); } catch (e) { continue; }
-          const itemsHtml = details.items.map(i => `<li>${i.quantity}x ${escHtml(i.product_name)}</li>`).join('');
-
-          html += `
-       <div class="col-md-6 col-lg-4">
-         <div class="cc-card h-100 d-flex flex-column">
-           <div class="d-flex justify-content-between align-items-center mb-2">
-             <strong>${escHtml(o.order_code)}</strong>
-             <span class="badge bg-warning text-dark">Open</span>
-           </div>
-           <p class="mb-1 text-primary fw-bold"><i class="bi bi-person me-2"></i>${escHtml(o.member_name || 'Guest')}</p>
-           <ul class="mb-3 ps-3 list-unstyled flex-grow-1">
-             ${itemsHtml}
-           </ul>
-           <button class="btn btn-sm btn-success w-100 mt-auto" onclick="completeOrder(${o.id})"><i class="bi bi-check2-circle"></i> Mark Complete</button>
-         </div>
-       </div>
-      `;
-        }
-        container.innerHTML = html;
-      } catch (e) {
-        console.error('Failed to load orders', e);
+        const res = await api.get('/api/orders/kitchen/live');
+        liveOrders = res.data || [];
+        document.getElementById('kotCount').textContent = liveOrders.length;
+        renderKDS();
+      } catch (err) {
+        if (!isPoll) console.error(err);
       }
     }
 
-    async function completeOrder(id) {
-      if (!confirm('Mark this order as complete?')) return;
-      try {
-        await api.post('/api/orders/' + id + '/complete', { payment_method: 'online' });
-        if (window.showAlert) showAlert('Order completed', 'success');
-        loadOrders();
-      } catch (e) {
-        if (window.showAlert) showAlert(e.message || 'Error completing order', 'danger');
-      }
-    }
-
-    async function loadMenu() {
-      try {
-        const products = await api.get('/api/products?dept=bar');
-        const container = document.getElementById('menuGrid');
-        if (!products.length) {
-          container.innerHTML = '<div class="col-12 text-muted">No items found.</div>';
-          return;
-        }
-        container.innerHTML = products.map(p => {
-          let parsedImgs = [];
-          try { parsedImgs = JSON.parse(p.image_url); } catch (e) { parsedImgs = p.image_url ? [p.image_url] : ['https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80']; }
-          if (!Array.isArray(parsedImgs)) parsedImgs = [parsedImgs];
-          if (parsedImgs.length === 0) parsedImgs.push('https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80');
-
-          // Carousel for cards
-          const cid = 'carousel-staff-' + p.id;
-          let imgHtml = '';
-          if (parsedImgs.length > 1) {
-            const indicators = parsedImgs.map((img, i) => `<button type="button" data-bs-target="#${cid}" data-bs-slide-to="${i}" ${i === 0 ? 'class="active"' : ''}></button>`).join('');
-            const items = parsedImgs.map((img, i) => `
-          <div class="carousel-item ${i === 0 ? 'active' : ''}">
-            <img src="${escHtml(img)}" class="d-block w-100 rounded border" style="height:140px; object-fit:cover;">
-          </div>
-        `).join('');
-            imgHtml = `
-          <div id="${cid}" class="carousel slide mb-3" data-bs-ride="carousel">
-            <div class="carousel-indicators">${indicators}</div>
-            <div class="carousel-inner">${items}</div>
-            <button class="carousel-control-prev" type="button" data-bs-target="#${cid}" data-bs-slide="prev"><span class="carousel-control-prev-icon"></span></button>
-            <button class="carousel-control-next" type="button" data-bs-target="#${cid}" data-bs-slide="next"><span class="carousel-control-next-icon"></span></button>
+    function renderKDS() {
+      const board = document.getElementById('kotBoard');
+      if (!liveOrders.length) {
+        board.innerHTML = `
+          <div class="col-12 text-center py-5 text-muted">
+            <i class="bi bi-check2-circle fs-1 text-success d-block mb-2"></i>
+            All orders completed! No active kitchen tickets.
           </div>
         `;
-          } else {
-            imgHtml = `<img src="${escHtml(parsedImgs[0])}" class="img-fluid rounded border mb-3" style="height:140px; object-fit:cover; width:100%;">`;
-          }
-
-          return `
-      <div class="col-md-6 col-lg-3">
-        <div class="cc-card h-100 d-flex flex-column text-center p-3">
-          ${imgHtml}
-          <div class="d-flex justify-content-between align-items-center mb-1">
-             <span class="small text-muted">${escHtml(p.sku)}</span>
-             ${p.is_active ? '<span class="badge bg-success">Active</span>' : '<span class="badge bg-secondary">Inactive</span>'}
-          </div>
-          <h6 class="mb-1 fw-bold">${escHtml(p.name)}</h6>
-          <p class="small text-muted mb-2">${escHtml(p.category)}</p>
-          <div class="d-flex justify-content-between align-items-center mt-auto">
-             <h6 class="text-dark mb-0">${fmtINR(Number(p.price))} <span class="small text-muted fw-normal">(Stock: ${p.stock_qty})</span></h6>
-             <button class="btn btn-sm btn-outline-primary" onclick='editMenu(${JSON.stringify(p).replace(/'/g, "&apos;")})'>Edit</button>
-          </div>
-        </div>
-      </div>
-      `;
-        }).join('');
-      } catch (e) {
-        console.error('Failed to load menu', e);
-      }
-    }
-
-    function renderImages() {
-      const container = document.getElementById('imageList');
-      container.innerHTML = currentImages.map((img, i) => `
-    <div class="position-relative" style="width: 70px; height: 70px;">
-      <img src="${escHtml(img)}" class="w-100 h-100 rounded object-fit-cover shadow-sm border border-secondary border-opacity-25">
-      <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 rounded-circle d-flex align-items-center justify-content-center p-0 shadow" 
-              style="width:20px; height:20px; transform:translate(30%,-30%);" 
-              onclick="removeImage(${i})"><i class="bi bi-x" style="font-size:12px;"></i></button>
-    </div>
-  `).join('');
-    }
-    function addImage() {
-      const v = document.getElementById('newImgUrl').value.trim();
-      if (v) { currentImages.push(v); document.getElementById('newImgUrl').value = ''; renderImages(); }
-    }
-    function removeImage(i) {
-      currentImages.splice(i, 1);
-      renderImages();
-    }
-
-    function openMenuCanvas() {
-      document.getElementById('menuForm').reset();
-      document.getElementById('menuId').value = '';
-      document.getElementById('menuCanvasTitle').textContent = 'Add Menu Item';
-      document.getElementById('menuDeleteBtn').style.display = 'none';
-      currentImages = [];
-      renderImages();
-      menuCanvas.show();
-    }
-
-    function editMenu(p) {
-      document.getElementById('menuId').value = p.id;
-      document.getElementById('menuSku').value = p.sku;
-      document.getElementById('menuName').value = p.name;
-      document.getElementById('menuCategory').value = p.category;
-      document.getElementById('menuPrice').value = p.price;
-      document.getElementById('menuCost').value = p.cost_price;
-      document.getElementById('menuStock').value = p.stock_qty;
-      document.getElementById('menuActive').value = p.is_active;
-      document.getElementById('menuCanvasTitle').textContent = 'Edit Menu Item';
-
-      document.getElementById('menuDeleteBtn').style.display = 'block';
-      document.getElementById('menuDeleteBtn').setAttribute('data-id', p.id);
-
-      try { currentImages = JSON.parse(p.image_url); } catch (e) { currentImages = p.image_url ? [p.image_url] : []; }
-      if (!Array.isArray(currentImages)) currentImages = [currentImages].filter(Boolean);
-      renderImages();
-
-      menuCanvas.show();
-    }
-
-    async function saveMenu(e) {
-      e.preventDefault();
-      const id = document.getElementById('menuId').value;
-      const data = {
-        department: 'bar',
-        track_stock: 1,
-        sku: document.getElementById('menuSku').value,
-        name: document.getElementById('menuName').value,
-        category: document.getElementById('menuCategory').value,
-        price: Number(document.getElementById('menuPrice').value),
-        cost_price: Number(document.getElementById('menuCost').value),
-        stock_qty: Number(document.getElementById('menuStock').value),
-        is_active: Number(document.getElementById('menuActive').value),
-        image_url: JSON.stringify(currentImages)
-      };
-      try {
-        if (id) {
-          await api.put('/api/products/' + id, data);
-          if (window.showAlert) showAlert('Menu updated', 'success');
-        } else {
-          await api.post('/api/products', data);
-          if (window.showAlert) showAlert('Menu added', 'success');
-        }
-        menuCanvas.hide();
-        loadMenu();
-      } catch (err) {
-        if (window.showAlert) showAlert(err.message || 'Error saving menu', 'danger');
-      }
-    }
-
-    async function deleteMenu() {
-      const id = document.getElementById('menuDeleteBtn').getAttribute('data-id');
-      if (!confirm('Are you sure you want to deactivate this product?')) return;
-      try {
-        await api.delete('/api/products/' + id);
-        if (window.showAlert) showAlert('Menu item deactivated', 'success');
-        menuCanvas.hide();
-        loadMenu();
-      } catch (e) {
-        if (window.showAlert) showAlert(e.message || 'Error deleting item', 'danger');
-      }
-    }
-
-    let isFiltering = false;
-    let globalPastOrders = [];
-
-    async function loadHistory() {
-      if (isFiltering) return;
-      await fetchHistoryData();
-      renderHistory();
-    }
-
-    async function fetchHistoryData() {
-      try {
-        const dateObj = document.getElementById('filterDate').value;
-        let url = '/api/orders?dept=bar';
-        if (dateObj) url += '&date=' + dateObj;
-
-        const orders = await api.get(url);
-        const pastOrders = orders.filter(o => o.status !== 'open');
-
-        globalPastOrders = [];
-        for (const o of pastOrders) {
-          try {
-            const details = await api.get('/api/orders/' + o.id);
-            if (details) globalPastOrders.push(details);
-          } catch (e) { continue; }
-        }
-      } catch (e) {
-        console.error('Failed to fetch history', e);
-      }
-    }
-
-    function renderHistory() {
-      const container = document.getElementById('historyGrid');
-      const statusFilter = document.getElementById('filterStatus').value;
-      const itemFilter = document.getElementById('filterItem').value.toLowerCase();
-
-      let filtered = globalPastOrders;
-      if (statusFilter) {
-        filtered = filtered.filter(o => o.status === statusFilter);
-      }
-      if (itemFilter) {
-        filtered = filtered.filter(o => o.items.some(i => i.product_name.toLowerCase().includes(itemFilter)));
-      }
-
-      if (!filtered.length) {
-        container.innerHTML = '<div class="col-12 text-center text-muted mt-5"><i class="bi bi-journal-x fs-1 opacity-50 block mb-3"></i><br>No orders match the selected filters.</div>';
         return;
       }
 
-      let html = '';
-      for (const o of filtered) {
-        const itemsHtml = o.items.map(i => `<li class="mb-1"><span class="badge bg-secondary rounded-pill me-2">${i.quantity}x</span> ${escHtml(i.product_name)}</li>`).join('');
-        const badge = o.status === 'completed' ? '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> Completed</span>' : '<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i> Cancelled</span>';
-
-        const formattedDate = new Date(o.created_at).toLocaleString();
-        html += `
-         <div class="col-md-6 col-lg-4">
-           <div class="cc-card h-100 d-flex flex-column shadow-sm border-0 bg-white">
-             <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
-               <strong class="text-dark">${escHtml(o.order_code)}</strong>
-               ${badge}
-             </div>
-             <p class="mb-1 small text-muted"><i class="bi bi-clock me-1"></i> ${formattedDate}</p>
-             <p class="mb-2 text-primary fw-bold small"><i class="bi bi-person me-2"></i>${escHtml(o.member_name || 'Guest')}</p>
-             <ul class="mb-3 ps-0 list-unstyled flex-grow-1 text-muted small">
-               ${itemsHtml}
-             </ul>
-             <div class="text-end fw-bold text-success border-top pt-3 mt-auto">
-                Paid: ${fmtINR(Number(o.total))}
-             </div>
-           </div>
-         </div>
+      board.innerHTML = liveOrders.map(o => {
+        const isNew = o.status === 'pending' || o.status === 'new';
+        return `
+          <div class="kot-card">
+            <div class="kot-header ${isNew ? 'new-kot' : ''}">
+              <div>
+                <span class="fw-bold font-monospace">#${o.order_code}</span>
+                <small class="text-muted ms-2">${o.table_number || 'Takeaway'}</small>
+              </div>
+              <span class="badge ${isNew ? 'bg-warning text-dark' : 'bg-primary'}">${o.status}</span>
+            </div>
+            <div class="kot-body">
+              <div class="small text-muted mb-2">
+                <i class="bi bi-clock me-1"></i>${utils.formatTime(o.created_at)} 
+                (${utils.escapeHtml(o.member_name || 'Walk-in')})
+              </div>
+              <div class="kot-items">
+                ${(o.items || []).map(item => `
+                  <div class="kot-item-line">
+                    <span class="fw-semibold">${item.quantity}x ${utils.escapeHtml(item.product_name)}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+            <div class="kot-footer d-flex gap-2">
+              ${o.status === 'pending' || o.status === 'new' ? `
+                <button class="btn btn-sm btn-outline-primary w-100" onclick="updateKDSStatus(${o.id}, 'preparing')">
+                  Start Preparing
+                </button>
+              ` : ''}
+              ${o.status === 'preparing' ? `
+                <button class="btn btn-sm btn-success w-100" onclick="updateKDSStatus(${o.id}, 'ready')">
+                  Mark Ready
+                </button>
+              ` : ''}
+              ${o.status === 'ready' ? `
+                <button class="btn btn-sm btn-dark w-100" onclick="updateKDSStatus(${o.id}, 'delivered')">
+                  Served
+                </button>
+              ` : ''}
+            </div>
+          </div>
         `;
-      }
-      container.innerHTML = html;
+      }).join('');
     }
 
-    async function applyHistoryFilters() {
-      const btn = document.querySelector('button[onclick="applyHistoryFilters()"]');
-      btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-      isFiltering = true; // disable BG auto-reloading
+    async function updateKDSStatus(orderId, newStatus) {
       try {
-        await fetchHistoryData();
-        renderHistory();
-      } catch (e) {
-        console.error(e);
-      } finally {
-        btn.innerHTML = '<i class="bi bi-funnel"></i>';
+        await api.put(`/api/orders/${orderId}/status`, { status: newStatus });
+        ui.toast('KOT updated', 'success');
+        loadKDS();
+      } catch (err) {
+        ui.toast(err.message || 'Failed to update ticket', 'error');
       }
     }
 
-    function clearHistoryFilters() {
-      document.getElementById('filterDate').value = '';
-      document.getElementById('filterItem').value = '';
-      document.getElementById('filterStatus').value = '';
-      isFiltering = false;
-      loadHistory();
+    async function loadActiveTabs() {
+      const tbody = document.getElementById('openTabsTableBody');
+      try {
+        const res = await api.get('/api/orders/tabs/active');
+        activeTabs = res.data || [];
+        document.getElementById('tabCount').textContent = activeTabs.length;
+
+        if (!activeTabs.length) {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No open tabs.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = activeTabs.map(t => `
+          <tr>
+            <td class="font-monospace fw-bold">TAB-${t.id}</td>
+            <td>${utils.escapeHtml(t.member_name || t.guest_name || 'Customer')}</td>
+            <td><span class="badge bg-light text-dark border">${t.table_number || 'Bar'}</span></td>
+            <td><small class="text-muted">${utils.formatDate(t.created_at)}</small></td>
+            <td class="font-monospace fw-bold text-primary">${utils.formatINR(t.total_amount || 0)}</td>
+            <td><span class="badge bg-warning text-dark">Open</span></td>
+            <td class="text-end">
+              <button class="btn btn-sm btn-success" onclick="openSettleModal(${t.id}, '${utils.escapeHtml(t.member_name || t.guest_name)}', '${t.table_number || 'Bar'}', ${t.total_amount || 0})">
+                <i class="bi bi-cash me-1"></i> Settle Tab
+              </button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-danger">${err.message}</td></tr>`;
+      }
+    }
+
+    function openSettleModal(tabId, customer, table, amount) {
+      document.getElementById('settleTabId').value = tabId;
+      document.getElementById('settleTabCustomer').textContent = customer;
+      document.getElementById('settleTabTable').textContent = table;
+      document.getElementById('settleTabAmount').textContent = utils.formatINR(amount);
+      ui.openModal('settleTabModal');
+    }
+
+    async function handleSettleTab(e) {
+      e.preventDefault();
+      const form = e.target;
+      const tabId = form.tab_id.value;
+      const paymentMethod = form.payment_method.value;
+
+      try {
+        await api.post(`/api/orders/tabs/${tabId}/settle`, { payment_method: paymentMethod });
+        ui.closeModal('settleTabModal');
+        ui.toast('Tab settled and closed successfully', 'success');
+        loadActiveTabs();
+      } catch (err) {
+        ui.toast(err.message || 'Settlement failed', 'error');
+      }
     }
   </script>
 </body>
-
 </html>

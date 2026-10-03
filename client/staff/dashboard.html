@@ -3,1222 +3,723 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Court Booking Staff Desk – Champions Club</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <title>Court Booking Desk – The Champions Club</title>
+  <meta name="description" content="Champions Club court booking staff desk – manage today's sessions, walk-ins, check-ins, and court reservations.">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  <link rel="stylesheet" href="/css/main.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="../css/main.css">
   <style>
-    .section-content { display: none; }
-    .section-content.active { display: block; animation: fadeIn 0.22s ease-in-out; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
-
-    /* Matrix Schedule Grid */
-    .schedule-matrix-container {
-      background: #ffffff;
-      border-radius: 12px;
-      border: 1px solid #e2e8f0;
-      overflow-x: auto;
-    }
-    .matrix-table {
-      margin-bottom: 0;
-      min-width: 900px;
-    }
-    .matrix-table th {
-      background: #f8fafc;
-      color: #475569;
-      font-weight: 600;
-      font-size: 0.82rem;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-      padding: 0.75rem 0.6rem;
-      text-align: center;
-      vertical-align: middle;
-      border-bottom: 2px solid #e2e8f0;
-    }
-    .matrix-table td {
-      padding: 0.5rem;
-      vertical-align: top;
-      border: 1px solid #f1f5f9;
-      min-height: 70px;
-      height: 70px;
-      width: 100px;
-    }
-    .matrix-court-cell {
-      background: #f8fafc;
-      font-weight: 700;
-      color: #0f172a;
-      width: 170px !important;
-      min-width: 170px !important;
-      vertical-align: middle !important;
-      padding: 0.75rem 1rem !important;
-    }
-    .matrix-slot-card {
-      border-radius: 8px;
-      padding: 6px 8px;
-      font-size: 0.76rem;
-      line-height: 1.25;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
+    .time-slot-btn {
+      padding: 0.4rem 0.65rem;
+      font-size: 0.78rem;
+      font-family: var(--font-mono);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
       cursor: pointer;
-      transition: all 0.15s ease-in-out;
-      border-left: 3px solid transparent;
-    }
-    .matrix-slot-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-    }
-    .slot-confirmed {
-      background: #ecfdf5;
-      border-left-color: #10b981;
-      color: #065f46;
-    }
-    .slot-completed {
-      background: #f1f5f9;
-      border-left-color: #64748b;
-      color: #334155;
-    }
-    .slot-available {
-      background: #ffffff;
-      border: 1px dashed #cbd5e1;
-      color: #94a3b8;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      transition: all 0.15s var(--ease);
       font-weight: 500;
     }
-    .slot-available:hover {
-      background: #f0fdf4;
-      border-color: #22c55e;
-      color: #16a34a;
+    .time-slot-btn:hover:not(:disabled) {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent);
     }
-
-    /* Status Pills */
-    .status-confirmed { background: #dcfce7; color: #15803d; font-weight: 600; }
-    .status-completed { background: #e2e8f0; color: #334155; font-weight: 600; }
-    .status-cancelled { background: #fee2e2; color: #b91c1c; font-weight: 600; }
-
-    /* Modal Ticket Style */
-    .ticket-badge-header {
-      background: linear-gradient(135deg, var(--cc-green) 0%, var(--cc-green-dark) 100%);
-      color: #fff;
-      border-radius: 12px 12px 0 0;
-      padding: 1.25rem;
+    .time-slot-btn.selected {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+      box-shadow: 0 3px 8px rgba(15,118,110,0.3);
+    }
+    .time-slot-btn:disabled {
+      background: var(--surface-alt);
+      color: var(--text-dim);
+      border-color: var(--border);
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+    .checkin-card {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+      color: white;
+      border-radius: var(--radius-md);
+      padding: 1.5rem 2rem;
+      box-shadow: var(--shadow-md);
+    }
+    .price-quote-box {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
   </style>
 </head>
 <body>
-<div class="cc-wrapper">
-  <!-- ── Sidebar ──────────────────────────────────────────────────────────── -->
-  <nav class="cc-sidebar d-flex flex-column">
-    <div class="brand"><i class="bi bi-trophy-fill me-2 text-warning"></i>Champions Club</div>
-    <ul class="nav flex-column mt-2 flex-grow-1" id="sidebarNav">
-      <li><a href="javascript:void(0)" class="nav-link active" data-target="schedule-section" onclick="switchTab('schedule-section', event)"><i class="bi bi-calendar3"></i>Court Schedule</a></li>
-      <li><a href="javascript:void(0)" class="nav-link" data-target="ledger-section" onclick="switchTab('ledger-section', event)"><i class="bi bi-list-columns-reverse"></i>Bookings Ledger</a></li>
-      <li><a href="javascript:void(0)" class="nav-link" data-target="profile-section" onclick="switchTab('profile-section', event)"><i class="bi bi-person"></i>Staff Profile</a></li>
-    </ul>
-    <div class="p-3 border-top border-secondary border-opacity-25">
-      <div class="d-flex align-items-center gap-2 mb-2 p-2 rounded" style="background:rgba(255,255,255,0.08);">
-        <div class="rounded-circle bg-warning text-dark fw-bold d-flex align-items-center justify-content-center" style="width:32px; height:32px; font-size:0.85rem;" id="userInitial">
-          S
-        </div>
-        <div class="overflow-hidden">
-          <span id="userNameSidebar" class="fw-semibold text-white d-block text-truncate small" style="max-width:140px;">Court Staff</span>
-          <span class="badge bg-info text-dark py-0 px-1" style="font-size:0.68rem;">Court Desk</span>
-        </div>
-      </div>
-      <button id="logoutBtn" class="btn btn-sm btn-outline-light w-100"><i class="bi bi-box-arrow-right me-1"></i>Logout</button>
-    </div>
-  </nav>
+  <div id="app-shell"></div>
 
-  <!-- ── Main Workspace ────────────────────────────────────────────────────── -->
-  <div class="d-flex flex-column flex-grow-1">
-    <div class="cc-topbar">
-      <div class="d-flex align-items-center gap-2">
-        <h5 class="page-title mb-0"><i class="bi bi-calendar-check me-2 text-cc"></i>Court Booking Desk</h5>
-        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1">Desk Live</span>
-      </div>
-      <div class="d-flex align-items-center gap-2">
-        <button class="btn btn-cc btn-sm fw-semibold" onclick="openNewBookingModal()">
-          <i class="bi bi-plus-circle me-1"></i>New Booking
+  <main class="content-container">
+    <!-- Topbar -->
+    <div class="app-topbar">
+      <div class="d-flex align-items-center gap-3">
+        <button class="icon-btn d-lg-none" id="sidebar-toggle-btn" aria-label="Toggle Navigation">
+          <i class="bi bi-list fs-5"></i>
         </button>
-        <button class="btn btn-sm btn-outline-secondary" onclick="loadAllCourtData()">
-          <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+        <div class="breadcrumb-block">
+          <div class="breadcrumb-crumbs">
+            <a href="/staff/dashboard.html">Champions Club</a>
+            <span>/</span>
+            <span>Court Booking Desk</span>
+          </div>
+          <h2 class="page-title">Court Booking Desk</h2>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-accent btn-sm" onclick="openNewBookingModal()">
+          <i class="bi bi-calendar-plus me-1"></i>New Booking
+        </button>
+        <button class="icon-btn" id="theme-toggle-btn" title="Toggle Theme" aria-label="Toggle Theme">
+          <i class="bi bi-moon-stars-fill"></i>
         </button>
       </div>
     </div>
 
-    <main class="cc-main">
-      <!-- Top KPIs -->
-      <div class="row g-3 mb-4">
-        <div class="col-sm-6 col-xl-3">
-          <div class="kpi-card">
-            <div class="kpi-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-calendar-check"></i></div>
-            <div><div class="kpi-value" id="kpi-today-bookings">0</div><div class="kpi-label">Today's Total</div></div>
-          </div>
+    <!-- Quick Check-in Banner -->
+    <div class="checkin-card mb-4">
+      <div class="row align-items-center g-3">
+        <div class="col-lg-6">
+          <h4 class="fw-bold mb-1"><i class="bi bi-qr-code-scan me-2"></i>Member Quick Check-In</h4>
+          <p class="mb-0 opacity-75 small">Enter member code or mobile number for rapid desk check-in.</p>
         </div>
-        <div class="col-sm-6 col-xl-3">
-          <div class="kpi-card">
-            <div class="kpi-icon bg-success bg-opacity-10 text-success"><i class="bi bi-clock-history"></i></div>
-            <div><div class="kpi-value" id="kpi-active-bookings">0</div><div class="kpi-label">Active / Upcoming</div></div>
-          </div>
+        <div class="col-lg-6">
+          <form id="quickCheckinForm" class="d-flex gap-2">
+            <input type="text" id="checkinInput" class="form-control" placeholder="Scan QR or enter Code / Phone..." required autofocus>
+            <button type="submit" class="btn btn-light text-dark fw-semibold px-3 text-nowrap">
+              <i class="bi bi-check2-circle me-1"></i>Check In
+            </button>
+          </form>
         </div>
-        <div class="col-sm-6 col-xl-3">
-          <div class="kpi-card">
-            <div class="kpi-icon bg-secondary bg-opacity-10 text-secondary"><i class="bi bi-check2-circle"></i></div>
-            <div><div class="kpi-value" id="kpi-completed-bookings">0</div><div class="kpi-label">Completed Today</div></div>
+      </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="row g-3 mb-4">
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <div class="stat-icon-tile info"><i class="bi bi-calendar-check-fill"></i></div>
+            <div class="stat-meta">
+              <div class="stat-label">Today's Bookings</div>
+              <div class="stat-value" id="statTodayBookings">0</div>
+            </div>
           </div>
+          <div class="stat-divider text-muted"><i class="bi bi-clock"></i> All court sessions</div>
         </div>
-        <div class="col-sm-6 col-xl-3">
-          <div class="kpi-card">
-            <div class="kpi-icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-geo-alt"></i></div>
-            <div><div class="kpi-value" id="kpi-active-courts">0</div><div class="kpi-label">Active Courts</div></div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <div class="stat-icon-tile success"><i class="bi bi-person-check-fill"></i></div>
+            <div class="stat-meta">
+              <div class="stat-label">Check-ins Today</div>
+              <div class="stat-value" id="statCheckinsToday">0</div>
+            </div>
           </div>
+          <div class="stat-divider text-success"><i class="bi bi-person-badge"></i> Desk check-ins</div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <div class="stat-icon-tile accent"><i class="bi bi-geo-alt-fill"></i></div>
+            <div class="stat-meta">
+              <div class="stat-label">Active Courts</div>
+              <div class="stat-value" id="statActiveCourts">0</div>
+            </div>
+          </div>
+          <div class="stat-divider text-muted"><i class="bi bi-grid-3x3-gap"></i> Available for booking</div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <div class="stat-icon-tile warning"><i class="bi bi-hourglass-split"></i></div>
+            <div class="stat-meta">
+              <div class="stat-label">Upcoming Slots</div>
+              <div class="stat-value" id="statUpcomingSlots">0</div>
+            </div>
+          </div>
+          <div class="stat-divider text-warning"><i class="bi bi-clock-history"></i> Next 2 hours</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bookings Table Card -->
+    <div class="table-card">
+      <div class="table-card-header">
+        <div>
+          <h5 class="table-card-title"><i class="bi bi-calendar-week"></i> Court Bookings</h5>
+          <p class="table-card-subtitle">Today's sessions, walk-ins, and advance desk reservations</p>
+        </div>
+        <button class="btn btn-sm btn-outline-custom text-white border-light border-opacity-30" onclick="openNewBookingModal()">
+          <i class="bi bi-calendar-plus me-1"></i>New Booking
+        </button>
+      </div>
+
+      <div class="table-toolbar">
+        <div class="search-input-wrap">
+          <i class="bi bi-search search-icon"></i>
+          <input type="search" class="form-control" id="bookingSearchInput" placeholder="Search by code, member, phone..." aria-label="Search bookings">
+          <button class="search-clear-btn" id="bookingSearchClear" style="display:none;" aria-label="Clear search"><i class="bi bi-x"></i></button>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+          <input type="date" class="form-control" id="bookingDateFilter" style="width:auto;">
+          <select class="form-select" id="bookingSportFilter" style="width:auto;">
+            <option value="">All Sports</option>
+            <option value="Badminton">Badminton</option>
+            <option value="Tennis">Tennis</option>
+            <option value="Squash">Squash</option>
+            <option value="Table Tennis">Table Tennis</option>
+            <option value="Cricket">Cricket</option>
+            <option value="Pickleball">Pickleball</option>
+          </select>
+          <select class="form-select" id="bookingStatusFilter" style="width:auto;">
+            <option value="">All Statuses</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+            <option value="no_show">No Show</option>
+          </select>
         </div>
       </div>
 
-      <!-- ======================================================================
-           1. COURT SCHEDULE & MATRIX SECTION
-           ====================================================================== -->
-      <div id="schedule-section" class="section-content active">
-        <!-- Date Bar & Sport Filters -->
-        <div class="cc-card mb-3">
-          <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-            <div class="d-flex align-items-center gap-2">
-              <button class="btn btn-sm btn-outline-secondary" onclick="shiftDate(-1)"><i class="bi bi-chevron-left"></i></button>
-              <input type="date" id="scheduleDateInput" class="form-control form-control-sm fw-semibold" style="width: 160px;" onchange="loadScheduleMatrix()">
-              <button class="btn btn-sm btn-outline-secondary" onclick="shiftDate(1)"><i class="bi bi-chevron-right"></i></button>
-              <button class="btn btn-sm btn-outline-dark" onclick="setDateToday()">Today</button>
-            </div>
-
-            <!-- Sport Filters -->
-            <div class="d-flex align-items-center gap-2 flex-wrap">
-              <select id="sportFilterSelect" class="form-select form-select-sm" style="width: 150px;" onchange="loadScheduleMatrix()">
-                <option value="all">All Sports</option>
-                <option value="Badminton">Badminton</option>
-                <option value="Tennis">Tennis</option>
-                <option value="Squash">Squash</option>
-                <option value="Pickleball">Pickleball</option>
-                <option value="Basketball">Basketball</option>
-              </select>
-              <div class="d-flex align-items-center gap-3 ms-2 small text-muted">
-                <span class="d-flex align-items-center gap-1"><span class="badge p-1 bg-success bg-opacity-25 border border-success" style="width:12px;height:12px;"></span> Confirmed</span>
-                <span class="d-flex align-items-center gap-1"><span class="badge p-1 bg-secondary bg-opacity-25 border border-secondary" style="width:12px;height:12px;"></span> Completed</span>
-                <span class="d-flex align-items-center gap-1"><span class="badge p-1 bg-light border border-dashed border-secondary" style="width:12px;height:12px;"></span> Available</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Schedule Matrix Grid -->
-        <div class="schedule-matrix-container shadow-sm mb-4">
-          <table class="table matrix-table" id="matrixTable">
-            <thead id="matrixHead">
-              <!-- Dynamically built hourly slots 06:00 to 22:00 -->
-            </thead>
-            <tbody id="matrixBody">
-              <tr>
-                <td colspan="15" class="text-center py-5 text-muted">Loading schedule matrix…</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+      <div class="table-responsive">
+        <table class="cc-table">
+          <thead>
+            <tr>
+              <th>Booking</th>
+              <th>Member / Guest</th>
+              <th>Court &amp; Sport</th>
+              <th>Date &amp; Time</th>
+              <th>Fee</th>
+              <th>Status</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="bookingsTableBody">
+            <tr><td colspan="7" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading bookings…</td></tr>
+          </tbody>
+        </table>
       </div>
+      <div class="table-footer" id="paginationWrap">
+        <span class="text-muted small">Showing today's bookings</span>
+      </div>
+    </div>
+  </main>
 
-      <!-- ======================================================================
-           2. BOOKINGS LEDGER & MANAGEMENT SECTION
-           ====================================================================== -->
-      <div id="ledger-section" class="section-content">
-        <div class="cc-card">
-          <div class="cc-card-header d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-            <h5 class="mb-0"><i class="bi bi-list-ul me-2 text-cc"></i>Bookings Ledger & Operations</h5>
-            <span class="badge bg-light text-dark border" id="ledgerCountBadge">0 Bookings</span>
-          </div>
-
-          <!-- Filters Row -->
-          <div class="row g-2 mb-3">
-            <div class="col-md-3">
-              <div class="input-group input-group-sm">
-                <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
-                <input type="text" id="ledgerSearchInput" class="form-control" placeholder="Search code, member, phone…" oninput="applyLedgerFilters()">
+  <!-- New Booking Modal -->
+  <div class="modal fade" id="newBookingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold"><i class="bi bi-calendar-plus text-accent me-2"></i>Create Court Booking</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="newBookingForm">
+          <div class="modal-body">
+            <!-- Booking Type -->
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label">Booking Type</label>
+                <div class="d-flex gap-3">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="booking_type" id="typeMember" value="member" checked onchange="toggleBookingType()">
+                    <label class="form-check-label" for="typeMember">Club Member</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="booking_type" id="typeGuest" value="guest" onchange="toggleBookingType()">
+                    <label class="form-check-label" for="typeGuest">Walk-in Guest</label>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6" id="memberSelectWrap">
+                <label class="form-label">Select Member</label>
+                <select class="form-select" id="bookingMemberSelect" name="member_id" required>
+                  <option value="">Loading members...</option>
+                </select>
               </div>
             </div>
-            <div class="col-md-2">
-              <select id="ledgerStatusFilter" class="form-select form-select-sm" onchange="applyLedgerFilters()">
-                <option value="all">All Statuses</option>
+
+            <!-- Guest Details -->
+            <div class="row g-3 mb-3 d-none" id="guestFieldsWrap">
+              <div class="col-md-6">
+                <label class="form-label">Guest Name</label>
+                <input type="text" class="form-control" name="guest_name" placeholder="Guest Full Name">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Guest Phone</label>
+                <input type="tel" class="form-control" name="guest_phone" placeholder="10-digit mobile" maxlength="10">
+              </div>
+            </div>
+
+            <!-- Date, Court, Payment -->
+            <div class="row g-3 mb-3">
+              <div class="col-md-4">
+                <label class="form-label">Booking Date</label>
+                <input type="date" class="form-control" id="newBookingDate" name="booking_date" required onchange="loadCourtSlots()">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Court</label>
+                <select class="form-select" id="newBookingCourt" name="court_id" required onchange="loadCourtSlots()">
+                  <option value="">Select Court...</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Payment Method</label>
+                <select class="form-select" name="payment_method">
+                  <option value="cash">Cash Desk</option>
+                  <option value="upi">UPI / QR</option>
+                  <option value="card">Credit/Debit Card</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Slot Picker -->
+            <div class="mb-3">
+              <label class="form-label">Select Start Time Slot <span class="text-muted fw-normal">(60-min session)</span></label>
+              <div id="slotGrid" class="d-flex flex-wrap gap-2 p-3 rounded-3 border" style="background:var(--surface-alt);">
+                <div class="text-muted small">Select date and court to see available slots</div>
+              </div>
+              <input type="hidden" name="start_time" id="selectedStartTime" required>
+            </div>
+
+            <!-- Price Quote -->
+            <div class="price-quote-box">
+              <div>
+                <div class="small text-muted">Session: <strong>60 Minutes</strong></div>
+                <div class="small text-muted">Rate includes member discount perks where applicable</div>
+              </div>
+              <div class="text-end">
+                <div class="small text-muted">Total Fee</div>
+                <div class="fw-bold fs-5 text-accent mono" id="bookingPriceQuote">₹0</div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-custom" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-accent" id="confirmBookingBtn">
+              <i class="bi bi-check2-circle me-1"></i>Confirm &amp; Book
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit/Update Booking Modal -->
+  <div class="modal fade" id="editBookingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square text-accent me-2"></i>Edit Booking</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="editBookingForm">
+          <div class="modal-body">
+            <input type="hidden" id="editBookingId">
+            <div class="mb-3">
+              <label class="form-label">Update Status</label>
+              <select class="form-select" id="editBookingStatus" name="status">
                 <option value="confirmed">Confirmed</option>
                 <option value="completed">Completed</option>
+                <option value="no_show">No Show</option>
                 <option value="cancelled">Cancelled</option>
               </select>
             </div>
-            <div class="col-md-3">
-              <select id="ledgerCourtFilter" class="form-select form-select-sm" onchange="applyLedgerFilters()">
-                <option value="all">All Courts</option>
-              </select>
+            <div class="mb-3">
+              <label class="form-label">Notes (optional)</label>
+              <textarea class="form-control" id="editBookingNotes" rows="3" placeholder="Add any notes about this booking..."></textarea>
             </div>
-            <div class="col-md-2">
-              <input type="date" id="ledgerDateFilter" class="form-control form-control-sm" onchange="applyLedgerFilters()">
-            </div>
-            <div class="col-md-2">
-              <button class="btn btn-sm btn-outline-secondary w-100" onclick="clearLedgerFilters()">
-                <i class="bi bi-x-circle me-1"></i>Clear Filters
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-custom" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-accent">
+              <i class="bi bi-check2 me-1"></i>Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/shell.js"></script>
+  <script>
+    let bookingsList = [];
+    let courtsList = [];
+    let membersList = [];
+    let currentPage = 1;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const today = utils.todayIST ? utils.todayIST() : new Date().toISOString().split('T')[0];
+      document.getElementById('bookingDateFilter').value = today;
+      document.getElementById('newBookingDate').value = today;
+      document.getElementById('newBookingDate').min = today;
+
+      initSearch();
+      await loadCourts();
+      await loadMembers();
+      loadBookings();
+
+      document.getElementById('bookingDateFilter').addEventListener('change', () => { currentPage = 1; loadBookings(); });
+      document.getElementById('bookingSportFilter').addEventListener('change', () => { currentPage = 1; loadBookings(); });
+      document.getElementById('bookingStatusFilter').addEventListener('change', () => { currentPage = 1; loadBookings(); });
+      document.getElementById('quickCheckinForm').addEventListener('submit', handleQuickCheckin);
+      document.getElementById('newBookingForm').addEventListener('submit', handleCreateBooking);
+      document.getElementById('editBookingForm').addEventListener('submit', handleEditBooking);
+    });
+
+    function initSearch() {
+      const input = document.getElementById('bookingSearchInput');
+      const clearBtn = document.getElementById('bookingSearchClear');
+      let abortController = null;
+
+      const performSearch = utils.debounce(async (q) => {
+        if (abortController) abortController.abort();
+        abortController = new AbortController();
+        currentPage = 1;
+        await loadBookings(q, abortController.signal);
+      }, 300);
+
+      input.addEventListener('input', (e) => {
+        const val = e.target.value.trim();
+        clearBtn.style.display = val ? 'block' : 'none';
+        performSearch(val);
+      });
+
+      clearBtn.addEventListener('click', () => {
+        input.value = '';
+        clearBtn.style.display = 'none';
+        currentPage = 1;
+        loadBookings('');
+      });
+    }
+
+    async function loadCourts() {
+      try {
+        const res = await api.get('/api/courts');
+        courtsList = res.data || res || [];
+        document.getElementById('statActiveCourts').textContent = courtsList.filter(c => c.is_active).length;
+
+        const select = document.getElementById('newBookingCourt');
+        select.innerHTML = '<option value="">Select Court...</option>' +
+          courtsList.filter(c => c.is_active).map(c =>
+            `<option value="${c.id}" data-price="${c.hourly_rate}">${utils.escapeHtml(c.name)} (${utils.escapeHtml(c.sport)}) — ${utils.formatINR(c.hourly_rate)}/hr</option>`
+          ).join('');
+      } catch (err) {
+        console.error('Failed to load courts', err);
+      }
+    }
+
+    async function loadMembers() {
+      try {
+        const res = await api.get('/api/members', { limit: 200, status: 'active' });
+        membersList = res.data || res || [];
+        const select = document.getElementById('bookingMemberSelect');
+        select.innerHTML = '<option value="">Select Member...</option>' +
+          membersList.map(m =>
+            `<option value="${m.id}">${utils.escapeHtml(m.name || m.full_name)} (${utils.escapeHtml(m.member_code)}) — ${utils.escapeHtml(m.plan_name || 'Standard')}</option>`
+          ).join('');
+      } catch (err) {
+        console.error('Failed to load members', err);
+      }
+    }
+
+    async function loadBookings(searchQuery = '', signal = null) {
+      const q = searchQuery !== '' ? searchQuery : document.getElementById('bookingSearchInput').value.trim();
+      const date = document.getElementById('bookingDateFilter').value;
+      const sport = document.getElementById('bookingSportFilter').value;
+      const status = document.getElementById('bookingStatusFilter').value;
+
+      try {
+        const res = await api.get('/api/bookings', { q, date, sport, status, page: currentPage, limit: 15 }, { signal });
+        bookingsList = res.data || [];
+        const total = res.meta ? res.meta.total : bookingsList.length;
+        document.getElementById('statTodayBookings').textContent = total;
+
+        // Count upcoming (next 2 hrs)
+        const now = new Date();
+        const upcoming = bookingsList.filter(b => {
+          if (b.status !== 'confirmed') return false;
+          const [h, m] = (b.start_time || '00:00').split(':').map(Number);
+          const slotTime = new Date();
+          slotTime.setHours(h, m, 0, 0);
+          const diff = (slotTime - now) / 60000;
+          return diff > 0 && diff <= 120;
+        }).length;
+        document.getElementById('statUpcomingSlots').textContent = upcoming;
+
+        renderBookings();
+        renderPagination(res.meta);
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          ui.toast(err.message || 'Failed to load bookings', 'error');
+        }
+      }
+    }
+
+    function renderBookings() {
+      const tbody = document.getElementById('bookingsTableBody');
+      if (!bookingsList.length) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-5 text-muted"><i class="bi bi-calendar-x fs-2 d-block mb-2 opacity-50"></i>No bookings found for the selected filters.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = bookingsList.map(b => `
+        <tr>
+          <td>
+            <code class="mono fw-bold small">${utils.escapeHtml(b.booking_code || '')}</code>
+            <div class="small text-muted text-capitalize">${utils.escapeHtml(b.source || 'online')}</div>
+          </td>
+          <td>
+            <div class="fw-semibold">${utils.escapeHtml(b.player_name || b.member_name || b.guest_name || 'Walk-in')}</div>
+            <small class="text-muted">${utils.escapeHtml(b.member_code || b.guest_phone || '')}</small>
+          </td>
+          <td>
+            <div class="fw-semibold">${utils.escapeHtml(b.court_name || '—')}</div>
+            <small class="text-muted">${utils.escapeHtml(b.sport || '')}</small>
+          </td>
+          <td>
+            <div><i class="bi bi-calendar-event me-1 text-muted"></i>${utils.formatDate(b.booking_date)}</div>
+            <div class="mono text-accent small"><i class="bi bi-clock me-1"></i>${utils.formatTime(b.start_time)} – ${utils.formatTime(b.end_time)}</div>
+          </td>
+          <td>
+            <div class="mono fw-semibold">${utils.formatINR(b.price || b.total_fee || 0)}</div>
+            <small class="text-muted text-capitalize">${utils.escapeHtml(b.payment_status || 'paid')}</small>
+          </td>
+          <td>${utils.statusChip(b.status)}</td>
+          <td class="text-end">
+            <div class="d-flex gap-1 justify-content-end">
+              <button class="btn btn-sm btn-outline-custom" onclick="openEditModal(${b.id}, '${utils.escapeHtml(b.status)}')" title="Edit Booking">
+                <i class="bi bi-pencil"></i>
               </button>
+              ${b.status === 'confirmed' ? `
+                <button class="btn btn-sm btn-outline-custom" style="color:var(--danger);border-color:var(--danger);" onclick="cancelBooking(${b.id})" title="Cancel Booking">
+                  <i class="bi bi-calendar-x"></i>
+                </button>
+              ` : ''}
             </div>
-          </div>
-
-          <!-- Table -->
-          <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0" id="ledgerTable">
-              <thead>
-                <tr>
-                  <th>Booking ID</th>
-                  <th>Court & Sport</th>
-                  <th>Date & Time</th>
-                  <th>Player / Member</th>
-                  <th>Pricing</th>
-                  <th>Status</th>
-                  <th class="text-end">Actions</th>
-                </tr>
-              </thead>
-              <tbody id="ledgerTableBody">
-                <tr>
-                  <td colspan="7" class="text-center py-4 text-muted">Loading bookings…</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <!-- ======================================================================
-           3. STAFF PROFILE SECTION
-           ====================================================================== -->
-      <div id="profile-section" class="section-content">
-        <div class="row justify-content-center">
-          <div class="col-lg-7">
-            <div class="cc-card">
-              <div class="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom">
-                <div class="rounded-circle bg-warning text-dark fw-bold d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; font-size: 1.5rem;">
-                  <i class="bi bi-person-fill"></i>
-                </div>
-                <div>
-                  <h4 class="mb-0 fw-bold" id="profileNameDisplay">Court Desk Staff</h4>
-                  <span class="badge bg-info text-dark">Assigned: Court Booking Desk</span>
-                </div>
-              </div>
-
-              <form id="profileForm" onsubmit="event.preventDefault(); handleSaveProfile();">
-                <div class="mb-3">
-                  <label class="form-label fw-semibold">Full Name</label>
-                  <input type="text" id="editFullName" class="form-control" required>
-                </div>
-                <div class="mb-3">
-                  <label class="form-label fw-semibold">Email Address</label>
-                  <input type="email" id="profileEmailDisplay" class="form-control bg-light" disabled readonly>
-                </div>
-                <div class="mb-3">
-                  <label class="form-label fw-semibold">Phone Number</label>
-                  <input type="tel" id="editPhone" class="form-control" placeholder="+91 ...">
-                </div>
-                <div class="mb-3">
-                  <label class="form-label fw-semibold">New Password (optional)</label>
-                  <input type="password" id="editPassword" class="form-control" placeholder="Leave blank to keep unchanged">
-                </div>
-                <div class="text-end">
-                  <button type="submit" class="btn btn-cc"><i class="bi bi-check-circle me-1"></i>Update Profile</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
-  </div>
-</div>
-
-<!-- ==========================================================================
-     MODALS
-     ========================================================================== -->
-
-<!-- 1. NEW BOOKING MODAL -->
-<div class="modal fade" id="newBookingModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content border-0 shadow-lg">
-      <div class="modal-header bg-success text-white">
-        <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle me-2"></i>Create New Court Booking</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body p-4">
-        <form id="newBookingForm">
-          <!-- Booking Type: Member or Walk-in Guest -->
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Customer Type</label>
-            <div class="d-flex gap-3">
-              <div class="form-check">
-                <input class="form-check-input" type="radio" name="customerTypeRadio" id="custTypeMember" value="member" checked onchange="toggleCustomerType()">
-                <label class="form-check-label fw-semibold" for="custTypeMember">Registered Club Member</label>
-              </div>
-              <div class="form-check">
-                <input class="form-check-input" type="radio" name="customerTypeRadio" id="custTypeGuest" value="guest" onchange="toggleCustomerType()">
-                <label class="form-check-label fw-semibold" for="custTypeGuest">Walk-in Guest</label>
-              </div>
-            </div>
-          </div>
-
-          <!-- Member Select Box -->
-          <div class="mb-3" id="memberSelectBlock">
-            <label class="form-label fw-semibold">Select Member</label>
-            <select id="newBookMemberId" class="form-select" onchange="recalculatePrice()">
-              <option value="">-- Choose Member --</option>
-            </select>
-          </div>
-
-          <!-- Guest Info Block -->
-          <div class="row g-2 mb-3 d-none" id="guestInfoBlock">
-            <div class="col-md-6">
-              <label class="form-label fw-semibold">Guest Name *</label>
-              <input type="text" id="newGuestName" class="form-control" placeholder="John Doe">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-semibold">Guest Phone *</label>
-              <input type="tel" id="newGuestPhone" class="form-control" placeholder="+91 9876543210">
-            </div>
-          </div>
-
-          <!-- Court & Date -->
-          <div class="row g-2 mb-3">
-            <div class="col-md-6">
-              <label class="form-label fw-semibold">Court *</label>
-              <select id="newBookCourtId" class="form-select" required onchange="recalculatePrice()">
-                <option value="">-- Select Court --</option>
-              </select>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-semibold">Booking Date *</label>
-              <input type="date" id="newBookDate" class="form-control" required onchange="recalculatePrice()">
-            </div>
-          </div>
-
-          <!-- Time Slot Selection -->
-          <div class="row g-2 mb-3">
-            <div class="col-md-6">
-              <label class="form-label fw-semibold">Start Time *</label>
-              <select id="newBookStartTime" class="form-select" required onchange="recalculatePrice()">
-                <!-- Populated via JS -->
-              </select>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-semibold">End Time *</label>
-              <select id="newBookEndTime" class="form-select" required onchange="recalculatePrice()">
-                <!-- Populated via JS -->
-              </select>
-            </div>
-          </div>
-
-          <!-- Price & Payment Summary Box -->
-          <div class="p-3 bg-light rounded-3 mb-3 border">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-              <span class="text-muted">Hourly Base Rate:</span>
-              <strong id="dispBaseHourly">₹0/hr</strong>
-            </div>
-            <div class="d-flex justify-content-between align-items-center mb-1">
-              <span class="text-muted">Calculated Hours:</span>
-              <span id="dispTotalHours">1 hr</span>
-            </div>
-            <div class="d-flex justify-content-between align-items-center mb-1">
-              <span class="text-muted">Member Plan Discount:</span>
-              <span class="text-success fw-bold" id="dispDiscountPct">- 0%</span>
-            </div>
-            <hr class="my-2">
-            <div class="d-flex justify-content-between align-items-center">
-              <span class="fw-bold fs-6">Total Payable:</span>
-              <h4 class="mb-0 text-success fw-bold" id="dispFinalPrice">₹0.00</h4>
-            </div>
-          </div>
-
-          <!-- Payment Method -->
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Payment Method</label>
-            <select id="newBookPayMethod" class="form-select">
-              <option value="cash">Cash at Counter</option>
-              <option value="card">Card (POS Terminal)</option>
-              <option value="upi">UPI / QR Code</option>
-              <option value="wallet">Member Account Balance</option>
-            </select>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer bg-light">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-cc fw-bold" id="submitBookingBtn" onclick="handleCreateBooking()">
-          <i class="bi bi-check-circle me-1"></i>Confirm Booking
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- 2. EDIT / RESCHEDULE BOOKING MODAL -->
-<div class="modal fade" id="editBookingModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow-lg">
-      <div class="modal-header bg-dark text-white">
-        <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square me-2"></i>Edit / Reschedule Court Session</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body p-4">
-        <form id="editBookingForm">
-          <input type="hidden" id="editBookingId">
-
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Booking Reference</label>
-            <input type="text" id="editBookingCode" class="form-control bg-light" disabled readonly>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Assigned Court</label>
-            <select id="editCourtSelect" class="form-select" required>
-            </select>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Booking Date</label>
-            <input type="date" id="editDateInput" class="form-control" required>
-          </div>
-
-          <div class="row g-2 mb-3">
-            <div class="col-6">
-              <label class="form-label fw-semibold">Start Time</label>
-              <select id="editStartTime" class="form-select" required></select>
-            </div>
-            <div class="col-6">
-              <label class="form-label fw-semibold">End Time</label>
-              <select id="editEndTime" class="form-select" required></select>
-            </div>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Booking Status</label>
-            <select id="editStatusSelect" class="form-select">
-              <option value="confirmed">Confirmed</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer bg-light">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-primary fw-bold" onclick="handleUpdateBooking()">
-          <i class="bi bi-save me-1"></i>Save Changes
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- 3. VIEW BOOKING TICKET MODAL -->
-<div class="modal fade" id="viewBookingModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow-lg">
-      <div class="ticket-badge-header d-flex justify-content-between align-items-center">
-        <div>
-          <span class="badge bg-warning text-dark mb-1">Court Pass</span>
-          <h5 class="mb-0 fw-bold" id="ticketCourtName">—</h5>
-        </div>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body p-4">
-        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
-          <span class="text-muted small">Booking Ref:</span>
-          <code class="fw-bold fs-6" id="ticketCode">—</code>
-        </div>
-        <div class="row g-2 mb-3">
-          <div class="col-6">
-            <span class="text-muted small d-block">Player / Holder</span>
-            <strong id="ticketPlayerName">—</strong>
-          </div>
-          <div class="col-6">
-            <span class="text-muted small d-block">Phone / Contact</span>
-            <span id="ticketPlayerPhone">—</span>
-          </div>
-        </div>
-        <div class="row g-2 mb-3">
-          <div class="col-6">
-            <span class="text-muted small d-block">Session Date</span>
-            <strong id="ticketDate">—</strong>
-          </div>
-          <div class="col-6">
-            <span class="text-muted small d-block">Time Slot</span>
-            <strong id="ticketTime">—</strong>
-          </div>
-        </div>
-        <div class="row g-2 mb-3">
-          <div class="col-6">
-            <span class="text-muted small d-block">Amount Charged</span>
-            <strong class="text-success fs-5" id="ticketAmount">—</strong>
-          </div>
-          <div class="col-6">
-            <span class="text-muted small d-block">Status</span>
-            <span id="ticketStatusBadge">—</span>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer bg-light d-flex justify-content-between">
-        <button type="button" class="btn btn-outline-danger btn-sm" id="ticketCancelBtn">
-          <i class="bi bi-x-circle me-1"></i>Cancel Booking
-        </button>
-        <div class="d-flex gap-2">
-          <button type="button" class="btn btn-outline-primary btn-sm" id="ticketEditBtn">
-            <i class="bi bi-pencil me-1"></i>Edit
-          </button>
-          <button type="button" class="btn btn-success btn-sm" id="ticketCheckinBtn">
-            <i class="bi bi-check2-circle me-1"></i>Mark Completed
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Alert bar -->
-<div id="alert-bar"></div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="/js/api.js"></script>
-<script src="/js/utils.js"></script>
-<script>
-// ============================================================================
-// GLOBAL STATE
-// ============================================================================
-let COURTS_CACHE = [];
-let BOOKINGS_CACHE = [];
-let MEMBERS_CACHE = [];
-let SELECTED_DATE = new Date().toISOString().slice(0, 10);
-let CURRENT_BOOKING = null;
-
-// Time slots range 06:00 to 22:00
-const TIME_SLOTS = [
-  '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00',
-  '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00',
-  '20:00', '21:00', '22:00'
-];
-
-// ============================================================================
-// INITIALIZATION
-// ============================================================================
-document.addEventListener('DOMContentLoaded', async () => {
-  // Check auth
-  try {
-    const user = await loadSession(false);
-    if (user) {
-      document.getElementById('userNameSidebar').textContent = user.full_name || 'Court Staff';
-      if (document.getElementById('userInitial')) {
-        document.getElementById('userInitial').textContent = (user.full_name || 'S').charAt(0).toUpperCase();
-      }
-      document.getElementById('profileNameDisplay').textContent = user.full_name || 'Court Staff';
-      document.getElementById('profileEmailDisplay').value = user.email || 'staff@championsclub.com';
-      if (user.phone) document.getElementById('editPhone').value = user.phone;
+          </td>
+        </tr>
+      `).join('');
     }
-  } catch {}
 
-  document.getElementById('scheduleDateInput').value = SELECTED_DATE;
+    function renderPagination(meta) {
+      const wrap = document.getElementById('paginationWrap');
+      if (!meta) {
+        wrap.innerHTML = `<span class="text-muted small">Showing ${bookingsList.length} bookings</span>`;
+        return;
+      }
+      const from = (meta.page - 1) * meta.limit + 1;
+      const to = Math.min(meta.page * meta.limit, meta.total);
+      let pagesHtml = '';
+      if (meta.totalPages > 1) {
+        pagesHtml = `<nav><ul class="pagination pagination-sm mb-0">`;
+        for (let i = 1; i <= meta.totalPages; i++) {
+          pagesHtml += `<li class="page-item ${i === meta.page ? 'active' : ''}">
+            <button class="page-link" onclick="changePage(${i})">${i}</button></li>`;
+        }
+        pagesHtml += `</ul></nav>`;
+      }
+      wrap.innerHTML = `<span class="text-muted small">Showing ${from}–${to} of ${meta.total} bookings</span>${pagesHtml}`;
+    }
 
-  // Initialize time dropdown selects
-  populateTimeDropdowns();
+    function changePage(p) {
+      currentPage = p;
+      loadBookings();
+    }
 
-  // Load all foundational data
-  await loadAllCourtData();
+    function toggleBookingType() {
+      const isMember = document.getElementById('typeMember').checked;
+      document.getElementById('memberSelectWrap').classList.toggle('d-none', !isMember);
+      document.getElementById('guestFieldsWrap').classList.toggle('d-none', isMember);
+      document.getElementById('bookingMemberSelect').toggleAttribute('required', isMember);
+    }
 
-  // Logout handler
-  document.getElementById('logoutBtn')?.addEventListener('click', async () => {
-    await api.post('/api/auth/logout');
-    window.location.href = '/shared/login.html';
-  });
-});
+    function openNewBookingModal() {
+      document.getElementById('newBookingForm').reset();
+      const today = utils.todayIST ? utils.todayIST() : new Date().toISOString().split('T')[0];
+      document.getElementById('newBookingDate').value = today;
+      toggleBookingType();
+      document.getElementById('slotGrid').innerHTML = '<div class="text-muted small">Select date and court to see available slots</div>';
+      document.getElementById('selectedStartTime').value = '';
+      document.getElementById('bookingPriceQuote').textContent = '₹0';
+      const modal = new bootstrap.Modal(document.getElementById('newBookingModal'));
+      modal.show();
+    }
 
-// ============================================================================
-// TAB NAVIGATION
-// ============================================================================
-function switchTab(tabId, event) {
-  if (event) event.preventDefault();
-  document.querySelectorAll('#sidebarNav .nav-link').forEach(nav => {
-    if (nav.getAttribute('data-target') === tabId) nav.classList.add('active');
-    else nav.classList.remove('active');
-  });
+    async function loadCourtSlots() {
+      const courtId = document.getElementById('newBookingCourt').value;
+      const date = document.getElementById('newBookingDate').value;
+      const slotGrid = document.getElementById('slotGrid');
+      const quoteEl = document.getElementById('bookingPriceQuote');
 
-  document.querySelectorAll('.section-content').forEach(sec => sec.classList.remove('active'));
-  const targetSec = document.getElementById(tabId);
-  if (targetSec) targetSec.classList.add('active');
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
+      if (!courtId || !date) {
+        slotGrid.innerHTML = '<div class="text-muted small">Select court and date to view slots</div>';
+        return;
+      }
 
-// ============================================================================
-// TIME DROPDOWNS SETUP
-// ============================================================================
-function populateTimeDropdowns() {
-  const startSelects = ['newBookStartTime', 'editStartTime'];
-  const endSelects   = ['newBookEndTime', 'editEndTime'];
+      slotGrid.innerHTML = '<div class="text-muted small"><span class="spinner-border spinner-border-sm text-accent me-2"></span>Loading available slots...</div>';
 
-  startSelects.forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.innerHTML = TIME_SLOTS.slice(0, -1).map(t => `<option value="${t}:00">${t}</option>`).join('');
-  });
+      try {
+        const res = await api.get(`/api/courts/${courtId}/slots`, { date });
+        const slots = res.data || res || [];
 
-  endSelects.forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.innerHTML = TIME_SLOTS.slice(1).map(t => `<option value="${t}:00">${t}</option>`).join('');
-  });
-}
+        if (!slots.length) {
+          slotGrid.innerHTML = '<div class="small text-danger">No slots available for this court on the selected date.</div>';
+          return;
+        }
 
-// ============================================================================
-// DATA FETCHING & KPI UPDATES
-// ============================================================================
-async function loadAllCourtData() {
-  // Fetch Courts
-  try {
-    const courts = await api.get('/api/courts');
-    COURTS_CACHE = Array.isArray(courts) ? courts.filter(c => c.is_active) : [];
-  } catch {
-    COURTS_CACHE = [
-      { id: 1, name: 'Badminton Court 1', sport: 'Badminton', surface_type: 'Synthetic Wooden', base_price_per_hour: 400.00, is_active: 1 },
-      { id: 2, name: 'Badminton Court 2', sport: 'Badminton', surface_type: 'Synthetic Wooden', base_price_per_hour: 400.00, is_active: 1 },
-      { id: 3, name: 'Tennis Court A', sport: 'Tennis', surface_type: 'Hard Acrylic', base_price_per_hour: 800.00, is_active: 1 },
-      { id: 4, name: 'Tennis Court B', sport: 'Tennis', surface_type: 'Clay', base_price_per_hour: 900.00, is_active: 1 },
-      { id: 5, name: 'Squash Arena 1', sport: 'Squash', surface_type: 'Glass Back Hardwood', base_price_per_hour: 600.00, is_active: 1 }
-    ];
-  }
+        slotGrid.innerHTML = slots.map(s => {
+          const isPast = s.is_past;
+          const isDisabled = !s.is_available || isPast;
+          return `
+            <button type="button"
+              class="time-slot-btn"
+              ${isDisabled ? 'disabled' : ''}
+              onclick="selectSlot('${s.start_time}', this)"
+              title="${isDisabled ? (isPast ? 'Slot in past' : 'Already booked') : 'Click to select'}">
+              ${utils.formatTime(s.start_time)}
+            </button>
+          `;
+        }).join('');
 
-  // Populate Court Selects in Modals & Ledger filter
-  populateCourtSelects();
+        const selectedOption = document.querySelector('#newBookingCourt option:checked');
+        if (selectedOption) quoteEl.textContent = utils.formatINR(selectedOption.dataset.price);
+      } catch (err) {
+        slotGrid.innerHTML = `<div class="small text-danger">${utils.escapeHtml(err.message || 'Failed to fetch slots')}</div>`;
+      }
+    }
 
-  // Fetch Members for Booking Form
-  try {
-    const members = await api.get('/api/members?status=active');
-    MEMBERS_CACHE = Array.isArray(members.members || members) ? (members.members || members) : [];
-    populateMemberSelect();
-  } catch {}
+    function selectSlot(startTime, btnEl) {
+      document.querySelectorAll('.time-slot-btn').forEach(b => b.classList.remove('selected'));
+      btnEl.classList.add('selected');
+      document.getElementById('selectedStartTime').value = startTime;
+    }
 
-  // Load Bookings for Ledger & Matrix
-  await fetchAllBookings();
-  loadScheduleMatrix();
-  applyLedgerFilters();
-  updateKpiCounts();
-}
+    async function handleCreateBooking(e) {
+      e.preventDefault();
+      const form = e.target;
+      const isMember = document.getElementById('typeMember').checked;
+      const startTime = document.getElementById('selectedStartTime').value;
+      const btn = document.getElementById('confirmBookingBtn');
 
-function populateCourtSelects() {
-  const selects = ['newBookCourtId', 'editCourtSelect', 'ledgerCourtFilter'];
-  selects.forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    const isFilter = (id === 'ledgerCourtFilter');
-    let opts = isFilter ? '<option value="all">All Courts</option>' : '<option value="">-- Select Court --</option>';
-    COURTS_CACHE.forEach(c => {
-      opts += `<option value="${c.id}">${escHtml(c.name)} (${escHtml(c.sport)} – ₹${c.base_price_per_hour}/hr)</option>`;
-    });
-    el.innerHTML = opts;
-  });
-}
+      if (!startTime) {
+        ui.toast('Please select a time slot first', 'warning');
+        return;
+      }
 
-function populateMemberSelect() {
-  const el = document.getElementById('newBookMemberId');
-  if (!el) return;
-  let opts = '<option value="">-- Choose Member --</option>';
-  MEMBERS_CACHE.forEach(m => {
-    const discount = m.court_discount_pct ? ` (${m.court_discount_pct}% Court Off)` : '';
-    opts += `<option value="${m.user_id || m.id}" data-discount="${m.court_discount_pct || 0}">${escHtml(m.full_name || m.name)} – ${escHtml(m.member_code || '')}${discount}</option>`;
-  });
-  el.innerHTML = opts;
-}
+      const payload = {
+        court_id: Number(form.court_id.value),
+        booking_date: form.booking_date.value,
+        start_time: startTime,
+        payment_method: form.payment_method.value,
+        source: 'front_desk'
+      };
 
-async function fetchAllBookings() {
-  try {
-    const bookings = await api.get('/api/bookings');
-    BOOKINGS_CACHE = Array.isArray(bookings) ? bookings : [];
-  } catch {
-    BOOKINGS_CACHE = [];
-  }
-}
-
-function updateKpiCounts() {
-  const today = new Date().toISOString().slice(0, 10);
-  const todayBookings = BOOKINGS_CACHE.filter(b => (b.booking_date || '').slice(0, 10) === today && b.status !== 'cancelled');
-  const activeCount = todayBookings.filter(b => b.status === 'confirmed').length;
-  const completedCount = todayBookings.filter(b => b.status === 'completed').length;
-
-  document.getElementById('kpi-today-bookings').textContent = todayBookings.length;
-  document.getElementById('kpi-active-bookings').textContent = activeCount;
-  document.getElementById('kpi-completed-bookings').textContent = completedCount;
-  document.getElementById('kpi-active-courts').textContent = COURTS_CACHE.length;
-}
-
-// ============================================================================
-// SCHEDULE MATRIX RENDERER
-// ============================================================================
-function shiftDate(delta) {
-  const current = new Date(SELECTED_DATE);
-  current.setDate(current.getDate() + delta);
-  SELECTED_DATE = current.toISOString().slice(0, 10);
-  document.getElementById('scheduleDateInput').value = SELECTED_DATE;
-  loadScheduleMatrix();
-}
-
-function setDateToday() {
-  SELECTED_DATE = new Date().toISOString().slice(0, 10);
-  document.getElementById('scheduleDateInput').value = SELECTED_DATE;
-  loadScheduleMatrix();
-}
-
-function loadScheduleMatrix() {
-  const dateVal = document.getElementById('scheduleDateInput').value || SELECTED_DATE;
-  SELECTED_DATE = dateVal;
-  const sportFilter = document.getElementById('sportFilterSelect').value;
-
-  const filteredCourts = COURTS_CACHE.filter(c => sportFilter === 'all' || c.sport.toLowerCase() === sportFilter.toLowerCase());
-
-  // Build matrix header
-  const thead = document.getElementById('matrixHead');
-  let headerHtml = '<tr><th class="matrix-court-cell text-start">Court / Time</th>';
-  for (let i = 0; i < TIME_SLOTS.length - 1; i++) {
-    const s = TIME_SLOTS[i];
-    const e = TIME_SLOTS[i + 1];
-    headerHtml += `<th>${s}<br><small class="text-muted" style="font-size:0.65rem;">to ${e}</small></th>`;
-  }
-  headerHtml += '</tr>';
-  thead.innerHTML = headerHtml;
-
-  // Build matrix body rows
-  const tbody = document.getElementById('matrixBody');
-  if (!filteredCourts.length) {
-    tbody.innerHTML = '<tr><td colspan="18" class="text-center py-4 text-muted">No courts available for selected sport.</td></tr>';
-    return;
-  }
-
-  const dayBookings = BOOKINGS_CACHE.filter(b => (b.booking_date || '').slice(0, 10) === SELECTED_DATE && b.status !== 'cancelled');
-
-  let bodyHtml = '';
-  filteredCourts.forEach(c => {
-    bodyHtml += `<tr><td class="matrix-court-cell">
-      <div class="fw-bold text-dark">${escHtml(c.name)}</div>
-      <div class="small text-muted">${escHtml(c.sport)} &bull; ₹${c.base_price_per_hour}/hr</div>
-    </td>`;
-
-    for (let i = 0; i < TIME_SLOTS.length - 1; i++) {
-      const slotStart = TIME_SLOTS[i] + ':00';
-      const slotEnd   = TIME_SLOTS[i + 1] + ':00';
-
-      // Find if court is booked in this slot
-      const booking = dayBookings.find(b => b.court_id == c.id && (b.start_time < slotEnd && b.end_time > slotStart));
-
-      if (booking) {
-        const isCompleted = booking.status === 'completed';
-        const cardClass = isCompleted ? 'slot-completed' : 'slot-confirmed';
-        const playerName = booking.member_name || booking.guest_name || 'Booked';
-
-        bodyHtml += `<td>
-          <div class="matrix-slot-card ${cardClass}" onclick="openBookingTicket(${booking.id})">
-            <div class="fw-bold text-truncate">${escHtml(playerName)}</div>
-            <div class="d-flex justify-content-between align-items-center mt-1">
-              <span class="badge ${isCompleted ? 'bg-secondary' : 'bg-success'} py-0 px-1" style="font-size:0.65rem;">${escHtml(booking.status)}</span>
-              <span class="text-muted" style="font-size:0.65rem;">${fmtINR(booking.price_charged)}</span>
-            </div>
-          </div>
-        </td>`;
+      if (isMember) {
+        if (!form.member_id.value) { ui.toast('Please select a member', 'warning'); return; }
+        payload.member_id = Number(form.member_id.value);
       } else {
-        bodyHtml += `<td>
-          <div class="matrix-slot-card slot-available" onclick="quickBookSlot(${c.id}, '${slotStart}', '${slotEnd}')">
-            <i class="bi bi-plus-lg me-1"></i>Book
-          </div>
-        </td>`;
+        payload.guest_name = form.guest_name.value.trim();
+        payload.guest_phone = form.guest_phone.value.trim();
+        if (!payload.guest_name || !payload.guest_phone) {
+          ui.toast('Please enter guest name and phone', 'warning');
+          return;
+        }
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Booking…';
+      try {
+        await api.post('/api/bookings', payload);
+        bootstrap.Modal.getInstance(document.getElementById('newBookingModal'))?.hide();
+        ui.toast('Court booking confirmed successfully', 'success');
+        loadBookings();
+      } catch (err) {
+        ui.toast(err.message || 'Booking creation failed', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Confirm &amp; Book';
       }
     }
 
-    bodyHtml += '</tr>';
-  });
-
-  tbody.innerHTML = bodyHtml;
-}
-
-// ============================================================================
-// BOOKINGS LEDGER
-// ============================================================================
-function applyLedgerFilters() {
-  const q = document.getElementById('ledgerSearchInput').value.toLowerCase().trim();
-  const status = document.getElementById('ledgerStatusFilter').value;
-  const courtId = document.getElementById('ledgerCourtFilter').value;
-  const date = document.getElementById('ledgerDateFilter').value;
-
-  const filtered = BOOKINGS_CACHE.filter(b => {
-    const matchQ = !q ||
-      (b.booking_code && b.booking_code.toLowerCase().includes(q)) ||
-      (b.member_name && b.member_name.toLowerCase().includes(q)) ||
-      (b.guest_name && b.guest_name.toLowerCase().includes(q)) ||
-      (b.guest_phone && b.guest_phone.includes(q)) ||
-      (b.court_name && b.court_name.toLowerCase().includes(q));
-
-    const matchStatus = status === 'all' || b.status === status;
-    const matchCourt = courtId === 'all' || String(b.court_id) === String(courtId);
-    const matchDate = !date || (b.booking_date || '').slice(0, 10) === date;
-
-    return matchQ && matchStatus && matchCourt && matchDate;
-  });
-
-  document.getElementById('ledgerCountBadge').textContent = `${filtered.length} Bookings`;
-  renderLedgerTable(filtered);
-}
-
-function clearLedgerFilters() {
-  document.getElementById('ledgerSearchInput').value = '';
-  document.getElementById('ledgerStatusFilter').value = 'all';
-  document.getElementById('ledgerCourtFilter').value = 'all';
-  document.getElementById('ledgerDateFilter').value = '';
-  applyLedgerFilters();
-}
-
-function renderLedgerTable(bookings) {
-  const tbody = document.getElementById('ledgerTableBody');
-  if (!bookings.length) {
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted"><i class="bi bi-inbox fs-3 d-block mb-1"></i>No court bookings found.</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = bookings.map(b => {
-    const isCompleted = b.status === 'completed';
-    const isCancelled = b.status === 'cancelled';
-    const isConfirmed = b.status === 'confirmed';
-
-    let statusCls = 'bg-secondary';
-    if (isConfirmed) statusCls = 'status-confirmed';
-    else if (isCompleted) statusCls = 'status-completed';
-    else if (isCancelled) statusCls = 'status-cancelled';
-
-    const player = b.member_name ?
-      `<div><strong class="text-dark">${escHtml(b.member_name)}</strong><span class="badge bg-light text-dark border ms-1" style="font-size:0.65rem;">Member</span></div>` :
-      `<div><strong class="text-dark">${escHtml(b.guest_name || 'Walk-in Guest')}</strong><small class="text-muted d-block">${escHtml(b.guest_phone || '')}</small></div>`;
-
-    return `
-      <tr>
-        <td>
-          <code class="fw-bold text-dark">${escHtml(b.booking_code || '#' + b.id)}</code>
-          <small class="text-muted d-block">${fmtDate(b.created_at)}</small>
-        </td>
-        <td>
-          <div class="fw-semibold text-dark">${escHtml(b.court_name || 'Court #' + b.court_id)}</div>
-          <span class="badge bg-light text-muted border">${escHtml(b.sport || 'Sports')}</span>
-        </td>
-        <td>
-          <div><i class="bi bi-calendar2-event me-1 text-muted"></i><strong>${fmtDate(b.booking_date)}</strong></div>
-          <small class="text-muted"><i class="bi bi-clock me-1"></i>${String(b.start_time).slice(0,5)} – ${String(b.end_time).slice(0,5)}</small>
-        </td>
-        <td>${player}</td>
-        <td>
-          <div class="fw-bold text-success">${fmtINR(b.price_charged)}</div>
-          <small class="text-muted">${escHtml(b.payment_method || 'counter')}</small>
-        </td>
-        <td>
-          <span class="badge ${statusCls} px-2 py-1">${escHtml(b.status)}</span>
-        </td>
-        <td class="text-end">
-          <button class="btn btn-sm btn-outline-secondary me-1" onclick="openBookingTicket(${b.id})" title="View Details">
-            <i class="bi bi-eye"></i>
-          </button>
-          ${!isCancelled ? `
-            <button class="btn btn-sm btn-outline-primary me-1" onclick="openEditBooking(${b.id})" title="Edit / Reschedule">
-              <i class="bi bi-pencil"></i>
-            </button>
-          ` : ''}
-          ${isConfirmed ? `
-            <button class="btn btn-sm btn-outline-success me-1" onclick="markBookingCompleted(${b.id})" title="Check In / Mark Completed">
-              <i class="bi bi-check2"></i>
-            </button>
-            <button class="btn btn-sm btn-outline-danger" onclick="cancelBooking(${b.id})" title="Cancel Booking">
-              <i class="bi bi-x-circle"></i>
-            </button>
-          ` : ''}
-        </td>
-      </tr>
-    `;
-  }).join('');
-}
-
-// ============================================================================
-// CREATE NEW BOOKING
-// ============================================================================
-function openNewBookingModal() {
-  document.getElementById('newBookingForm').reset();
-  document.getElementById('newBookDate').value = SELECTED_DATE;
-  document.getElementById('custTypeMember').checked = true;
-  toggleCustomerType();
-  recalculatePrice();
-  new bootstrap.Modal(document.getElementById('newBookingModal')).show();
-}
-
-function quickBookSlot(courtId, startTime, endTime) {
-  openNewBookingModal();
-  document.getElementById('newBookCourtId').value = courtId;
-  document.getElementById('newBookDate').value = SELECTED_DATE;
-  document.getElementById('newBookStartTime').value = startTime;
-  document.getElementById('newBookEndTime').value = endTime;
-  recalculatePrice();
-}
-
-function toggleCustomerType() {
-  const isMember = document.getElementById('custTypeMember').checked;
-  const memberBlock = document.getElementById('memberSelectBlock');
-  const guestBlock  = document.getElementById('guestInfoBlock');
-
-  if (isMember) {
-    memberBlock.classList.remove('d-none');
-    guestBlock.classList.add('d-none');
-  } else {
-    memberBlock.classList.add('d-none');
-    guestBlock.classList.remove('d-none');
-  }
-  recalculatePrice();
-}
-
-function recalculatePrice() {
-  const courtId = document.getElementById('newBookCourtId').value;
-  const court = COURTS_CACHE.find(c => String(c.id) === String(courtId));
-  const rate = court ? parseFloat(court.base_price_per_hour) : 0;
-
-  document.getElementById('dispBaseHourly').textContent = `₹${rate}/hr`;
-
-  const sTime = document.getElementById('newBookStartTime').value;
-  const eTime = document.getElementById('newBookEndTime').value;
-
-  let hours = 1;
-  if (sTime && eTime) {
-    const [sh, sm] = sTime.split(':').map(Number);
-    const [eh, em] = eTime.split(':').map(Number);
-    hours = Math.max(0.5, ((eh * 60 + (em || 0)) - (sh * 60 + (sm || 0))) / 60);
-  }
-  document.getElementById('dispTotalHours').textContent = `${hours} hr${hours > 1 ? 's' : ''}`;
-
-  let discountPct = 0;
-  if (document.getElementById('custTypeMember').checked) {
-    const memberSelect = document.getElementById('newBookMemberId');
-    const selectedOpt = memberSelect.options[memberSelect.selectedIndex];
-    if (selectedOpt) {
-      discountPct = parseFloat(selectedOpt.dataset.discount || 0);
+    function openEditModal(id, currentStatus) {
+      document.getElementById('editBookingId').value = id;
+      document.getElementById('editBookingStatus').value = currentStatus;
+      document.getElementById('editBookingNotes').value = '';
+      const modal = new bootstrap.Modal(document.getElementById('editBookingModal'));
+      modal.show();
     }
-  }
 
-  document.getElementById('dispDiscountPct').textContent = `-${discountPct}%`;
+    async function handleEditBooking(e) {
+      e.preventDefault();
+      const id = document.getElementById('editBookingId').value;
+      const status = document.getElementById('editBookingStatus').value;
+      const notes = document.getElementById('editBookingNotes').value.trim();
 
-  const basePrice = rate * hours;
-  const finalPayable = Math.max(0, basePrice * (1 - discountPct / 100));
-
-  document.getElementById('dispFinalPrice').textContent = fmtINR(finalPayable);
-}
-
-async function handleCreateBooking() {
-  const isMember = document.getElementById('custTypeMember').checked;
-  const courtId = document.getElementById('newBookCourtId').value;
-  const bookingDate = document.getElementById('newBookDate').value;
-  const startTime = document.getElementById('newBookStartTime').value;
-  const endTime = document.getElementById('newBookEndTime').value;
-  const payMethod = document.getElementById('newBookPayMethod').value;
-
-  if (!courtId || !bookingDate || !startTime || !endTime) {
-    showAlert('Please fill in all court and timing fields.', 'warning');
-    return;
-  }
-
-  if (startTime >= endTime) {
-    showAlert('End time must be after start time.', 'danger');
-    return;
-  }
-
-  let payload = {
-    court_id: parseInt(courtId, 10),
-    booking_date: bookingDate,
-    start_time: startTime,
-    end_time: endTime,
-    payment_method: payMethod
-  };
-
-  if (isMember) {
-    const memberId = document.getElementById('newBookMemberId').value;
-    if (!memberId) {
-      showAlert('Please select a club member.', 'warning');
-      return;
+      try {
+        await api.put(`/api/bookings/${id}`, { status, notes });
+        bootstrap.Modal.getInstance(document.getElementById('editBookingModal'))?.hide();
+        ui.toast('Booking updated successfully', 'success');
+        loadBookings();
+      } catch (err) {
+        ui.toast(err.message || 'Failed to update booking', 'error');
+      }
     }
-    payload.user_id = parseInt(memberId, 10);
-  } else {
-    const guestName = document.getElementById('newGuestName').value.trim();
-    const guestPhone = document.getElementById('newGuestPhone').value.trim();
-    if (!guestName) {
-      showAlert('Please enter guest name.', 'warning');
-      return;
+
+    async function cancelBooking(id) {
+      const confirmed = await ui.confirmDialog({
+        title: 'Cancel Court Booking',
+        message: 'Are you sure you want to cancel this booking? The time slot will be freed for other guests.',
+        confirmText: 'Cancel Booking',
+        danger: true
+      });
+      if (!confirmed) return;
+
+      try {
+        await api.del(`/api/bookings/${id}`, { reason: 'Staff cancellation from desk' });
+        ui.toast('Booking cancelled and slot freed', 'success');
+        loadBookings();
+      } catch (err) {
+        ui.toast(err.message || 'Failed to cancel booking', 'error');
+      }
     }
-    payload.guest_name = guestName;
-    payload.guest_phone = guestPhone;
-  }
 
-  const btn = document.getElementById('submitBookingBtn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
+    async function handleQuickCheckin(e) {
+      e.preventDefault();
+      const input = document.getElementById('checkinInput');
+      const val = input.value.trim();
+      if (!val) return;
 
-  try {
-    const res = await api.post('/api/bookings', payload);
-    showAlert(`Court booking ${res.booking_code || ''} confirmed!`, 'success');
-    bootstrap.Modal.getInstance(document.getElementById('newBookingModal')).hide();
-    await loadAllCourtData();
-  } catch (err) {
-    showAlert(err.message || 'Failed to create court booking.', 'danger');
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Confirm Booking';
-  }
-}
-
-// ============================================================================
-// EDIT / RESCHEDULE BOOKING
-// ============================================================================
-function openEditBooking(id) {
-  const b = BOOKINGS_CACHE.find(item => item.id == id);
-  if (!b) return;
-
-  CURRENT_BOOKING = b;
-  document.getElementById('editBookingId').value = b.id;
-  document.getElementById('editBookingCode').value = b.booking_code || `#${b.id}`;
-  document.getElementById('editCourtSelect').value = b.court_id;
-  document.getElementById('editDateInput').value = (b.booking_date || '').slice(0, 10);
-
-  const sTime = String(b.start_time).slice(0, 5) + ':00';
-  const eTime = String(b.end_time).slice(0, 5) + ':00';
-  document.getElementById('editStartTime').value = sTime;
-  document.getElementById('editEndTime').value = eTime;
-  document.getElementById('editStatusSelect').value = b.status || 'confirmed';
-
-  // Close ticket modal if open
-  bootstrap.Modal.getInstance(document.getElementById('viewBookingModal'))?.hide();
-  new bootstrap.Modal(document.getElementById('editBookingModal')).show();
-}
-
-async function handleUpdateBooking() {
-  const id = document.getElementById('editBookingId').value;
-  const courtId = document.getElementById('editCourtSelect').value;
-  const bookingDate = document.getElementById('editDateInput').value;
-  const startTime = document.getElementById('editStartTime').value;
-  const endTime = document.getElementById('editEndTime').value;
-  const status = document.getElementById('editStatusSelect').value;
-
-  if (startTime >= endTime) {
-    showAlert('End time must be after start time.', 'danger');
-    return;
-  }
-
-  try {
-    await api.put(`/api/bookings/${id}`, {
-      court_id: parseInt(courtId, 10),
-      booking_date: bookingDate,
-      start_time: startTime,
-      end_time: endTime,
-      status: status
-    });
-    showAlert('Court booking updated successfully!', 'success');
-    bootstrap.Modal.getInstance(document.getElementById('editBookingModal')).hide();
-    await loadAllCourtData();
-  } catch (err) {
-    showAlert(err.message || 'Failed to update booking.', 'danger');
-  }
-}
-
-// ============================================================================
-// VIEW TICKET & QUICK ACTIONS
-// ============================================================================
-function openBookingTicket(id) {
-  const b = BOOKINGS_CACHE.find(item => item.id == id);
-  if (!b) return;
-
-  CURRENT_BOOKING = b;
-  document.getElementById('ticketCourtName').textContent = b.court_name || `Court #${b.court_id}`;
-  document.getElementById('ticketCode').textContent = b.booking_code || `#${b.id}`;
-  document.getElementById('ticketPlayerName').textContent = b.member_name || b.guest_name || 'Walk-in Guest';
-  document.getElementById('ticketPlayerPhone').textContent = b.member_phone || b.guest_phone || '—';
-  document.getElementById('ticketDate').textContent = fmtDate(b.booking_date);
-  document.getElementById('ticketTime').textContent = `${String(b.start_time).slice(0,5)} – ${String(b.end_time).slice(0,5)}`;
-  document.getElementById('ticketAmount').textContent = fmtINR(b.price_charged);
-
-  const badgeEl = document.getElementById('ticketStatusBadge');
-  if (b.status === 'confirmed') badgeEl.innerHTML = '<span class="badge status-confirmed">Confirmed</span>';
-  else if (b.status === 'completed') badgeEl.innerHTML = '<span class="badge status-completed">Completed</span>';
-  else badgeEl.innerHTML = '<span class="badge status-cancelled">Cancelled</span>';
-
-  // Modal Action Buttons
-  const cancelBtn = document.getElementById('ticketCancelBtn');
-  const editBtn   = document.getElementById('ticketEditBtn');
-  const checkinBtn= document.getElementById('ticketCheckinBtn');
-
-  if (b.status === 'cancelled') {
-    cancelBtn.classList.add('d-none');
-    editBtn.classList.add('d-none');
-    checkinBtn.classList.add('d-none');
-  } else if (b.status === 'completed') {
-    cancelBtn.classList.add('d-none');
-    checkinBtn.classList.add('d-none');
-    editBtn.classList.remove('d-none');
-    editBtn.onclick = () => openEditBooking(b.id);
-  } else {
-    cancelBtn.classList.remove('d-none');
-    editBtn.classList.remove('d-none');
-    checkinBtn.classList.remove('d-none');
-    cancelBtn.onclick = () => cancelBooking(b.id);
-    editBtn.onclick   = () => openEditBooking(b.id);
-    checkinBtn.onclick= () => markBookingCompleted(b.id);
-  }
-
-  new bootstrap.Modal(document.getElementById('viewBookingModal')).show();
-}
-
-async function markBookingCompleted(id) {
-  try {
-    await api.put(`/api/bookings/${id}`, { status: 'completed' });
-    showAlert('Booking checked-in and marked as completed!', 'success');
-    bootstrap.Modal.getInstance(document.getElementById('viewBookingModal'))?.hide();
-    await loadAllCourtData();
-  } catch (err) {
-    showAlert(err.message || 'Failed to update status.', 'danger');
-  }
-}
-
-async function cancelBooking(id) {
-  if (!confirm('Are you sure you want to cancel this court booking? The slot will be released.')) return;
-  try {
-    await api.post(`/api/bookings/${id}/cancel`, { reason: 'Cancelled by Court Desk Staff' });
-    showAlert('Court booking cancelled successfully.', 'warning');
-    bootstrap.Modal.getInstance(document.getElementById('viewBookingModal'))?.hide();
-    await loadAllCourtData();
-  } catch (err) {
-    showAlert(err.message || 'Failed to cancel booking.', 'danger');
-  }
-}
-
-// ============================================================================
-// PROFILE UPDATE
-// ============================================================================
-async function handleSaveProfile() {
-  const fullName = document.getElementById('editFullName').value.trim();
-  const phone = document.getElementById('editPhone').value.trim();
-  const password = document.getElementById('editPassword').value;
-
-  try {
-    await api.put('/api/auth/profile', { full_name: fullName, phone, password: password || undefined });
-    showAlert('Profile updated successfully!', 'success');
-    document.getElementById('profileNameDisplay').textContent = fullName;
-    document.getElementById('userNameSidebar').textContent = fullName;
-    if (document.getElementById('userInitial')) {
-      document.getElementById('userInitial').textContent = (fullName || 'S').charAt(0).toUpperCase();
+      try {
+        const res = await api.post('/api/members/checkin', { identifier: val });
+        const name = res.data ? (res.data.name || res.data.full_name) : 'Member';
+        ui.toast(`Checked in: ${name}`, 'success');
+        input.value = '';
+        input.focus();
+        const cur = parseInt(document.getElementById('statCheckinsToday').textContent) || 0;
+        document.getElementById('statCheckinsToday').textContent = cur + 1;
+      } catch (err) {
+        ui.toast(err.message || 'Check-in failed. Verify member code or phone.', 'error');
+      }
     }
-  } catch (err) {
-    showAlert('Profile updated!', 'success');
-  }
-}
-</script>
+  </script>
 </body>
 </html>

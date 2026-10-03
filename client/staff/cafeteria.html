@@ -1,520 +1,417 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cafeteria & Bar – Champions Club Staff</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <title>Bar & Cafe POS - Champions Club</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  <link rel="stylesheet" href="/css/main.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="../css/main.css">
+  <style>
+    .table-map-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .table-tile {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 0.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .table-tile:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+    .table-tile.active-table {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+    .table-tile.occupied {
+      background: var(--danger-soft);
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+    .menu-item-tile {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 0.85rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100%;
+    }
+    .menu-item-tile:hover {
+      border-color: var(--accent);
+      box-shadow: var(--shadow-sm);
+    }
+  </style>
 </head>
-
 <body>
-  <div class="cc-wrapper">
-    <nav class="cc-sidebar d-flex flex-column">
-      <div class="brand"><i class="bi bi-trophy-fill me-2 text-warning"></i>Champions Club</div>
-      <ul class="nav flex-column mt-2 flex-grow-1">
-        <li><a href="/staff/cafeteria.html" class="nav-link active"><i class="bi bi-cup-hot"></i>Bar & Cafeteria</a></li>
-      </ul>
-      <div class="p-3 border-top border-secondary border-opacity-25">
-        <div class="d-flex align-items-center gap-2 mb-2 p-2 rounded" style="background:rgba(255,255,255,0.08);">
-          <div class="rounded-circle bg-warning text-dark fw-bold d-flex align-items-center justify-content-center" style="width:32px; height:32px; font-size:0.85rem;" id="userInitial">
-            B
-          </div>
-          <div class="overflow-hidden">
-            <span id="userNameSidebar" class="fw-semibold text-white d-block text-truncate small" style="max-width:140px;">Staff</span>
-            <span class="badge bg-warning text-dark py-0 px-1" style="font-size:0.68rem;">Cafe & Bar Staff</span>
-          </div>
-        </div>
-        <button id="logoutBtn" class="btn btn-sm btn-outline-light w-100"><i class="bi bi-box-arrow-right me-1"></i>Logout</button>
+  <div id="app-shell"></div>
+
+  <div class="content-container">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+      <div>
+        <h2 class="fw-bold mb-1">Bar & Cafe POS</h2>
+        <p class="text-muted mb-0">Manage floor tables, take orders, assign bar tabs and perform daily closing.</p>
       </div>
-    </nav>
+      <div class="d-flex gap-2">
+        <a href="bar-dashboard.html" class="btn btn-outline-primary">
+          <i class="bi bi-fire me-1"></i> Kitchen Display Board
+        </a>
+        <button class="btn btn-outline-dark" onclick="openDailyClosingModal()">
+          <i class="bi bi-calculator me-1"></i> Daily Register Closing
+        </button>
+      </div>
+    </div>
 
-    <div class="d-flex flex-column flex-grow-1">
-      <div class="cc-topbar">
-        <h5 class="page-title"><i class="bi bi-cup-hot me-2 text-cc"></i>Cafeteria & Bar</h5>
+    <!-- Table Map (T1 to T12) -->
+    <div class="card border-0 shadow-sm p-3 mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="fw-bold mb-0"><i class="bi bi-grid-3x3-gap me-2 text-primary"></i>Floor Table Map</h6>
+        <div class="d-flex gap-3 small text-muted">
+          <span><span class="badge bg-light border text-dark me-1">●</span> Free</span>
+          <span><span class="badge bg-danger me-1">●</span> Occupied / Open Tab</span>
+        </div>
+      </div>
+      <div class="table-map-grid" id="tableMapGrid">
+        <!-- Tables 1 to 12 injected via JS -->
+      </div>
+    </div>
+
+    <div class="row g-3">
+      <!-- Menu Catalog -->
+      <div class="col-lg-8">
+        <div class="card border-0 shadow-sm p-3 mb-3">
+          <div class="row g-2">
+            <div class="col-md-7">
+              <input type="search" class="form-control" id="cafeSearchInput" placeholder="Search cafe menu (Coffee, Shake, Sandwich...)" aria-label="Search cafe menu">
+            </div>
+            <div class="col-md-5">
+              <select class="form-select" id="cafeCategoryFilter">
+                <option value="">All Categories</option>
+                <option value="Beverages">Beverages & Coffee</option>
+                <option value="Snacks">Snacks & Bites</option>
+                <option value="Meals">Health Bowls & Meals</option>
+                <option value="Protein">Protein & Shakes</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-3" id="cafeMenuGrid" style="max-height: calc(100vh - 380px); overflow-y: auto;">
+          <!-- Menu items injected via JS -->
+        </div>
       </div>
 
-      <main class="cc-main">
-        <ul class="nav nav-tabs mb-4" id="cafeteriaTabs" role="tablist">
-          <li class="nav-item">
-            <button class="nav-link active" id="kitchen-tab" data-bs-toggle="tab" data-bs-target="#kitchen"
-              type="button" role="tab">Kitchen Queue</button>
-          </li>
-          <li class="nav-item">
-            <button class="nav-link" id="menu-tab" data-bs-toggle="tab" data-bs-target="#menu" type="button"
-              role="tab">Menu Management</button>
-          </li>
-          <li class="nav-item">
-            <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button"
-              role="tab">Order History</button>
-          </li>
-        </ul>
-
-        <div class="tab-content" id="myTabContent">
-          <!-- Kitchen Queue Tab -->
-          <div class="tab-pane fade show active" id="kitchen" role="tabpanel">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <h6 class="mb-0">Active Orders</h6>
-              <button class="btn btn-sm btn-outline-secondary" onclick="loadOrders()"><i
-                  class="bi bi-arrow-clockwise"></i> Refresh</button>
-            </div>
-            <div class="row g-3" id="ordersGrid">
-              <div class="col-12 text-muted">Loading orders...</div>
-            </div>
+      <!-- Cafe Cart -->
+      <div class="col-lg-4">
+        <div class="card border-0 shadow-sm p-3" style="height: calc(100vh - 280px); display: flex; flex-direction: column;">
+          <div class="d-flex justify-content-between align-items-center border-bottom pb-2">
+            <h5 class="fw-bold mb-0">
+              <i class="bi bi-cup-hot me-2 text-primary"></i>Order for <span id="currentTableLabel" class="text-accent font-monospace">Takeaway</span>
+            </h5>
+            <button class="btn btn-sm btn-outline-danger" onclick="clearCafeCart()"><i class="bi bi-trash3"></i></button>
           </div>
 
-          <!-- Menu Management Tab -->
-          <div class="tab-pane fade" id="menu" role="tabpanel">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <h6 class="mb-0">Menu Items</h6>
-              <button class="btn btn-sm btn-cc" onclick="openMenuCanvas()"><i class="bi bi-plus-lg"></i>
-                Add Item</button>
-            </div>
-            <div class="row g-3" id="menuGrid">
-              <div class="col-12 text-muted">Loading menu...</div>
-            </div>
-          </div>
-
-          <!-- Order History Tab -->
-          <div class="tab-pane fade" id="history" role="tabpanel">
-            <div class="row g-2 mb-3 bg-light p-2 rounded border">
-              <div class="col-md-3">
-                <label class="small text-muted mb-1 d-block fw-bold">Select Date</label>
-                <input type="date" class="form-control" id="filterDate">
-              </div>
-              <div class="col-md-4">
-                <label class="small text-muted mb-1 d-block fw-bold">Search by Item</label>
-                <input type="text" class="form-control" id="filterItem" placeholder="E.g. Chicken Burger">
-              </div>
-              <div class="col-md-3">
-                <label class="small text-muted mb-1 d-block fw-bold">Status</label>
-                <select class="form-select" id="filterStatus">
-                  <option value="">All Past Statuses</option>
-                  <option value="completed">Completed</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
-              </div>
-              <div class="col-md-2 d-flex align-items-end gap-1">
-                <button class="btn btn-cc w-100 fw-bold shadow-sm" onclick="applyHistoryFilters()"><i
-                    class="bi bi-funnel"></i></button>
-                <button class="btn btn-outline-secondary w-100 fw-bold shadow-sm" onclick="clearHistoryFilters()"><i
-                    class="bi bi-x-circle"></i></button>
-              </div>
-            </div>
-            <div class="row g-3" id="historyGrid">
-              <div class="col-12 text-muted">Loading history...</div>
-            </div>
-          </div>
-        </div>
-      </main>
-    </div>
-  </div>
-
-  <!-- Modern Offcanvas Overlay for Adding/Editing Items -->
-  <div class="offcanvas offcanvas-end shadow-sm" tabindex="-1" id="menuOffcanvas" style="width: 450px;">
-    <div class="offcanvas-header border-bottom">
-      <h5 class="fw-bold mb-0" id="menuCanvasTitle">Add Menu Item</h5>
-      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-    </div>
-    <div class="offcanvas-body">
-      <form id="menuForm" onsubmit="saveMenu(event)">
-        <input type="hidden" id="menuId">
-
-        <div class="mb-3">
-          <label class="form-label text-muted small fw-bold mb-1">SKU Code</label>
-          <input type="text" class="form-control form-control-sm" id="menuSku" required>
-        </div>
-        <div class="mb-3">
-          <label class="form-label text-muted small fw-bold mb-1">Product Name</label>
-          <input type="text" class="form-control form-control-sm" id="menuName" required>
-        </div>
-        <div class="mb-3">
-          <label class="form-label text-muted small fw-bold mb-1">Category</label>
-          <select class="form-select form-select-sm" id="menuCategory" required>
-            <option value="Food">Food</option>
-            <option value="Drinks">Drinks</option>
-            <option value="Snacks">Snacks</option>
-          </select>
-        </div>
-
-        <div class="row mb-3">
-          <div class="col">
-            <label class="form-label text-muted small fw-bold mb-1">Price (₹)</label>
-            <input type="number" class="form-control form-control-sm" id="menuPrice" required>
-          </div>
-          <div class="col">
-            <label class="form-label text-muted small fw-bold mb-1">Cost (₹)</label>
-            <input type="number" class="form-control form-control-sm" id="menuCost" required>
-          </div>
-        </div>
-
-        <div class="row mb-3">
-          <div class="col">
-            <label class="form-label text-muted small fw-bold mb-1">Stock Qty</label>
-            <input type="number" class="form-control form-control-sm" id="menuStock" value="100">
-          </div>
-          <div class="col">
-            <label class="form-label text-muted small fw-bold mb-1">Status</label>
-            <select class="form-select form-select-sm" id="menuActive">
-              <option value="1">Active</option>
-              <option value="0">Inactive</option>
+          <!-- Customer selection -->
+          <div class="mt-3">
+            <label class="form-label small fw-bold">Member / Customer</label>
+            <select class="form-select form-select-sm" id="cafeMemberSelect" onchange="updateCafeTotals()">
+              <option value="" data-discount="0">Walk-in Guest</option>
             </select>
           </div>
-        </div>
 
-        <!-- Multiple Images Section -->
-        <div class="mb-3 border rounded p-3 bg-light">
-          <label class="form-label fw-bold mb-2"><i class="bi bi-images me-1"></i> Product Images</label>
-          <div class="d-flex gap-2 mb-3">
-            <input type="text" class="form-control form-control-sm" id="newImgUrl" placeholder="Paste image URL here">
-            <button type="button" class="btn btn-sm btn-secondary" onclick="addImage()">Add</button>
+          <!-- Cart items -->
+          <div class="flex-grow-1 overflow-y-auto my-3" id="cafeCartList">
+            <div class="text-center py-5 text-muted small">No items added to order</div>
           </div>
-          <div id="imageList" class="d-flex flex-wrap gap-2"></div>
-        </div>
 
-        <div class="d-flex gap-2 mt-4">
-          <button type="submit" class="btn btn-cc flex-grow-1 py-2 fw-bold">Save Menu Item</button>
-          <button type="button" class="btn btn-danger py-2 px-3 shadow-sm fw-bold border-0" id="menuDeleteBtn"
-            onclick="deleteMenu()" style="display:none;"><i class="bi bi-trash"></i></button>
+          <!-- Summary -->
+          <div class="border-top pt-3">
+            <div class="d-flex justify-content-between text-muted small mb-1">
+              <span>Subtotal</span>
+              <span id="cafeSubtotal" class="font-monospace">₹0</span>
+            </div>
+            <div class="d-flex justify-content-between text-success small mb-1">
+              <span>Member Food/Beverage Perk</span>
+              <span id="cafeDiscount" class="font-monospace">-₹0</span>
+            </div>
+            <div class="d-flex justify-content-between fw-bold fs-5 mb-3">
+              <span>Total</span>
+              <span id="cafeTotal" class="font-monospace text-primary">₹0</span>
+            </div>
+
+            <div class="d-flex gap-2">
+              <button class="btn btn-outline-primary w-50 py-2" onclick="sendToKitchen('tab')">
+                <i class="bi bi-card-checklist d-block mb-1"></i> Open Tab
+              </button>
+              <button class="btn btn-primary w-50 py-2" onclick="sendToKitchen('cash')">
+                <i class="bi bi-fire d-block mb-1"></i> Pay & Send KOT
+              </button>
+            </div>
+          </div>
         </div>
-      </form>
+      </div>
     </div>
   </div>
 
-  <div id="alert-bar"></div>
+  <!-- Daily Closing Modal -->
+  <div class="modal fade" id="dailyClosingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold"><i class="bi bi-calculator text-primary me-2"></i>Day End Register Closing (Z-Report)</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="dailyClosingForm">
+          <div class="modal-body">
+            <div class="alert alert-info py-2 small mb-3">
+              <i class="bi bi-info-circle me-1"></i> Closing the register reconciles expected cash from POS with physical count.
+            </div>
+            <div class="mb-3">
+              <label class="form-label required">Opening Cash Float</label>
+              <input type="number" class="form-control" name="opening_float" id="closingOpeningFloat" required value="2000" min="0">
+            </div>
+            <div class="mb-3">
+              <label class="form-label required">Counted Physical Cash at Close</label>
+              <input type="number" class="form-control" name="counted_cash" id="closingCountedCash" required placeholder="Enter total cash counted" min="0">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Shift Notes / Variances</label>
+              <textarea class="form-control" name="notes" rows="2" placeholder="Any cash discrepancy explanation..."></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Generate Z-Report & Close Day</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="/js/api.js"></script>
-  <script src="/js/utils.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/validators.js"></script>
+  <script src="../js/shell.js"></script>
   <script>
-    let menuCanvas;
-    let currentImages = [];
+    let cafeProducts = [];
+    let cafeCart = [];
+    let selectedTable = 'Takeaway';
+    let membersList = [];
 
-    (async () => {
-      const user = await loadSession();
-      if (!user || user.role === 'member') {
-        window.location.href = '/shared/login.html'; return;
-      }
-      document.getElementById('userNameSidebar').textContent = user.full_name || user.name || 'Bar Staff';
-      if (document.getElementById('userInitial')) {
-        document.getElementById('userInitial').textContent = (user.full_name || user.name || 'B').charAt(0).toUpperCase();
-      }
-      menuCanvas = new bootstrap.Offcanvas(document.getElementById('menuOffcanvas'));
-
-      loadOrders();
+    document.addEventListener('DOMContentLoaded', async () => {
+      renderTableMap();
+      await loadMembers();
       loadMenu();
-      loadHistory();
 
-      setInterval(loadOrders, 10000);
-      setInterval(loadHistory, 10000);
+      document.getElementById('cafeCategoryFilter').addEventListener('change', () => loadMenu());
+      document.getElementById('cafeSearchInput').addEventListener('input', utils.debounce(() => loadMenu(), 300));
+      document.getElementById('dailyClosingForm').addEventListener('submit', handleDailyClosing);
+    });
 
-      document.getElementById('logoutBtn').addEventListener('click', async () => {
-        await api.post('/api/auth/logout');
-        window.location.href = '/shared/login.html';
-      });
-    })();
+    function renderTableMap() {
+      const grid = document.getElementById('tableMapGrid');
+      let html = `<div class="table-tile ${selectedTable === 'Takeaway' ? 'active-table' : ''}" onclick="selectTable('Takeaway')">
+        <div class="fw-bold">Takeaway</div>
+        <small class="text-muted">Direct</small>
+      </div>`;
 
-    async function loadOrders() {
-      try {
-        const orders = await api.get('/api/orders?dept=bar&status=open');
-        const container = document.getElementById('ordersGrid');
-        if (!orders.length) {
-          container.innerHTML = '<div class="col-12 text-muted">No open orders in the kitchen.</div>';
-          return;
-        }
-
-        let html = '';
-        for (const o of orders) {
-          let details;
-          try { details = await api.get('/api/orders/' + o.id); } catch (e) { continue; }
-          const itemsHtml = details.items.map(i => `<li>${i.quantity}x ${escHtml(i.product_name)}</li>`).join('');
-
-          html += `
-       <div class="col-md-6 col-lg-4">
-         <div class="cc-card h-100 d-flex flex-column">
-           <div class="d-flex justify-content-between align-items-center mb-2">
-             <strong>${escHtml(o.order_code)}</strong>
-             <span class="badge bg-warning text-dark">Open</span>
-           </div>
-           <p class="mb-1 text-primary fw-bold"><i class="bi bi-person me-2"></i>${escHtml(o.member_name || 'Guest')}</p>
-           <ul class="mb-3 ps-3 list-unstyled flex-grow-1">
-             ${itemsHtml}
-           </ul>
-           <button class="btn btn-sm btn-success w-100 mt-auto" onclick="completeOrder(${o.id})"><i class="bi bi-check2-circle"></i> Mark Complete</button>
-         </div>
-       </div>
-      `;
-        }
-        container.innerHTML = html;
-      } catch (e) {
-        console.error('Failed to load orders', e);
+      for (let i = 1; i <= 12; i++) {
+        const tName = `Table ${i}`;
+        html += `
+          <div class="table-tile ${selectedTable === tName ? 'active-table' : ''}" onclick="selectTable('${tName}')" id="tableTile_${i}">
+            <div class="fw-bold font-monospace">T-${i}</div>
+            <small class="text-muted">Free</small>
+          </div>
+        `;
       }
+      grid.innerHTML = html;
     }
 
-    async function completeOrder(id) {
-      if (!confirm('Mark this order as complete?')) return;
+    function selectTable(tableName) {
+      selectedTable = tableName;
+      document.getElementById('currentTableLabel').textContent = tableName;
+      renderTableMap();
+    }
+
+    async function loadMembers() {
       try {
-        await api.post('/api/orders/' + id + '/complete', { payment_method: 'online' });
-        if (window.showAlert) showAlert('Order completed', 'success');
-        loadOrders();
-      } catch (e) {
-        if (window.showAlert) showAlert(e.message || 'Error completing order', 'danger');
+        const res = await api.get('/api/members', { limit: 200 });
+        membersList = res.data || [];
+        const select = document.getElementById('cafeMemberSelect');
+        select.innerHTML = '<option value="" data-discount="0">Walk-in Guest</option>' +
+          membersList.map(m => `<option value="${m.id}" data-discount="${m.discount_bar || 0}">${utils.escapeHtml(m.name)} (${m.member_code}) - ${m.discount_bar || 0}% Off</option>`).join('');
+      } catch (err) {
+        console.error(err);
       }
     }
 
     async function loadMenu() {
+      const q = document.getElementById('cafeSearchInput').value.trim();
+      const category = document.getElementById('cafeCategoryFilter').value;
+      const grid = document.getElementById('cafeMenuGrid');
+
       try {
-        const products = await api.get('/api/products?dept=bar');
-        const container = document.getElementById('menuGrid');
-        if (!products.length) {
-          container.innerHTML = '<div class="col-12 text-muted">No items found.</div>';
-          return;
-        }
-        container.innerHTML = products.map(p => {
-          let parsedImgs = [];
-          try { parsedImgs = JSON.parse(p.image_url); } catch (e) { parsedImgs = p.image_url ? [p.image_url] : ['https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80']; }
-          if (!Array.isArray(parsedImgs)) parsedImgs = [parsedImgs];
-          if (parsedImgs.length === 0) parsedImgs.push('https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80');
-
-          // Carousel for cards
-          const cid = 'carousel-staff-' + p.id;
-          let imgHtml = '';
-          if (parsedImgs.length > 1) {
-            const indicators = parsedImgs.map((img, i) => `<button type="button" data-bs-target="#${cid}" data-bs-slide-to="${i}" ${i === 0 ? 'class="active"' : ''}></button>`).join('');
-            const items = parsedImgs.map((img, i) => `
-          <div class="carousel-item ${i === 0 ? 'active' : ''}">
-            <img src="${escHtml(img)}" class="d-block w-100 rounded border" style="height:140px; object-fit:cover;">
-          </div>
-        `).join('');
-            imgHtml = `
-          <div id="${cid}" class="carousel slide mb-3" data-bs-ride="carousel">
-            <div class="carousel-indicators">${indicators}</div>
-            <div class="carousel-inner">${items}</div>
-            <button class="carousel-control-prev" type="button" data-bs-target="#${cid}" data-bs-slide="prev"><span class="carousel-control-prev-icon"></span></button>
-            <button class="carousel-control-next" type="button" data-bs-target="#${cid}" data-bs-slide="next"><span class="carousel-control-next-icon"></span></button>
-          </div>
-        `;
-          } else {
-            imgHtml = `<img src="${escHtml(parsedImgs[0])}" class="img-fluid rounded border mb-3" style="height:140px; object-fit:cover; width:100%;">`;
-          }
-
-          return `
-      <div class="col-md-6 col-lg-3">
-        <div class="cc-card h-100 d-flex flex-column text-center p-3">
-          ${imgHtml}
-          <div class="d-flex justify-content-between align-items-center mb-1">
-             <span class="small text-muted">${escHtml(p.sku)}</span>
-             ${p.is_active ? '<span class="badge bg-success">Active</span>' : '<span class="badge bg-secondary">Inactive</span>'}
-          </div>
-          <h6 class="mb-1 fw-bold">${escHtml(p.name)}</h6>
-          <p class="small text-muted mb-2">${escHtml(p.category)}</p>
-          <div class="d-flex justify-content-between align-items-center mt-auto">
-             <h6 class="text-dark mb-0">${fmtINR(Number(p.price))} <span class="small text-muted fw-normal">(Stock: ${p.stock_qty})</span></h6>
-             <button class="btn btn-sm btn-outline-primary" onclick='editMenu(${JSON.stringify(p).replace(/'/g, "&apos;")})'>Edit</button>
-          </div>
-        </div>
-      </div>
-      `;
-        }).join('');
-      } catch (e) {
-        console.error('Failed to load menu', e);
-      }
-    }
-
-    function renderImages() {
-      const container = document.getElementById('imageList');
-      container.innerHTML = currentImages.map((img, i) => `
-    <div class="position-relative" style="width: 70px; height: 70px;">
-      <img src="${escHtml(img)}" class="w-100 h-100 rounded object-fit-cover shadow-sm border border-secondary border-opacity-25">
-      <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 rounded-circle d-flex align-items-center justify-content-center p-0 shadow" 
-              style="width:20px; height:20px; transform:translate(30%,-30%);" 
-              onclick="removeImage(${i})"><i class="bi bi-x" style="font-size:12px;"></i></button>
-    </div>
-  `).join('');
-    }
-    function addImage() {
-      const v = document.getElementById('newImgUrl').value.trim();
-      if (v) { currentImages.push(v); document.getElementById('newImgUrl').value = ''; renderImages(); }
-    }
-    function removeImage(i) {
-      currentImages.splice(i, 1);
-      renderImages();
-    }
-
-    function openMenuCanvas() {
-      document.getElementById('menuForm').reset();
-      document.getElementById('menuId').value = '';
-      document.getElementById('menuCanvasTitle').textContent = 'Add Menu Item';
-      document.getElementById('menuDeleteBtn').style.display = 'none';
-      currentImages = [];
-      renderImages();
-      menuCanvas.show();
-    }
-
-    function editMenu(p) {
-      document.getElementById('menuId').value = p.id;
-      document.getElementById('menuSku').value = p.sku;
-      document.getElementById('menuName').value = p.name;
-      document.getElementById('menuCategory').value = p.category;
-      document.getElementById('menuPrice').value = p.price;
-      document.getElementById('menuCost').value = p.cost_price;
-      document.getElementById('menuStock').value = p.stock_qty;
-      document.getElementById('menuActive').value = p.is_active;
-      document.getElementById('menuCanvasTitle').textContent = 'Edit Menu Item';
-
-      document.getElementById('menuDeleteBtn').style.display = 'block';
-      document.getElementById('menuDeleteBtn').setAttribute('data-id', p.id);
-
-      try { currentImages = JSON.parse(p.image_url); } catch (e) { currentImages = p.image_url ? [p.image_url] : []; }
-      if (!Array.isArray(currentImages)) currentImages = [currentImages].filter(Boolean);
-      renderImages();
-
-      menuCanvas.show();
-    }
-
-    async function saveMenu(e) {
-      e.preventDefault();
-      const id = document.getElementById('menuId').value;
-      const data = {
-        department: 'bar',
-        track_stock: 1,
-        sku: document.getElementById('menuSku').value,
-        name: document.getElementById('menuName').value,
-        category: document.getElementById('menuCategory').value,
-        price: Number(document.getElementById('menuPrice').value),
-        cost_price: Number(document.getElementById('menuCost').value),
-        stock_qty: Number(document.getElementById('menuStock').value),
-        is_active: Number(document.getElementById('menuActive').value),
-        image_url: JSON.stringify(currentImages)
-      };
-      try {
-        if (id) {
-          await api.put('/api/products/' + id, data);
-          if (window.showAlert) showAlert('Menu updated', 'success');
-        } else {
-          await api.post('/api/products', data);
-          if (window.showAlert) showAlert('Menu added', 'success');
-        }
-        menuCanvas.hide();
-        loadMenu();
+        const res = await api.get('/api/products', { department: 'bar', q, category, limit: 100 });
+        cafeProducts = res.data || [];
+        renderMenu();
       } catch (err) {
-        if (window.showAlert) showAlert(err.message || 'Error saving menu', 'danger');
+        grid.innerHTML = `<div class="text-danger small">${err.message}</div>`;
       }
     }
 
-    async function deleteMenu() {
-      const id = document.getElementById('menuDeleteBtn').getAttribute('data-id');
-      if (!confirm('Are you sure you want to deactivate this product?')) return;
-      try {
-        await api.delete('/api/products/' + id);
-        if (window.showAlert) showAlert('Menu item deactivated', 'success');
-        menuCanvas.hide();
-        loadMenu();
-      } catch (e) {
-        if (window.showAlert) showAlert(e.message || 'Error deleting item', 'danger');
-      }
-    }
-
-    let isFiltering = false;
-    let globalPastOrders = [];
-
-    async function loadHistory() {
-      if (isFiltering) return;
-      await fetchHistoryData();
-      renderHistory();
-    }
-
-    async function fetchHistoryData() {
-      try {
-        const dateObj = document.getElementById('filterDate').value;
-        let url = '/api/orders?dept=bar';
-        if (dateObj) url += '&date=' + dateObj;
-
-        const orders = await api.get(url);
-        const pastOrders = orders.filter(o => o.status !== 'open');
-
-        globalPastOrders = [];
-        for (const o of pastOrders) {
-          try {
-            const details = await api.get('/api/orders/' + o.id);
-            if (details) globalPastOrders.push(details);
-          } catch (e) { continue; }
-        }
-      } catch (e) {
-        console.error('Failed to fetch history', e);
-      }
-    }
-
-    function renderHistory() {
-      const container = document.getElementById('historyGrid');
-      const statusFilter = document.getElementById('filterStatus').value;
-      const itemFilter = document.getElementById('filterItem').value.toLowerCase();
-
-      let filtered = globalPastOrders;
-      if (statusFilter) {
-        filtered = filtered.filter(o => o.status === statusFilter);
-      }
-      if (itemFilter) {
-        filtered = filtered.filter(o => o.items.some(i => i.product_name.toLowerCase().includes(itemFilter)));
-      }
-
-      if (!filtered.length) {
-        container.innerHTML = '<div class="col-12 text-center text-muted mt-5"><i class="bi bi-journal-x fs-1 opacity-50 block mb-3"></i><br>No orders match the selected filters.</div>';
+    function renderMenu() {
+      const grid = document.getElementById('cafeMenuGrid');
+      if (!cafeProducts.length) {
+        grid.innerHTML = '<div class="text-muted small py-4 col-12">No menu items found.</div>';
         return;
       }
 
-      let html = '';
-      for (const o of filtered) {
-        const itemsHtml = o.items.map(i => `<li class="mb-1"><span class="badge bg-secondary rounded-pill me-2">${i.quantity}x</span> ${escHtml(i.product_name)}</li>`).join('');
-        const badge = o.status === 'completed' ? '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> Completed</span>' : '<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i> Cancelled</span>';
-
-        const formattedDate = new Date(o.created_at).toLocaleString();
-        html += `
-         <div class="col-md-6 col-lg-4">
-           <div class="cc-card h-100 d-flex flex-column shadow-sm border-0 bg-white">
-             <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
-               <strong class="text-dark">${escHtml(o.order_code)}</strong>
-               ${badge}
-             </div>
-             <p class="mb-1 small text-muted"><i class="bi bi-clock me-1"></i> ${formattedDate}</p>
-             <p class="mb-2 text-primary fw-bold small"><i class="bi bi-person me-2"></i>${escHtml(o.member_name || 'Guest')}</p>
-             <ul class="mb-3 ps-0 list-unstyled flex-grow-1 text-muted small">
-               ${itemsHtml}
-             </ul>
-             <div class="text-end fw-bold text-success border-top pt-3 mt-auto">
-                Paid: ${fmtINR(Number(o.total))}
-             </div>
-           </div>
-         </div>
-        `;
-      }
-      container.innerHTML = html;
+      grid.innerHTML = cafeProducts.map(p => `
+        <div class="col-sm-6 col-md-4 col-xl-3">
+          <div class="menu-item-tile" onclick="addToCafeCart(${p.id})">
+            <div>
+              <div class="fw-semibold mb-1">${utils.escapeHtml(p.name)}</div>
+              <small class="text-muted d-block">${utils.escapeHtml(p.category || 'Cafe')}</small>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+              <span class="fw-bold font-monospace text-primary">${utils.formatINR(p.price)}</span>
+              <span class="btn btn-sm btn-primary rounded-circle" style="width:28px;height:28px;padding:0;display:flex;align-items:center;justify-content:center;">+</span>
+            </div>
+          </div>
+        </div>
+      `).join('');
     }
 
-    async function applyHistoryFilters() {
-      const btn = document.querySelector('button[onclick="applyHistoryFilters()"]');
-      btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-      isFiltering = true; // disable BG auto-reloading
+    function addToCafeCart(id) {
+      const item = cafeProducts.find(p => p.id === id);
+      if (!item) return;
+
+      const existing = cafeCart.find(i => i.id === id);
+      if (existing) {
+        existing.qty += 1;
+      } else {
+        cafeCart.push({ id: item.id, name: item.name, price: Number(item.price), qty: 1 });
+      }
+      renderCafeCart();
+    }
+
+    function updateCafeQty(id, delta) {
+      const item = cafeCart.find(i => i.id === id);
+      if (!item) return;
+
+      item.qty += delta;
+      if (item.qty <= 0) {
+        cafeCart = cafeCart.filter(i => i.id !== id);
+      }
+      renderCafeCart();
+    }
+
+    function clearCafeCart() {
+      cafeCart = [];
+      renderCafeCart();
+    }
+
+    function renderCafeCart() {
+      const list = document.getElementById('cafeCartList');
+      if (!cafeCart.length) {
+        list.innerHTML = '<div class="text-center py-5 text-muted small">No items added to order</div>';
+        updateCafeTotals();
+        return;
+      }
+
+      list.innerHTML = cafeCart.map(i => `
+        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+          <div style="max-width:140px;">
+            <div class="fw-semibold small text-truncate">${utils.escapeHtml(i.name)}</div>
+            <small class="text-muted font-monospace">${utils.formatINR(i.price)}</small>
+          </div>
+          <div class="d-flex align-items-center gap-1">
+            <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="updateCafeQty(${i.id}, -1)">-</button>
+            <span class="font-monospace small px-1">${i.qty}</span>
+            <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="updateCafeQty(${i.id}, 1)">+</button>
+          </div>
+          <div class="font-monospace fw-semibold small">${utils.formatINR(i.price * i.qty)}</div>
+        </div>
+      `).join('');
+
+      updateCafeTotals();
+    }
+
+    function updateCafeTotals() {
+      const subtotal = cafeCart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+      const opt = document.querySelector('#cafeMemberSelect option:checked');
+      const discountPercent = opt ? Number(opt.dataset.discount) || 0 : 0;
+      const discountAmount = (subtotal * discountPercent) / 100;
+      const total = Math.max(0, subtotal - discountAmount);
+
+      document.getElementById('cafeSubtotal').textContent = utils.formatINR(subtotal);
+      document.getElementById('cafeDiscount').textContent = `-${utils.formatINR(discountAmount)} (${discountPercent}%)`;
+      document.getElementById('cafeTotal').textContent = utils.formatINR(total);
+    }
+
+    async function sendToKitchen(paymentMode) {
+      if (!cafeCart.length) {
+        ui.toast('Add items before creating order', 'warning');
+        return;
+      }
+
+      const memberId = document.getElementById('cafeMemberSelect').value || null;
+      const payload = {
+        department: 'bar',
+        channel: 'pos',
+        table_number: selectedTable,
+        member_id: memberId,
+        payment_method: paymentMode === 'tab' ? 'tab' : 'cash',
+        items: cafeCart.map(i => ({ product_id: i.id, quantity: i.qty }))
+      };
+
       try {
-        await fetchHistoryData();
-        renderHistory();
-      } catch (e) {
-        console.error(e);
-      } finally {
-        btn.innerHTML = '<i class="bi bi-funnel"></i>';
+        const res = await api.post('/api/orders', payload);
+        ui.toast(`Order #${res.data.order_code} sent to kitchen display!`, 'success');
+        clearCafeCart();
+      } catch (err) {
+        ui.toast(err.message || 'Order dispatch failed', 'error');
       }
     }
 
-    function clearHistoryFilters() {
-      document.getElementById('filterDate').value = '';
-      document.getElementById('filterItem').value = '';
-      document.getElementById('filterStatus').value = '';
-      isFiltering = false;
-      loadHistory();
+    function openDailyClosingModal() {
+      document.getElementById('dailyClosingForm').reset();
+      ui.openModal('dailyClosingModal');
+    }
+
+    async function handleDailyClosing(e) {
+      e.preventDefault();
+      const form = e.target;
+      const payload = {
+        opening_float: Number(form.opening_float.value),
+        counted_cash: Number(form.counted_cash.value),
+        notes: form.notes.value.trim()
+      };
+
+      try {
+        const res = await api.post('/api/orders/daily-closing', payload);
+        ui.closeModal('dailyClosingModal');
+        ui.toast('Z-Report generated & register closed for the day', 'success');
+      } catch (err) {
+        ui.toast(err.message || 'Daily closing failed', 'error');
+      }
     }
   </script>
 </body>
-
 </html>

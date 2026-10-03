@@ -1,33 +1,53 @@
 /**
  * @file server/services/bookingService.js
  * @description Core court booking business logic.
- * Handles slot availability calculation, double-booking prevention using atomic transactions,
- * member daily limit enforcement with SELECT FOR UPDATE, slot generation, and cancellation.
+ * Enforces atomic slot reservation, daily member limits, past slot rejection,
+ * double-booking prevention with UNIQUE constraints, and IST time validation.
  */
 
 const { query, transaction } = require('../db');
 const config = require('../config');
 const { calculateCourtPrice } = require('./pricing');
+const { todayIST, nowIST, isPastSlot, addMinutes, timeIST } = require('../utils/time');
 
 /**
- * Helper to pad numbers to 2 digits (e.g. 6 -> "06")
- * @param {number|string} num
- * @returns {string}
+ * Helper to pad numbers to 2 digits.
  */
 function pad(num) {
   return String(num).padStart(2, '0');
 }
 
 /**
+ * Auto-completes any confirmed booking whose end date-time has passed in IST.
+ */
+async function autoCompleteBookings() {
+  try {
+    const today = todayIST();
+    const currTime = timeIST();
+    await query(
+      `UPDATE bookings
+       SET status = 'completed'
+       WHERE status = 'confirmed'
+         AND (booking_date < ? OR (booking_date = ? AND end_time <= ?))`,
+      [today, today, currTime]
+    );
+  } catch (err) {
+    console.error('[WARN] Auto-complete bookings error:', err.message);
+  }
+}
+
+/**
  * Calculates availability for all courts on a given date.
- * Each court booking is 60 minutes long, constructed of two 30-minute slot units.
+ * Returns 30-minute start slots across opening hours.
  * 
  * @param {string} dateStr - 'YYYY-MM-DD'
- * @param {string|null} sport - optional filter ('tennis' or 'cricket')
- * @param {number|null} currentUserId - logged in user's ID for highlighting 'mine'
+ * @param {string|null} sport - optional sport filter
+ * @param {number|null} currentUserId - logged in user's ID
  * @returns {Promise<object>} { date, courts, slots }
  */
 async function getAvailability(dateStr, sport = null, currentUserId = null) {
+  await autoCompleteBookings();
+
   let courtSql = 'SELECT id, name, sport, surface_type, base_price_per_hour FROM courts WHERE is_active = 1';
   const courtParams = [];
   if (sport) {
@@ -46,65 +66,89 @@ async function getAvailability(dateStr, sport = null, currentUserId = null) {
     [dateStr]
   );
 
-  // Map of "courtId_HH:MM" -> booking_user_id
+  // Fetch court blocks on this date
+  const [blocks] = await query(
+    'SELECT court_id, start_time, end_time, reason FROM court_blocks WHERE block_date = ?',
+    [dateStr]
+  );
+
+  // Map of booked slots: "courtId_HH:MM" -> booking_user_id
   const bookedMap = new Map();
   slotRows.forEach(s => {
     const d = new Date(s.slot_start);
-    const h = pad(d.getHours());
-    const m = pad(d.getMinutes());
-    bookedMap.set(`${s.court_id}_${h}:${m}`, s.booking_user_id);
+    // Parse HH:MM from slot_start
+    const timeParts = s.slot_start instanceof Date 
+      ? `${pad(s.slot_start.getHours())}:${pad(s.slot_start.getMinutes())}`
+      : String(s.slot_start).slice(11, 16);
+    bookedMap.set(`${s.court_id}_${timeParts}`, s.booking_user_id);
   });
 
-  // Build list of 60-minute start time slots (every 30 min from OPENING_HOUR to CLOSING_HOUR - 1)
+  // Build 30-minute start time slots (from OPENING_HOUR to CLOSING_HOUR - 1)
   const slots = [];
   for (let h = config.OPENING_HOUR; h < config.CLOSING_HOUR; h++) {
     for (const m of [0, 30]) {
-      // Last booking starts 1 hour before closing (e.g., 21:00 if closing is 22:00)
+      // Don't generate slot if 60-min session would exceed CLOSING_HOUR
       if (h === config.CLOSING_HOUR - 1 && m > 0) continue;
 
-      const startTime = `${pad(h)}:${pad(m)}`;
-      let endH = h + 1;
-      let endM = m;
-      const endTime = `${pad(endH)}:${pad(endM)}`;
+      const timeLabel = `${pad(h)}:${pad(m)}`;
+      const secondHalf = m === 0 ? `${pad(h)}:30` : `${pad(h + 1)}:00`;
+      const endTimeLabel = addMinutes(timeLabel, 60);
 
-      // The 60-min booking spans two 30-min slots: (h:m) and (s2H:s2M)
-      const s1H = h;
-      const s1M = m;
-      const s2H = (m === 30 ? h + 1 : h);
-      const s2M = (m === 30 ? 0 : 30);
+      const slotInPast = isPastSlot(dateStr, timeLabel);
 
-      const slot1Key = (courtId) => `${courtId}_${pad(s1H)}:${pad(s1M)}`;
-      const slot2Key = (courtId) => `${courtId}_${pad(s2H)}:${pad(s2M)}`;
+      const courtStatus = {};
+      courts.forEach(court => {
+        const key1 = `${court.id}_${timeLabel}`;
+        const key2 = `${court.id}_${secondHalf}`;
 
-      const courtStatuses = courts.map(court => {
-        const k1 = slot1Key(court.id);
-        const k2 = slot2Key(court.id);
+        // Check maintenance blocks
+        const isBlocked = blocks.some(b => {
+          if (b.court_id !== court.id) return false;
+          const bStart = b.start_time.slice(0, 5);
+          const bEnd = b.end_time.slice(0, 5);
+          return (timeLabel >= bStart && timeLabel < bEnd) || (secondHalf >= bStart && secondHalf < bEnd);
+        });
 
-        const user1 = bookedMap.get(k1);
-        const user2 = bookedMap.get(k2);
-
-        let status = 'available';
-        if (user1 !== undefined || user2 !== undefined) {
-          if (currentUserId && (user1 === currentUserId || user2 === currentUserId)) {
-            status = 'mine';
-          } else {
-            status = 'booked';
-          }
+        if (isBlocked) {
+          courtStatus[court.id] = {
+            available: false,
+            isPast: slotInPast,
+            isBlocked: true,
+            isMine: false,
+            reason: 'Maintenance Block'
+          };
+          return;
         }
 
-        return {
-          courtId: court.id,
-          courtName: court.name,
-          sport: court.sport,
-          basePricePerHour: court.base_price_per_hour,
-          status
-        };
+        const booked1 = bookedMap.has(key1);
+        const booked2 = bookedMap.has(key2);
+
+        if (booked1 || booked2) {
+          const bookedUser = bookedMap.get(key1) || bookedMap.get(key2);
+          const isMine = !!(currentUserId && bookedUser === currentUserId);
+          courtStatus[court.id] = {
+            available: false,
+            isPast: slotInPast,
+            isBlocked: false,
+            isMine,
+            reason: isMine ? 'Your Booking' : 'Booked'
+          };
+        } else {
+          courtStatus[court.id] = {
+            available: !slotInPast,
+            isPast: slotInPast,
+            isBlocked: false,
+            isMine: false,
+            reason: slotInPast ? 'Time has passed' : 'Available'
+          };
+        }
       });
 
       slots.push({
-        startTime,
-        endTime,
-        courts: courtStatuses
+        time: timeLabel,
+        endTime: endTimeLabel,
+        isPast: slotInPast,
+        courtStatus
       });
     }
   }
@@ -114,215 +158,365 @@ async function getAvailability(dateStr, sport = null, currentUserId = null) {
 
 /**
  * Creates a court booking inside an atomic transaction.
- * Validates court, operational hours, member daily limits, calculates pricing,
- * and inserts 30-min slot rows (which enforce uniqueness at the DB level).
+ * 
+ * @param {object} params
+ * @param {number} params.courtId
+ * @param {string} params.bookingDate - 'YYYY-MM-DD'
+ * @param {string} params.startTime - 'HH:MM'
+ * @param {number|null} [params.memberId]
+ * @param {number|null} [params.userId]
+ * @param {string|null} [params.guestName]
+ * @param {string|null} [params.guestPhone]
+ * @param {number} params.bookedByUserId
+ * @param {string} [params.source='member_portal']
+ * @param {string} [params.paymentMethod='online']
+ * @param {Array<string>} [params.participants=[]]
+ * @returns {Promise<object>} Created booking
  */
 async function createBooking({
   courtId,
   bookingDate,
   startTime,
-  userId = null,
   memberId = null,
+  userId = null,
   guestName = null,
   guestPhone = null,
   bookedByUserId,
-  paymentMethod = 'cash'
+  source = 'member_portal',
+  paymentMethod = 'online',
+  participants = []
 }) {
+  await autoCompleteBookings();
+
+  // 1. Validate past slot
+  if (isPastSlot(bookingDate, startTime)) {
+    const err = new Error('Cannot book a time slot in the past.');
+    err.code = 'SLOT_IN_PAST';
+    err.status = 400;
+    throw err;
+  }
+
+  // 2. Validate advance booking limit
+  const today = todayIST();
+  const diffDays = Math.ceil((new Date(bookingDate) - new Date(today)) / (1000 * 60 * 60 * 24));
+  if (diffDays < 0) {
+    const err = new Error('Cannot book a date in the past.');
+    err.code = 'SLOT_IN_PAST';
+    err.status = 400;
+    throw err;
+  }
+  if (diffDays > config.MAX_ADVANCE_BOOKING_DAYS) {
+    const err = new Error(`Bookings are only permitted up to ${config.MAX_ADVANCE_BOOKING_DAYS} days in advance.`);
+    err.code = 'ADVANCE_LIMIT_EXCEEDED';
+    err.status = 400;
+    throw err;
+  }
+
+  // 3. Time grid verification (60 minutes length)
+  const [startH, startM] = startTime.split(':').map(Number);
+  if (isNaN(startH) || (startM !== 0 && startM !== 30)) {
+    const err = new Error('Bookings must start on the hour or half-hour.');
+    err.code = 'INVALID_TIME_GRID';
+    err.status = 400;
+    throw err;
+  }
+  if (startH < config.OPENING_HOUR || (startH >= config.CLOSING_HOUR - 1 && startM > 0) || startH >= config.CLOSING_HOUR) {
+    const err = new Error(`Club hours are ${config.OPENING_HOUR}:00 to ${config.CLOSING_HOUR}:00.`);
+    err.code = 'OUTSIDE_OPERATING_HOURS';
+    err.status = 400;
+    throw err;
+  }
+
+  const endTime = addMinutes(startTime, config.BOOKING_LENGTH_MINUTES);
+  const secondSlotTime = addMinutes(startTime, config.SLOT_LENGTH_MINUTES);
+
+  // 4. Guest vs Member validation
+  if (!memberId && !guestName) {
+    const err = new Error('Booking must have either an active member or a guest name.');
+    err.code = 'MISSING_BOOKER';
+    err.status = 400;
+    throw err;
+  }
+
   return await transaction(async (conn) => {
-    // 1. Verify Court exists and is active
-    const [courtRows] = await conn.query('SELECT * FROM courts WHERE id = ? AND is_active = 1', [courtId]);
-    if (!courtRows.length) {
-      const err = new Error('Court not found or inactive');
-      err.status = 404;
-      throw err;
-    }
-    const court = courtRows[0];
-
-    // 2. Validate Time Interval
-    const [startH, startM] = startTime.split(':').map(Number);
-    if (isNaN(startH) || isNaN(startM) || (startM !== 0 && startM !== 30)) {
-      const err = new Error('Invalid time format. Must be in HH:MM format on 30-minute intervals.');
+    // Check court existence and active state
+    const [courts] = await conn.query('SELECT * FROM courts WHERE id = ? FOR UPDATE', [courtId]);
+    if (!courts.length || !courts[0].is_active) {
+      const err = new Error('The selected court is unavailable or inactive.');
+      err.code = 'COURT_INACTIVE';
       err.status = 400;
       throw err;
     }
-    if (startH < config.OPENING_HOUR || startH > (config.CLOSING_HOUR - 1) || (startH === config.CLOSING_HOUR - 1 && startM > 0)) {
-      const err = new Error(`Bookings must start between ${pad(config.OPENING_HOUR)}:00 and ${pad(config.CLOSING_HOUR - 1)}:00`);
-      err.status = 400;
+    const court = courts[0];
+
+    // Check maintenance blocks
+    const [blocks] = await conn.query(
+      `SELECT * FROM court_blocks
+       WHERE court_id = ? AND block_date = ?
+         AND ((start_time <= ? AND end_time > ?) OR (start_time < ? AND end_time >= ?))`,
+      [courtId, bookingDate, startTime, startTime, endTime, endTime]
+    );
+    if (blocks.length > 0) {
+      const err = new Error(`Court is blocked for maintenance: ${blocks[0].reason}`);
+      err.code = 'COURT_BLOCKED';
+      err.status = 409;
       throw err;
     }
 
-    let endH = startH + 1;
-    let endM = startM;
-    const formattedStartTime = `${pad(startH)}:${pad(startM)}:00`;
-    const formattedEndTime = `${pad(endH)}:${pad(endM)}:00`;
+    let discountPct = 0;
+    let effectiveMemberId = memberId;
+    let effectiveUserId = userId;
 
-    // 3. Member Validation & Daily Limit Check with SELECT FOR UPDATE
-    let courtDiscountPct = 0;
-    let resolvedMemberId = memberId || null;
-    let resolvedUserId = userId || null;
+    if (memberId || userId) {
+      let memberQuery = 'SELECT m.*, p.name AS plan_name, p.court_discount_pct, p.max_bookings_per_day FROM members m JOIN plans p ON m.plan_id = p.id WHERE ';
+      const memberParams = [];
+      if (memberId) {
+        memberQuery += 'm.id = ?';
+        memberParams.push(memberId);
+      } else {
+        memberQuery += 'm.user_id = ?';
+        memberParams.push(userId);
+      }
+      memberQuery += ' FOR UPDATE';
 
-    if (resolvedMemberId) {
-      const [mRows] = await conn.query(
-        `SELECT m.*, p.court_discount_pct, p.max_bookings_per_day, u.id as user_acc_id
-         FROM members m
-         JOIN plans p ON m.plan_id = p.id
-         JOIN users u ON m.user_id = u.id
-         WHERE m.id = ? FOR UPDATE`,
-        [resolvedMemberId]
-      );
+      const [mRows] = await conn.query(memberQuery, memberParams);
       if (!mRows.length) {
-        const err = new Error('Member not found');
+        const err = new Error('Member profile not found.');
+        err.code = 'MEMBER_NOT_FOUND';
         err.status = 404;
         throw err;
       }
+
       const member = mRows[0];
-      resolvedUserId = member.user_acc_id;
+      effectiveMemberId = member.id;
+      effectiveUserId = member.user_id;
 
-      const todayStr = new Date().toISOString().slice(0, 10);
-      const expStr = new Date(member.expiry_date).toISOString().slice(0, 10);
-      if (member.status !== 'active' || expStr < todayStr) {
-        const err = new Error('Membership is expired or inactive. Please renew to book at member rate.');
-        err.status = 403;
-        throw err;
-      }
-
-      courtDiscountPct = Number(member.court_discount_pct) || 0;
-      const maxDaily = member.max_bookings_per_day || config.DEFAULT_MAX_BOOKINGS_PER_DAY;
-
-      const [dailyCountRows] = await conn.query(
-        `SELECT COUNT(*) as cnt FROM bookings WHERE member_id = ? AND booking_date = ? AND status = 'confirmed'`,
-        [resolvedMemberId, bookingDate]
-      );
-
-      if (dailyCountRows[0].cnt >= maxDaily) {
-        const err = new Error(`Daily booking limit of ${maxDaily} bookings per day reached for this member.`);
+      // Verify active membership status
+      if (member.status !== 'active') {
+        const err = new Error(`Member is currently ${member.status}. Renew membership to book at member rates.`);
+        err.code = 'MEMBER_INACTIVE';
         err.status = 400;
         throw err;
       }
+      if (new Date(member.expiry_date) < new Date(today)) {
+        const err = new Error('Membership has expired. Please renew your plan.');
+        err.code = 'MEMBER_EXPIRED';
+        err.status = 400;
+        throw err;
+      }
+
+      // Check daily booking limit (excluding cancelled)
+      const [bCount] = await conn.query(
+        `SELECT COUNT(*) as total FROM bookings
+         WHERE member_id = ? AND booking_date = ? AND status = 'confirmed'`,
+        [effectiveMemberId, bookingDate]
+      );
+
+      const maxLimit = Math.min(member.max_bookings_per_day || 2, config.DEFAULT_MAX_BOOKINGS_PER_DAY);
+      if (bCount[0].total >= maxLimit) {
+        const err = new Error(`You have already booked ${bCount[0].total} session(s) on this date (daily limit is ${maxLimit}).`);
+        err.code = 'DAILY_LIMIT_REACHED';
+        err.status = 409;
+        throw err;
+      }
+
+      discountPct = member.court_discount_pct;
     }
 
-    // 4. Pricing calculation
-    const pricing = calculateCourtPrice(court.base_price_per_hour, courtDiscountPct);
+    // Pricing calculation
+    const pricing = calculateCourtPrice(court.base_price_per_hour, discountPct);
 
-    // 5. Insert Booking record
-    const bookingCode = 'BK-' + Date.now().toString(36).toUpperCase() + '-' + Math.floor(Math.random() * 899 + 100);
+    // Generate unique booking code
+    const bookingCode = `BK-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`;
 
-    const [insRes] = await conn.query(
+    // Insert booking
+    const [bRes] = await conn.query(
       `INSERT INTO bookings (
         booking_code, court_id, user_id, member_id, guest_name, guest_phone,
         booking_date, start_time, end_time, base_price, discount_pct, price_charged,
-        status, booked_by_user_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', ?)`,
+        source, status, booked_by_user_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', ?)`,
       [
-        bookingCode, court.id, resolvedUserId, resolvedMemberId, guestName || null, guestPhone || null,
-        bookingDate, formattedStartTime, formattedEndTime, pricing.basePrice, pricing.discountPct, pricing.priceCharged,
-        bookedByUserId
+        bookingCode, courtId, effectiveUserId, effectiveMemberId,
+        guestName || null, guestPhone || null,
+        bookingDate, startTime, endTime, pricing.basePrice, pricing.discountPct, pricing.priceCharged,
+        source, bookedByUserId
       ]
     );
-    const bookingId = insRes.insertId;
+    const bookingId = bRes.insertId;
 
-    // 6. Insert TWO 30-Minute Booking Slots
-    const slot1Start = `${bookingDate} ${pad(startH)}:${pad(startM)}:00`;
-    let slot1EndH = startH;
-    let slot1EndM = startM + 30;
-    if (slot1EndM === 60) {
-      slot1EndH += 1;
-      slot1EndM = 0;
-    }
-    const slot1End = `${bookingDate} ${pad(slot1EndH)}:${pad(slot1EndM)}:00`;
-
-    const slot2Start = slot1End;
-    const slot2End = `${bookingDate} ${pad(endH)}:${pad(endM)}:00`;
+    // Slot datetime timestamps for atomic slot reservation
+    const slot1Start = `${bookingDate} ${startTime}:00`;
+    const slot1End   = `${bookingDate} ${secondSlotTime}:00`;
+    const slot2Start = `${bookingDate} ${secondSlotTime}:00`;
+    const slot2End   = `${bookingDate} ${endTime}:00`;
 
     try {
       await conn.query(
         `INSERT INTO booking_slots (booking_id, court_id, slot_date, slot_start, slot_end)
          VALUES (?, ?, ?, ?, ?), (?, ?, ?, ?, ?)`,
         [
-          bookingId, court.id, bookingDate, slot1Start, slot1End,
-          bookingId, court.id, bookingDate, slot2Start, slot2End
+          bookingId, courtId, bookingDate, slot1Start, slot1End,
+          bookingId, courtId, bookingDate, slot2Start, slot2End
         ]
       );
-    } catch (dupErr) {
-      if (dupErr.code === 'ER_DUP_ENTRY' || dupErr.errno === 1062) {
-        const err = new Error('That slot was just taken. Please select another slot.');
+    } catch (slotErr) {
+      if (slotErr.code === 'ER_DUP_ENTRY') {
+        const err = new Error('The selected court and time slot was just booked by another player.');
+        err.code = 'SLOT_TAKEN';
         err.status = 409;
         throw err;
       }
-      throw dupErr;
+      throw slotErr;
     }
 
-    // 7. Payment Ledger Entry if priceCharged > 0
+    // Record extra participants if any
+    if (Array.isArray(participants) && participants.length > 0) {
+      for (const p of participants.slice(0, 4)) {
+        if (p && p.trim()) {
+          await conn.query(
+            'INSERT INTO booking_participants (booking_id, participant_name) VALUES (?, ?)',
+            [bookingId, p.trim()]
+          );
+        }
+      }
+    }
+
+    // Record payment ledger row
     if (pricing.priceCharged > 0) {
-      const paymentCode = 'PAY-' + Date.now().toString(36).toUpperCase() + '-' + Math.floor(Math.random() * 899 + 100);
+      const payCode = `PAY-BK-${Date.now()}`;
       await conn.query(
-        `INSERT INTO payments (payment_code, source, reference_id, user_id, amount, method, status, notes)
-         VALUES (?, 'court', ?, ?, ?, ?, 'paid', ?)`,
-        [paymentCode, bookingId, resolvedUserId, pricing.priceCharged, paymentMethod, `Court booking ${bookingCode}`]
+        `INSERT INTO payments (payment_code, source, reference_id, user_id, amount, method, status, paid_at)
+         VALUES (?, 'court', ?, ?, ?, ?, 'paid', NOW())`,
+        [payCode, bookingId, effectiveUserId, pricing.priceCharged, paymentMethod]
       );
     }
 
-    return {
-      bookingId,
-      bookingCode,
-      courtName: court.name,
-      bookingDate,
-      startTime: formattedStartTime,
-      endTime: formattedEndTime,
-      priceCharged: pricing.priceCharged,
-      discountPct: pricing.discountPct
-    };
+    // Fetch and return full created booking record
+    const [fullRows] = await conn.query(
+      `SELECT b.*, c.name as court_name, c.sport,
+              COALESCE(u.full_name, b.guest_name) AS player_name,
+              COALESCE(u.email, '—') AS player_email,
+              COALESCE(u.phone, b.guest_phone, '—') AS player_phone,
+              m.member_code
+       FROM bookings b
+       JOIN courts c ON b.court_id = c.id
+       LEFT JOIN users u ON b.user_id = u.id
+       LEFT JOIN members m ON b.member_id = m.id
+       WHERE b.id = ?`,
+      [bookingId]
+    );
+
+    return fullRows[0];
   });
 }
 
 /**
- * Cancels a booking, removes slot locks, and updates payment ledger.
+ * Cancels a booking, validates authorization & cancellation cutoff window,
+ * frees the booking_slots, and logs a negative refund entry in payments.
  */
-async function cancelBooking(bookingId, cancelledByUserId, userRole, reason = 'Cancelled by user') {
+async function cancelBooking({
+  bookingId,
+  cancellingUserId,
+  userRole,
+  cancellationReason = 'User cancelled'
+}) {
+  await autoCompleteBookings();
+
   return await transaction(async (conn) => {
-    const [rows] = await conn.query('SELECT * FROM bookings WHERE id = ?', [bookingId]);
+    const [rows] = await conn.query('SELECT * FROM bookings WHERE id = ? FOR UPDATE', [bookingId]);
     if (!rows.length) {
-      const err = new Error('Booking not found');
+      const err = new Error('Booking record not found.');
+      err.code = 'BOOKING_NOT_FOUND';
       err.status = 404;
       throw err;
     }
+
     const booking = rows[0];
 
     if (booking.status === 'cancelled') {
-      const err = new Error('Booking is already cancelled');
-      err.status = 400;
+      const err = new Error('This booking is already cancelled.');
+      err.code = 'BOOKING_ALREADY_CANCELLED';
+      err.status = 409;
       throw err;
     }
 
-    // If member, ensure they own the booking
-    if (userRole === 'member' && booking.user_id !== cancelledByUserId) {
-      const err = new Error('You do not have permission to cancel this booking');
-      err.status = 403;
+    if (booking.status === 'completed') {
+      const err = new Error('Completed bookings cannot be cancelled.');
+      err.code = 'BOOKING_COMPLETED';
+      err.status = 409;
       throw err;
     }
 
-    // Mark booking as cancelled
+    // Check if booking already started or passed
+    if (isPastSlot(booking.booking_date, booking.start_time)) {
+      const err = new Error('Cannot cancel a booking that has already started or passed.');
+      err.code = 'BOOKING_STARTED';
+      err.status = 409;
+      throw err;
+    }
+
+    // Member authorization check
+    if (userRole === 'member') {
+      if (booking.user_id !== cancellingUserId) {
+        const err = new Error('You can only cancel your own bookings.');
+        err.code = 'FORBIDDEN';
+        err.status = 403;
+        throw err;
+      }
+
+      // Check cancellation cutoff window (default 2 hours)
+      const [setRows] = await conn.query(
+        "SELECT setting_value FROM settings WHERE setting_key = 'cancellation_cutoff_hours'"
+      );
+      const cutoffHours = setRows.length ? Number(setRows[0].setting_value) || 2 : 2;
+
+      const slotDate = new Date(`${booking.booking_date}T${booking.start_time}:00+05:30`);
+      const now = new Date();
+      const hoursUntilSlot = (slotDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+      if (hoursUntilSlot < cutoffHours) {
+        const err = new Error(`Bookings cannot be cancelled within ${cutoffHours} hours of the start time.`);
+        err.code = 'CANCELLATION_CUTOFF_EXCEEDED';
+        err.status = 409;
+        throw err;
+      }
+    }
+
+    // Update status
     await conn.query(
-      `UPDATE bookings SET status = 'cancelled', cancelled_at = NOW(), cancellation_reason = ? WHERE id = ?`,
-      [reason, bookingId]
+      `UPDATE bookings
+       SET status = 'cancelled', cancelled_at = NOW(), cancellation_reason = ?
+       WHERE id = ?`,
+      [cancellationReason, bookingId]
     );
 
-    // Free the 30-min slots
+    // Free the unique slots
     await conn.query('DELETE FROM booking_slots WHERE booking_id = ?', [bookingId]);
 
-    // Mark payment as refunded if applicable
-    await conn.query(
-      `UPDATE payments SET status = 'refunded', refunded_at = NOW(), notes = CONCAT(COALESCE(notes, ''), ' [Refunded on cancellation]')
-       WHERE source = 'court' AND reference_id = ?`,
+    // Record refund in payments ledger if paid
+    const [payRows] = await conn.query(
+      `SELECT * FROM payments WHERE source = 'court' AND reference_id = ? AND status = 'paid'`,
       [bookingId]
     );
 
-    return { success: true, bookingId, status: 'cancelled' };
+    if (payRows.length > 0) {
+      const originalPay = payRows[0];
+      const refundCode = `REF-${Date.now()}`;
+      await conn.query(
+        `INSERT INTO payments (payment_code, source, reference_id, user_id, amount, method, status, refund_of_id, notes, paid_at, refunded_at)
+         VALUES (?, 'court', ?, ?, ?, ?, 'refunded', ?, 'Cancellation refund', NOW(), NOW())`,
+        [refundCode, bookingId, originalPay.user_id, -Math.abs(Number(originalPay.amount)), originalPay.method, originalPay.id]
+      );
+    }
+
+    return { ok: true, bookingId, message: 'Booking cancelled successfully and slot released.' };
   });
 }
 
 module.exports = {
   getAvailability,
   createBooking,
-  cancelBooking
+  cancelBooking,
+  autoCompleteBookings
 };

@@ -3,12 +3,982 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Champions Club Management System</title>
-  <meta http-equiv="refresh" content="0; url=/shared/login.html">
+  <title>The Champions Club – Premier Sports &amp; Recreation Center, Ahmedabad</title>
+  <meta name="description" content="Championship synthetic tennis courts, natural grass cricket turf, air-conditioned badminton courts, and pickleball arena. Book online or enquire about membership at The Champions Club.">
+  <meta name="robots" content="index, follow">
+  <meta property="og:title" content="The Champions Club – Premier Sports Center">
+  <meta property="og:description" content="State-of-the-art tennis, cricket, badminton and pickleball club with pro shop, cafeteria, and elite coaching in Ahmedabad.">
+  <meta property="og:type" content="website">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    /* ── Landing-only overrides ── */
+    body { margin: 0; }
+
+    /* Navbar */
+    .l-nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 1000;
+      padding: 14px 0;
+      transition: background 0.3s ease, box-shadow 0.3s ease;
+    }
+    .l-nav.scrolled {
+      background: rgba(11, 21, 32, 0.96) !important;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+      backdrop-filter: blur(16px);
+    }
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+    .nav-brand-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, #0F766E, #115E59);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; color: #fff;
+      box-shadow: 0 4px 12px rgba(15,118,110,0.35);
+    }
+    .nav-brand-text {
+      font-size: 1.05rem; font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.01em;
+    }
+
+    /* Hero */
+    .hero {
+      background: linear-gradient(135deg, #0A1520 0%, #162030 40%, #0B1E2E 100%);
+      min-height: 100vh;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      padding-top: 80px;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse at 75% 15%, rgba(15,118,110,0.28) 0%, transparent 50%),
+        radial-gradient(ellipse at 15% 75%, rgba(11,90,84,0.18) 0%, transparent 45%);
+      pointer-events: none;
+    }
+    .hero-grid-lines {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+    }
+    .hero-tag {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(15,118,110,0.18);
+      border: 1px solid rgba(15,118,110,0.35);
+      color: #5EEAD4;
+      padding: 6px 16px; border-radius: 100px;
+      font-size: 0.73rem; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+    .hero-h1 {
+      font-size: clamp(2.2rem, 5vw, 3.6rem);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      color: #FFFFFF;
+      margin-bottom: 20px;
+    }
+    .hero-h1 span { color: #5EEAD4; }
+    .hero-desc {
+      font-size: 1.05rem;
+      color: rgba(255,255,255,0.68);
+      line-height: 1.75;
+      max-width: 540px;
+      margin-bottom: 36px;
+    }
+    .hero-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 40px;
+    }
+    .hero-stat-box {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 14px 16px;
+      text-align: center;
+    }
+    .hero-stat-num {
+      font-size: 1.7rem; font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      color: #5EEAD4; line-height: 1; display: block;
+    }
+    .hero-stat-lbl {
+      font-size: 0.7rem; color: rgba(255,255,255,0.55);
+      text-transform: uppercase; letter-spacing: 0.06em; margin-top: 4px;
+    }
+
+    /* Lead Form Card */
+    .hero-form-card {
+      background: rgba(255,255,255,0.97);
+      border-radius: 20px;
+      padding: 32px 28px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.35);
+      position: relative;
+    }
+    .hero-form-title {
+      font-size: 1.1rem; font-weight: 700;
+      color: #1F2933; margin-bottom: 20px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .hero-form-title i { color: #0F766E; }
+
+    /* Section layout */
+    .section-light { background: #FFFFFF; padding: 80px 0; }
+    .section-alt   { background: #F4F6F8; padding: 80px 0; }
+    .section-dark  {
+      background: linear-gradient(135deg, #0B1520 0%, #101E2E 100%);
+      padding: 80px 0; color: #fff;
+    }
+    .section-header { text-align: center; max-width: 600px; margin: 0 auto 56px; }
+    .section-label {
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: #0F766E;
+      display: block; margin-bottom: 10px;
+    }
+    .section-title {
+      font-size: clamp(1.6rem, 3vw, 2.2rem);
+      font-weight: 800; letter-spacing: -0.025em;
+      color: #1F2933; line-height: 1.2;
+      margin-bottom: 14px;
+    }
+    .section-title.light { color: #FFFFFF; }
+    .section-sub {
+      font-size: 0.95rem; color: #66788A; line-height: 1.7;
+    }
+    .section-sub.light { color: rgba(255,255,255,0.65); }
+
+    /* Feature grid */
+    .feature-item {
+      padding: 28px;
+      background: #FFFFFF;
+      border: 1px solid #E5E9ED;
+      border-radius: 16px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .feature-item:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+    }
+    .fi-icon {
+      width: 52px; height: 52px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #0F766E, #115E59);
+      color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.35rem;
+      margin-bottom: 16px;
+      box-shadow: 0 6px 16px rgba(15,118,110,0.3);
+    }
+    .fi-title { font-size: 1rem; font-weight: 700; color: #1F2933; margin-bottom: 8px; }
+    .fi-text  { font-size: 0.85rem; color: #66788A; line-height: 1.65; }
+
+    /* Facility carousel cards */
+    .facility-card-wrap {
+      background: #FFFFFF;
+      border: 1px solid #E5E9ED;
+      border-radius: 20px;
+      overflow: hidden;
+      height: 100%;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+    .facility-card-wrap:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 40px rgba(0,0,0,0.1);
+    }
+    .facility-icon-section {
+      height: 180px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 3.5rem;
+      position: relative;
+    }
+    .facility-body { padding: 24px; }
+    .facility-name { font-size: 1.1rem; font-weight: 700; color: #1F2933; margin-bottom: 6px; }
+    .facility-desc { font-size: 0.83rem; color: #66788A; line-height: 1.6; margin-bottom: 14px; }
+    .facility-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .facility-tag {
+      background: rgba(15,118,110,0.1); color: #0F766E;
+      font-size: 0.7rem; font-weight: 600;
+      padding: 3px 10px; border-radius: 100px;
+    }
+
+    /* Pricing */
+    .pricing-card {
+      background: #FFFFFF;
+      border: 2px solid #E5E9ED;
+      border-radius: 20px;
+      padding: 36px 28px;
+      text-align: center;
+      position: relative;
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      height: 100%;
+    }
+    .pricing-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,0.08); }
+    .pricing-card.featured {
+      border-color: #0F766E;
+      box-shadow: 0 0 0 4px rgba(15,118,110,0.1), 0 12px 36px rgba(15,118,110,0.12);
+    }
+    .featured-badge {
+      position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+      background: linear-gradient(135deg, #0F766E, #115E59);
+      color: #fff; font-size: 0.72rem; font-weight: 700;
+      padding: 5px 20px; border-radius: 100px;
+      letter-spacing: 0.05em; text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .pricing-plan-name { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #66788A; margin-bottom: 8px; }
+    .pricing-amount {
+      font-size: 2.6rem; font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      color: #1F2933; line-height: 1; margin-bottom: 4px;
+    }
+    .pricing-amount span { font-size: 1.1rem; vertical-align: top; margin-top: 8px; display: inline-block; }
+    .pricing-period { font-size: 0.8rem; color: #66788A; margin-bottom: 24px; }
+    .pricing-features { list-style: none; padding: 0; text-align: left; margin-bottom: 28px; }
+    .pricing-features li {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 0.85rem; color: #1F2933;
+      padding: 6px 0;
+      border-bottom: 1px solid #F4F6F8;
+    }
+    .pricing-features li:last-child { border-bottom: none; }
+    .pricing-features li i { color: #2E9E5B; flex-shrink: 0; }
+
+    /* Testimonials */
+    .testi-card {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 28px;
+      height: 100%;
+    }
+    .testi-quote { font-size: 0.9rem; line-height: 1.75; color: rgba(255,255,255,0.82); margin-bottom: 20px; font-style: italic; }
+    .testi-author { font-weight: 700; color: #5EEAD4; font-size: 0.87rem; }
+    .testi-role   { font-size: 0.75rem; color: rgba(255,255,255,0.5); }
+    .stars { color: #E8A317; font-size: 0.8rem; margin-bottom: 12px; }
+
+    /* FAQ */
+    .faq-acc { border: 1px solid #E5E9ED; border-radius: 14px; overflow: hidden; margin-bottom: 10px; }
+    .faq-btn {
+      width: 100%; background: #fff; border: none;
+      padding: 18px 24px;
+      text-align: left; font-weight: 600; font-size: 0.92rem;
+      color: #1F2933;
+      display: flex; align-items: center; justify-content: space-between;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    .faq-btn:hover { background: #F8FAFB; }
+    .faq-btn[aria-expanded="true"] { background: rgba(15,118,110,0.05); color: #0F766E; }
+    .faq-btn[aria-expanded="true"] .faq-icon { transform: rotate(45deg); }
+    .faq-icon { transition: transform 0.25s ease; font-size: 1.1rem; flex-shrink: 0; }
+    .faq-body { padding: 4px 24px 18px; font-size: 0.85rem; color: #66788A; line-height: 1.75; background: #fff; }
+
+    /* Enquiry section */
+    .enquiry-panel {
+      background: linear-gradient(135deg, #0F766E 0%, #0B5A54 100%);
+      border-radius: 24px;
+      padding: 56px 48px;
+      position: relative;
+      overflow: hidden;
+    }
+    .enquiry-panel::after {
+      content: '';
+      position: absolute; top: -60px; right: -60px;
+      width: 280px; height: 280px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 50%;
+    }
+
+    /* Footer */
+    .site-footer {
+      background: #0B1520;
+      color: rgba(255,255,255,0.7);
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding: 48px 0 24px;
+    }
+    .footer-brand-text { font-size: 1rem; font-weight: 700; color: #fff; }
+    .footer-link { color: rgba(255,255,255,0.55); font-size: 0.83rem; text-decoration: none; transition: color 0.15s; }
+    .footer-link:hover { color: #5EEAD4; }
+    .footer-heading { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.35); margin-bottom: 14px; }
+
+    /* CTA Button variants */
+    .btn-hero-primary {
+      background: linear-gradient(135deg, #0F766E, #115E59);
+      color: #fff; border: none;
+      padding: 14px 32px; border-radius: 10px;
+      font-weight: 700; font-size: 0.92rem;
+      box-shadow: 0 8px 24px rgba(15,118,110,0.35);
+      transition: all 0.2s ease;
+      text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-hero-primary:hover { background: linear-gradient(135deg, #115E59, #0B4A44); color: #fff; transform: translateY(-2px); box-shadow: 0 12px 28px rgba(15,118,110,0.45); }
+    .btn-hero-outline {
+      background: transparent;
+      color: rgba(255,255,255,0.85);
+      border: 1px solid rgba(255,255,255,0.25);
+      padding: 13px 28px; border-radius: 10px;
+      font-weight: 600; font-size: 0.92rem;
+      transition: all 0.2s ease;
+      text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-hero-outline:hover { background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.4); }
+    .btn-green { background: linear-gradient(135deg, #0F766E, #115E59); color: #fff; border: none; padding: 12px 28px; border-radius: 10px; font-weight: 700; font-size: 0.9rem; text-decoration: none; display: inline-block; transition: all 0.2s; }
+    .btn-green:hover { background: linear-gradient(135deg, #115E59, #0B4A44); color: #fff; transform: translateY(-1px); }
+    .btn-white { background: #fff; color: #0F766E; border: none; padding: 12px 28px; border-radius: 10px; font-weight: 700; font-size: 0.9rem; text-decoration: none; display: inline-block; transition: all 0.2s; }
+    .btn-white:hover { background: #f0fdfa; color: #0F766E; transform: translateY(-1px); }
+  </style>
 </head>
 <body>
+
+  <!-- ── Fixed Navbar ───────────────────────────────────────────────────────── -->
+  <nav class="l-nav" id="mainNav" aria-label="Site navigation">
+    <div class="container d-flex align-items-center justify-content-between">
+      <a href="/" class="nav-brand">
+        <div class="nav-brand-icon"><i class="bi bi-trophy-fill"></i></div>
+        <span class="nav-brand-text">Champions Club</span>
+      </a>
+      <div class="d-flex align-items-center gap-4">
+        <a href="#facilities" class="landing-nav-link d-none d-lg-inline">Facilities</a>
+        <a href="#plans" class="landing-nav-link d-none d-lg-inline">Membership</a>
+        <a href="#testimonials" class="landing-nav-link d-none d-lg-inline">Members</a>
+        <a href="#faq" class="landing-nav-link d-none d-lg-inline">FAQ</a>
+        <a href="#enquiry" class="landing-nav-link d-none d-md-inline">Contact</a>
+        <a href="/shared/login.html" class="btn btn-hero-primary btn-sm" style="padding:8px 20px;">
+          <i class="bi bi-box-arrow-in-right"></i>Member Portal
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ── Hero Section ───────────────────────────────────────────────────────── -->
+  <section class="hero" id="home">
+    <div class="hero-grid-lines"></div>
+    <div class="container position-relative" style="z-index:1;">
+      <div class="row align-items-center g-5 py-5">
+
+        <!-- Left: Copy -->
+        <div class="col-lg-7">
+          <div class="hero-tag">
+            <i class="bi bi-star-fill" style="font-size:0.65rem;"></i>
+            Premier Sports Club of Ahmedabad
+          </div>
+          <h1 class="hero-h1">Elevate Your Game at<br><span>The Champions Club</span></h1>
+          <p class="hero-desc">
+            Championship synthetic tennis courts, natural grass cricket turf, air-conditioned badminton courts,
+            and an outdoor pickleball arena — all with seamless online court booking and elite member benefits.
+          </p>
+          <div class="d-flex flex-wrap gap-3">
+            <a href="/shared/login.html" class="btn-hero-primary">
+              <i class="bi bi-calendar-plus"></i>Book a Court Online
+            </a>
+            <a href="#enquiry" class="btn-hero-outline">
+              <i class="bi bi-envelope"></i>Membership Enquiry
+            </a>
+          </div>
+
+          <!-- Stats -->
+          <div class="hero-stats">
+            <div class="hero-stat-box">
+              <span class="hero-stat-num" id="heroStatCourts">12+</span>
+              <div class="hero-stat-lbl">Active Courts</div>
+            </div>
+            <div class="hero-stat-box">
+              <span class="hero-stat-num" id="heroStatMembers">500+</span>
+              <div class="hero-stat-lbl">Club Members</div>
+            </div>
+            <div class="hero-stat-box">
+              <span class="hero-stat-num">4</span>
+              <div class="hero-stat-lbl">Sports Arenas</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Lead Form -->
+        <div class="col-lg-5">
+          <div class="hero-form-card">
+            <div class="hero-form-title">
+              <i class="bi bi-send-fill"></i>Book a Free Trial Session
+            </div>
+            <form id="heroLeadForm" novalidate>
+              <div class="mb-3">
+                <label class="form-label" for="leadName">Full Name</label>
+                <input type="text" id="leadName" name="name" class="form-control" placeholder="e.g. Vikram Sharma" required minlength="2">
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="leadPhone">Mobile Number</label>
+                <input type="tel" id="leadPhone" name="phone" class="form-control" placeholder="+91 98765 43210" required pattern="[6-9][0-9]{9}">
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="leadInterest">I am interested in</label>
+                <select id="leadInterest" name="interest" class="form-select">
+                  <option value="membership">Annual Membership</option>
+                  <option value="court_rental">Court Booking Trial</option>
+                  <option value="coaching">Professional Coaching Academy</option>
+                  <option value="general">General Enquiry</option>
+                </select>
+              </div>
+              <button type="submit" class="btn-green w-100 py-2" id="leadSubmitBtn">
+                <span id="leadSpinner" class="spinner-border spinner-border-sm d-none me-2"></span>
+                Submit Request
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Why Champions Club ─────────────────────────────────────────────────── -->
+  <section class="section-light">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-label">Why Choose Us</span>
+        <h2 class="section-title">Everything a champion needs</h2>
+        <p class="section-sub">From world-class courts to seamless digital booking, every detail is designed for your best game.</p>
+      </div>
+      <div class="row g-4">
+        <div class="col-md-6 col-lg-4">
+          <div class="feature-item">
+            <div class="fi-icon"><i class="bi bi-calendar-check"></i></div>
+            <div class="fi-title">Online Booking System</div>
+            <div class="fi-text">Book any court in seconds from your phone or laptop. Real-time slot availability, instant confirmation, and email receipts.</div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4">
+          <div class="feature-item">
+            <div class="fi-icon"><i class="bi bi-award"></i></div>
+            <div class="fi-title">Tiered Membership Perks</div>
+            <div class="fi-text">Platinum, Gold, Silver, and Junior plans with exclusive court discounts, pro shop benefits, and priority booking windows.</div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4">
+          <div class="feature-item">
+            <div class="fi-icon"><i class="bi bi-people"></i></div>
+            <div class="fi-title">Elite Coaching Academy</div>
+            <div class="fi-text">Certified coaches for Badminton, Tennis, and Cricket. One-on-one sessions, group clinics, and junior academies.</div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4">
+          <div class="feature-item">
+            <div class="fi-icon"><i class="bi bi-bag"></i></div>
+            <div class="fi-title">Pro Shop</div>
+            <div class="fi-text">Rackets, grips, shoes, apparel, and nutrition — everything a serious player needs, with member discounts up to 20%.</div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4">
+          <div class="feature-item">
+            <div class="fi-icon"><i class="bi bi-cup-hot"></i></div>
+            <div class="fi-title">Bar &amp; Cafeteria</div>
+            <div class="fi-text">Healthy sports nutrition, fresh juices, protein shakes, and gourmet snacks — refuel the right way after every session.</div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4">
+          <div class="feature-item">
+            <div class="fi-icon"><i class="bi bi-shield-check"></i></div>
+            <div class="fi-title">Safety &amp; Security</div>
+            <div class="fi-text">24/7 CCTV, professional court maintenance, and trained staff ensure every session is safe, clean, and world-class.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Facilities ─────────────────────────────────────────────────────────── -->
+  <section class="section-alt" id="facilities">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-label">Our Courts &amp; Arenas</span>
+        <h2 class="section-title">World-class facilities for every sport</h2>
+        <p class="section-sub">All courts maintained to international standards with professional surfacing, lighting, and climate control.</p>
+      </div>
+      <div class="row g-4">
+        <div class="col-md-6 col-lg-3">
+          <div class="facility-card-wrap">
+            <div class="facility-icon-section" style="background:linear-gradient(135deg,#0B1520,#152030);">
+              <i class="bi bi-circle" style="font-size:3.5rem;color:rgba(94,234,212,0.25);"></i>
+              <span style="position:absolute;font-size:2.5rem;">🎾</span>
+            </div>
+            <div class="facility-body">
+              <div class="facility-name">Tennis Courts</div>
+              <div class="facility-desc">3 championship synthetic clay courts with tournament-grade surfaces and LED floodlights for evening play.</div>
+              <div class="facility-tags">
+                <span class="facility-tag">Synthetic Clay</span>
+                <span class="facility-tag">LED Lights</span>
+                <span class="facility-tag">Coaching</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+          <div class="facility-card-wrap">
+            <div class="facility-icon-section" style="background:linear-gradient(135deg,#1B2A3A,#0B1520);">
+              <span style="font-size:2.5rem;">🏸</span>
+            </div>
+            <div class="facility-body">
+              <div class="facility-name">Badminton Courts</div>
+              <div class="facility-desc">5 air-conditioned BWF-standard wooden badminton courts with premium synthetic flooring and side lighting.</div>
+              <div class="facility-tags">
+                <span class="facility-tag">Air-conditioned</span>
+                <span class="facility-tag">BWF Standard</span>
+                <span class="facility-tag">5 Courts</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+          <div class="facility-card-wrap">
+            <div class="facility-icon-section" style="background:linear-gradient(135deg,#0F2030,#152540);">
+              <span style="font-size:2.5rem;">🏏</span>
+            </div>
+            <div class="facility-body">
+              <div class="facility-name">Cricket Turf</div>
+              <div class="facility-desc">Natural grass cricket turf with red-clay pitch and multiple nets for batting practice. MRF-grade outfield.</div>
+              <div class="facility-tags">
+                <span class="facility-tag">Natural Grass</span>
+                <span class="facility-tag">Practice Nets</span>
+                <span class="facility-tag">Bowling Machine</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+          <div class="facility-card-wrap">
+            <div class="facility-icon-section" style="background:linear-gradient(135deg,#1E2A3A,#0E1B2A);">
+              <span style="font-size:2.5rem;">🏓</span>
+            </div>
+            <div class="facility-body">
+              <div class="facility-name">Pickleball Arena</div>
+              <div class="facility-desc">3 outdoor pickleball courts with USAPA-approved surface, permanent lines, and shaded seating area.</div>
+              <div class="facility-tags">
+                <span class="facility-tag">USAPA Standard</span>
+                <span class="facility-tag">Outdoor</span>
+                <span class="facility-tag">Shaded Seating</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Membership Plans ───────────────────────────────────────────────────── -->
+  <section class="section-light" id="plans">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-label">Membership Plans</span>
+        <h2 class="section-title">Choose your champion tier</h2>
+        <p class="section-sub">Unlock exclusive court discounts, pro store savings, coaching credits, and complimentary cafe benefits.</p>
+      </div>
+
+      <div class="row g-4 justify-content-center" id="plansContainer">
+        <!-- Plans injected by JS -->
+        <div class="col-12 text-center py-5">
+          <span class="spinner-border spinner-border-sm text-success me-2"></span>
+          <span class="text-muted">Loading membership plans…</span>
+        </div>
+      </div>
+
+      <div class="text-center mt-4">
+        <p class="text-muted small">All plans include GST-compliant invoicing. Prices valid for the current financial year.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Testimonials ───────────────────────────────────────────────────────── -->
+  <section class="section-dark" id="testimonials">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-label" style="color:#5EEAD4;">Member Stories</span>
+        <h2 class="section-title light">What our members say</h2>
+        <p class="section-sub light">Over 500 members trust Champions Club for their weekly sport and fitness goals.</p>
+      </div>
+
+      <div class="row g-4">
+        <div class="col-md-6 col-lg-4">
+          <div class="testi-card">
+            <div class="stars"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i></div>
+            <div class="testi-quote">"The badminton courts are impeccably maintained. I book online in 30 seconds and my slot is always confirmed instantly. The coaching here transformed my game."</div>
+            <div class="testi-author">Priya Mehta</div>
+            <div class="testi-role">Platinum Member since 2023</div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4">
+          <div class="testi-card">
+            <div class="stars"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i></div>
+            <div class="testi-quote">"Best tennis facility in Ahmedabad. The synthetic clay surface feels exactly like European clay courts. The online booking system is incredibly convenient."</div>
+            <div class="testi-author">Rohan Desai</div>
+            <div class="testi-role">Gold Member since 2022</div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4">
+          <div class="testi-card">
+            <div class="stars"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-half"></i></div>
+            <div class="testi-quote">"Enrolled my son in the junior cricket academy here. The coaching staff is excellent and the turf quality is outstanding. Worth every rupee of the membership."</div>
+            <div class="testi-author">Sanjay Patel</div>
+            <div class="testi-role">Family Member since 2024</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FAQ ───────────────────────────────────────────────────────────────── -->
+  <section class="section-light" id="faq">
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-lg-8">
+          <div class="section-header" style="max-width:100%;">
+            <span class="section-label">Frequently Asked Questions</span>
+            <h2 class="section-title">Everything you need to know</h2>
+          </div>
+
+          <div class="accordion" id="faqAccordion">
+            <div class="faq-acc">
+              <button class="faq-btn" type="button" data-bs-toggle="collapse" data-bs-target="#faq1" aria-expanded="true">
+                How do I book a court online?
+                <i class="bi bi-plus-lg faq-icon"></i>
+              </button>
+              <div id="faq1" class="collapse show" data-bs-parent="#faqAccordion">
+                <div class="faq-body">Log in to your member portal at champions-club.in, go to "Book a Court", select your sport and preferred date, choose an available slot, and pay online. You'll receive an instant email confirmation with your booking code.</div>
+              </div>
+            </div>
+            <div class="faq-acc">
+              <button class="faq-btn collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2" aria-expanded="false">
+                Can non-members book courts?
+                <i class="bi bi-plus-lg faq-icon"></i>
+              </button>
+              <div id="faq2" class="collapse" data-bs-parent="#faqAccordion">
+                <div class="faq-body">Yes, walk-in guests can book courts at the front desk. However, members enjoy significantly discounted rates (up to 40% off), priority access to peak-hour slots, and online booking convenience.</div>
+              </div>
+            </div>
+            <div class="faq-acc">
+              <button class="faq-btn collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3" aria-expanded="false">
+                What is the cancellation policy?
+                <i class="bi bi-plus-lg faq-icon"></i>
+              </button>
+              <div id="faq3" class="collapse" data-bs-parent="#faqAccordion">
+                <div class="faq-body">Cancellations made at least 2 hours before the session start time receive a full credit to your club wallet. Late cancellations (under 2 hours) or no-shows are non-refundable to ensure fair access for all members.</div>
+              </div>
+            </div>
+            <div class="faq-acc">
+              <button class="faq-btn collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4" aria-expanded="false">
+                Do you offer corporate memberships?
+                <i class="bi bi-plus-lg faq-icon"></i>
+              </button>
+              <div id="faq4" class="collapse" data-bs-parent="#faqAccordion">
+                <div class="faq-body">Yes, we offer flexible corporate group packages for teams of 5 or more, including bulk court booking credits, branded invoicing for reimbursement, and a dedicated relationship manager. Contact us for a custom quote.</div>
+              </div>
+            </div>
+            <div class="faq-acc">
+              <button class="faq-btn collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq5" aria-expanded="false">
+                What age group is the Junior membership for?
+                <i class="bi bi-plus-lg faq-icon"></i>
+              </button>
+              <div id="faq5" class="collapse" data-bs-parent="#faqAccordion">
+                <div class="faq-body">Junior memberships are available for members aged 6–17 years. A parent or guardian must co-sign the membership form. Junior members get access to all junior academy sessions, reduced court rates, and equipment lending from our pro shop.</div>
+              </div>
+            </div>
+            <div class="faq-acc">
+              <button class="faq-btn collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq6" aria-expanded="false">
+                Are equipment and rackets available for hire?
+                <i class="bi bi-plus-lg faq-icon"></i>
+              </button>
+              <div id="faq6" class="collapse" data-bs-parent="#faqAccordion">
+                <div class="faq-body">Yes, we offer equipment hire from our Pro Shop including rackets, court shoes (limited sizes), shuttlecocks, and protective gear. Charges are nominal and available to all members and walk-in guests.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Enquiry / CTA Section ─────────────────────────────────────────────── -->
+  <section class="section-alt" id="enquiry">
+    <div class="container">
+      <div class="enquiry-panel">
+        <div class="row align-items-center g-5 position-relative" style="z-index:1;">
+          <div class="col-lg-6">
+            <span style="font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.6);">Start Today</span>
+            <h2 style="font-size:clamp(1.6rem,3vw,2.2rem);font-weight:800;letter-spacing:-0.02em;color:#fff;margin:10px 0 16px;">Ready to elevate your game?</h2>
+            <p style="color:rgba(255,255,255,0.75);font-size:0.95rem;line-height:1.7;max-width:440px;">
+              Join over 500 active members at The Champions Club. Book a free trial session today — no commitment required.
+              Our team will reach out within 24 hours.
+            </p>
+            <div class="d-flex flex-wrap gap-3 mt-4">
+              <a href="/shared/login.html" class="btn-white">
+                <i class="bi bi-calendar-plus me-2"></i>Book a Free Trial
+              </a>
+              <a href="tel:+917969696969" style="color:rgba(255,255,255,0.75);text-decoration:none;display:flex;align-items:center;gap:8px;font-size:0.9rem;">
+                <i class="bi bi-telephone-fill"></i>+91 79 6969 6969
+              </a>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <div style="background:rgba(255,255,255,0.12);border-radius:16px;padding:28px;backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.2);">
+              <form id="enquiryForm" novalidate>
+                <div class="row g-3">
+                  <div class="col-12">
+                    <input type="text" id="enqName" name="name" class="form-control" placeholder="Full Name" required>
+                  </div>
+                  <div class="col-md-6">
+                    <input type="tel" id="enqPhone" name="phone" class="form-control" placeholder="Mobile Number" required>
+                  </div>
+                  <div class="col-md-6">
+                    <input type="email" id="enqEmail" name="email" class="form-control" placeholder="Email (optional)">
+                  </div>
+                  <div class="col-12">
+                    <select id="enqInterest" name="interest" class="form-select">
+                      <option value="membership">Membership Enquiry</option>
+                      <option value="court_rental">Court Booking</option>
+                      <option value="coaching">Coaching Academy</option>
+                      <option value="corporate">Corporate Package</option>
+                      <option value="general">General Enquiry</option>
+                    </select>
+                  </div>
+                  <div class="col-12">
+                    <button type="submit" class="btn-white w-100 py-2" id="enqSubmitBtn">
+                      <span id="enqSpinner" class="spinner-border spinner-border-sm d-none me-2"></span>
+                      Send Enquiry
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Footer ─────────────────────────────────────────────────────────────── -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="row g-4 mb-4">
+        <div class="col-lg-4">
+          <div class="d-flex align-items-center gap-2 mb-12">
+            <div class="nav-brand-icon" style="width:32px;height:32px;font-size:1rem;"><i class="bi bi-trophy-fill"></i></div>
+            <span class="footer-brand-text">The Champions Club</span>
+          </div>
+          <p style="font-size:0.83rem;color:rgba(255,255,255,0.5);line-height:1.7;margin-top:14px;max-width:280px;">
+            Premier sports and recreation facility in Ahmedabad. Committed to excellence in sport, fitness, and community.
+          </p>
+        </div>
+        <div class="col-6 col-lg-2">
+          <div class="footer-heading">Facilities</div>
+          <div class="d-flex flex-column gap-2">
+            <a href="#facilities" class="footer-link">Tennis Courts</a>
+            <a href="#facilities" class="footer-link">Badminton Courts</a>
+            <a href="#facilities" class="footer-link">Cricket Turf</a>
+            <a href="#facilities" class="footer-link">Pickleball Arena</a>
+          </div>
+        </div>
+        <div class="col-6 col-lg-2">
+          <div class="footer-heading">Membership</div>
+          <div class="d-flex flex-column gap-2">
+            <a href="#plans" class="footer-link">Platinum Plan</a>
+            <a href="#plans" class="footer-link">Gold Plan</a>
+            <a href="#plans" class="footer-link">Silver Plan</a>
+            <a href="#plans" class="footer-link">Junior Plan</a>
+          </div>
+        </div>
+        <div class="col-6 col-lg-2">
+          <div class="footer-heading">Services</div>
+          <div class="d-flex flex-column gap-2">
+            <a href="/shared/login.html" class="footer-link">Online Booking</a>
+            <a href="/shared/login.html" class="footer-link">Pro Shop</a>
+            <a href="/shared/login.html" class="footer-link">Coaching</a>
+            <a href="/shared/login.html" class="footer-link">Bar &amp; Cafe</a>
+          </div>
+        </div>
+        <div class="col-6 col-lg-2">
+          <div class="footer-heading">Connect</div>
+          <div class="d-flex flex-column gap-2">
+            <a href="#enquiry" class="footer-link">Contact Us</a>
+            <a href="/shared/login.html" class="footer-link">Member Portal</a>
+            <a href="tel:+917969696969" class="footer-link">+91 79 6969 6969</a>
+          </div>
+        </div>
+      </div>
+      <div class="border-top pt-4 d-flex flex-wrap justify-content-between align-items-center gap-3" style="border-color:rgba(255,255,255,0.08)!important;">
+        <div style="font-size:0.78rem;color:rgba(255,255,255,0.35);">
+          &copy; 2026 The Champions Club. All rights reserved. GST Reg: 24ABCDE1234F1Z5
+        </div>
+        <div class="d-flex gap-3">
+          <a href="/shared/login.html" class="footer-link">Sign In</a>
+          <span style="color:rgba(255,255,255,0.2);">|</span>
+          <a href="#home" class="footer-link">Back to Top</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/utils.js"></script>
+  <script src="/js/ui.js"></script>
   <script>
-    window.location.href = '/shared/login.html';
+    // ── Sticky Navbar ──────────────────────────────────────────────────────
+    const mainNav = document.getElementById('mainNav');
+    window.addEventListener('scroll', () => {
+      mainNav.classList.toggle('scrolled', window.scrollY > 60);
+    });
+
+    // ── Live Plans ─────────────────────────────────────────────────────────
+    async function loadLivePlans() {
+      const container = document.getElementById('plansContainer');
+      try {
+        const plans = await api.get('/api/plans');
+        if (!plans || !plans.length) {
+          container.innerHTML = '<div class="col-12 text-center text-muted py-4">No plans available at this time.</div>';
+          return;
+        }
+
+        const sorted = [...plans].sort((a, b) => b.annual_fee - a.annual_fee);
+        const featuredCode = 'PLATINUM';
+
+        container.innerHTML = sorted.map(p => {
+          const featured = p.code === featuredCode;
+          return `
+            <div class="col-md-6 col-lg-3">
+              <div class="pricing-card ${featured ? 'featured' : ''}">
+                ${featured ? '<div class="featured-badge">Most Popular</div>' : ''}
+                <div class="pricing-plan-name">${utils.escapeHtml(p.name)}</div>
+                <div class="pricing-amount">
+                  <span>₹</span>${((Number(p.annual_fee) || 0) / 1000).toFixed(0)}K
+                </div>
+                <div class="pricing-period">per year · ${p.duration_months || 12} months</div>
+                <ul class="pricing-features">
+                  <li><i class="bi bi-check-circle-fill"></i>${p.court_discount_pct}% court rate discount</li>
+                  <li><i class="bi bi-check-circle-fill"></i>${p.shop_discount_pct}% pro shop discount</li>
+                  <li><i class="bi bi-check-circle-fill"></i>${p.bar_discount_pct}% bar &amp; cafe discount</li>
+                  <li><i class="bi bi-check-circle-fill"></i>Up to ${p.max_bookings_per_day} sessions / day</li>
+                  <li><i class="bi bi-check-circle-fill"></i>Online booking access</li>
+                  ${featured ? '<li><i class="bi bi-check-circle-fill"></i>Priority slot access</li>' : ''}
+                </ul>
+                <a href="/shared/login.html" class="${featured ? 'btn-green' : 'btn btn-outline-secondary'} w-100 d-block text-center py-2">
+                  ${featured ? 'Get Started' : 'Select Plan'}
+                </a>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (e) {
+        container.innerHTML = `
+          <div class="col-12 text-center py-4">
+            <div class="pricing-card">
+              <div class="pricing-plan-name">Silver</div>
+              <div class="pricing-amount"><span>₹</span>12K</div>
+              <div class="pricing-period">per year</div>
+              <ul class="pricing-features">
+                <li><i class="bi bi-check-circle-fill"></i>10% court discount</li>
+                <li><i class="bi bi-check-circle-fill"></i>5% shop discount</li>
+                <li><i class="bi bi-check-circle-fill"></i>2 sessions / day</li>
+              </ul>
+              <a href="/shared/login.html" class="btn btn-outline-secondary w-100">Contact Us for Pricing</a>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    // ── Live Stats ──────────────────────────────────────────────────────────
+    async function loadHeroStats() {
+      try {
+        const data = await api.get('/api/reports/dashboard');
+        if (data.activeMembers) {
+          document.getElementById('heroStatMembers').textContent = data.activeMembers + '+';
+        }
+      } catch (e) { /* use static fallback */ }
+    }
+
+    // ── Hero Lead Form ──────────────────────────────────────────────────────
+    document.getElementById('heroLeadForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const btn = document.getElementById('leadSubmitBtn');
+      const sp = document.getElementById('leadSpinner');
+
+      btn.disabled = true;
+      sp.classList.remove('d-none');
+
+      try {
+        await api.post('/api/leads', {
+          name: form.name.value.trim(),
+          phone: form.phone.value.trim(),
+          interest: form.interest.value,
+          source: 'website_hero'
+        });
+        ui.toast('Thank you! We will contact you shortly.', 'success');
+        form.reset();
+      } catch (err) {
+        ui.toast(err.message || 'Failed to submit. Please call us directly.', 'error');
+      } finally {
+        btn.disabled = false;
+        sp.classList.add('d-none');
+      }
+    });
+
+    // ── Enquiry Form ────────────────────────────────────────────────────────
+    document.getElementById('enquiryForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const btn = document.getElementById('enqSubmitBtn');
+      const sp = document.getElementById('enqSpinner');
+
+      btn.disabled = true;
+      sp.classList.remove('d-none');
+
+      try {
+        await api.post('/api/leads', {
+          name: form.name.value.trim(),
+          phone: form.phone.value.trim(),
+          email: form.email.value.trim() || undefined,
+          interest: form.interest.value,
+          source: 'website_enquiry'
+        });
+        ui.toast('Enquiry received! Our team will reach out within 24 hours.', 'success');
+        form.reset();
+      } catch (err) {
+        ui.toast(err.message || 'Failed to submit. Please call us directly.', 'error');
+      } finally {
+        btn.disabled = false;
+        sp.classList.add('d-none');
+      }
+    });
+
+    // ── Smooth scroll for anchors ────────────────────────────────────────────
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', (e) => {
+        const target = document.querySelector(anchor.getAttribute('href'));
+        if (target) {
+          e.preventDefault();
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+
+    // ── Init ─────────────────────────────────────────────────────────────────
+    loadLivePlans();
+    loadHeroStats();
   </script>
 </body>
 </html>

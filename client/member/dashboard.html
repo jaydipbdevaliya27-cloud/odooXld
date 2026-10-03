@@ -1,266 +1,387 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Dashboard – Champions Club</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Member Overview – The Champions Club</title>
+  <meta name="description" content="Your Champions Club member dashboard – membership status, upcoming court reservations, and quick actions.">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  <link rel="stylesheet" href="/css/main.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="../css/main.css">
   <style>
-    .dash-prod-card {
-      background: #fff;
-      border-radius: 12px;
-      border: 1px solid #e2e8f0;
+    .member-card-hero {
+      background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+      color: white;
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      position: relative;
       overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: var(--shadow-lg);
     }
-    .dash-prod-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    .member-card-hero::after {
+      content: '';
+      position: absolute;
+      top: -60px;
+      right: -60px;
+      width: 240px;
+      height: 240px;
+      background: radial-gradient(circle, rgba(15, 118, 110, 0.4) 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
     }
-    .dash-prod-img {
-      height: 140px;
-      background: #f8fafc;
-      overflow: hidden;
+    .quick-action-tile {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1.35rem 1.25rem;
+      text-align: center;
+      transition: all 0.2s var(--ease);
+      color: var(--text);
+      text-decoration: none;
+      display: block;
+      box-shadow: var(--shadow-sm);
+    }
+    .quick-action-tile:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      color: var(--accent);
+    }
+    .tile-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: var(--radius-md);
       display: flex;
       align-items: center;
       justify-content: center;
+      font-size: 1.3rem;
+      margin: 0 auto 12px;
     }
-    .dash-prod-img img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
+    .plan-badge-pill {
+      display: inline-block;
+      padding: 4px 14px;
+      border-radius: 100px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
     }
   </style>
 </head>
 <body>
-<div class="cc-wrapper">
-  <nav class="cc-sidebar d-flex flex-column justify-content-between">
-    <div>
-      <div class="brand"><i class="bi bi-trophy-fill me-2 text-warning"></i>Champions Club</div>
-      <ul class="nav flex-column mt-2">
-        <li><a href="/member/dashboard.html"  class="nav-link active"><i class="bi bi-house"></i>My Dashboard</a></li>
-        <li><a href="/member/membership.html" class="nav-link"><i class="bi bi-stars"></i>Membership Plans</a></li>
-        <li><a href="/member/shop.html"       class="nav-link"><i class="bi bi-shop"></i>Browse Products</a></li>
-        <li><a href="/member/cafeteria.html"  class="nav-link"><i class="bi bi-cup-hot"></i>Cafeteria & Bar</a></li>
-        <li><a href="/member/book.html"       class="nav-link"><i class="bi bi-calendar-plus"></i>Book a Court</a></li>
-        <li><a href="/member/bookings.html"   class="nav-link"><i class="bi bi-calendar-check"></i>My Bookings</a></li>
-      </ul>
-    </div>
-    <div class="p-3 border-top border-secondary border-opacity-25">
-      <div class="d-flex align-items-center gap-2 mb-2 p-2 rounded" style="background:rgba(255,255,255,0.08);">
-        <div class="rounded-circle bg-warning text-dark fw-bold d-flex align-items-center justify-content-center" style="width:32px; height:32px; font-size:0.85rem;" id="userInitial">
-          M
-        </div>
-        <div class="overflow-hidden">
-          <span id="userNameSidebar" class="fw-semibold text-white d-block text-truncate small" style="max-width:140px;">Member</span>
-          <span id="userPlanSidebar" class="badge bg-warning text-dark py-0 px-1" style="font-size:0.68rem;">Member</span>
+  <div id="app-shell"></div>
+
+  <main class="content-container">
+    <!-- Member Dashboard Topbar -->
+    <div class="app-topbar">
+      <div class="d-flex align-items-center gap-3">
+        <button class="icon-btn d-lg-none" id="sidebar-toggle-btn" aria-label="Toggle Navigation">
+          <i class="bi bi-list fs-5"></i>
+        </button>
+        <div class="breadcrumb-block">
+          <div class="breadcrumb-crumbs">
+            <a href="/member/dashboard.html">Champions Club</a>
+            <span>/</span>
+            <span>My Overview</span>
+          </div>
+          <h2 class="page-title">Member Overview</h2>
         </div>
       </div>
-      <button id="logoutBtn" class="btn btn-sm btn-outline-light w-100"><i class="bi bi-box-arrow-right me-1"></i>Logout</button>
-    </div>
-  </nav>
-
-  <div class="d-flex flex-column flex-grow-1">
-    <div class="cc-topbar">
-      <h5 class="page-title" id="welcomeTitle">Welcome!</h5>
-      <a href="/member/shop.html" class="btn btn-cc btn-sm"><i class="bi bi-shop me-1"></i>Pro Shop Catalog</a>
+      <div class="topbar-actions">
+        <button class="icon-btn" id="theme-toggle-btn" title="Toggle Theme" aria-label="Toggle Theme">
+          <i class="bi bi-moon-stars-fill"></i>
+        </button>
+      </div>
     </div>
 
-    <main class="cc-main">
-      <!-- Membership Card -->
-      <div class="row g-3 mb-4">
-        <div class="col-lg-5">
-          <div class="cc-card h-100" style="background: linear-gradient(135deg, var(--cc-green) 0%, var(--cc-green-dark) 100%); color:#fff">
-            <div class="d-flex justify-content-between align-items-start mb-3">
-              <div>
-                <p class="mb-0 small opacity-75">Member Code</p>
-                <h5 id="memberCode" class="mb-0 fw-bold">—</h5>
-              </div>
-              <i class="bi bi-trophy-fill text-warning fs-2"></i>
-            </div>
-            <h4 id="memberName" class="mb-1">—</h4>
-            <p id="planName" class="mb-3 opacity-75">—</p>
-            <div class="d-flex gap-4">
-              <div>
-                <p class="mb-0 small opacity-75">Joined</p>
-                <p id="joinDate" class="mb-0 fw-semibold">—</p>
-              </div>
-              <div>
-                <p class="mb-0 small opacity-75">Expires</p>
-                <p id="expiryDate" class="mb-0 fw-semibold">—</p>
-              </div>
-              <div>
-                <p class="mb-0 small opacity-75">Status</p>
-                <p id="memberStatus" class="mb-0 fw-semibold">—</p>
+    <!-- Digital Membership Card -->
+    <div class="member-card-hero mb-4">
+      <div class="row align-items-center g-4">
+        <div class="col-lg-8">
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="user-avatar" style="width:56px;height:56px;font-size:1.25rem;" id="memberAvatar">CC</div>
+            <div>
+              <h3 class="fw-bold mb-0" id="memberName">Loading…</h3>
+              <div class="d-flex gap-2 align-items-center mt-1 flex-wrap">
+                <span class="plan-badge-pill bg-white bg-opacity-15 text-white" id="memberPlanTier">Plan</span>
+                <code class="small opacity-75" id="memberCode">CC-0000</code>
               </div>
             </div>
           </div>
-        </div>
-
-        <!-- Discount info -->
-        <div class="col-lg-7">
-          <div class="cc-card h-100">
-            <h6 class="fw-bold mb-3"><i class="bi bi-percent me-2 text-cc"></i>My Membership Benefits</h6>
-            <div class="row g-3" id="benefitsRow">
-              <div class="col-12 text-muted">Loading benefits…</div>
+          <div class="row g-3 mt-1">
+            <div class="col-6 col-sm-4">
+              <div class="small opacity-60 mb-1">Membership Status</div>
+              <span id="memberStatusBadge" class="status-chip success"><span class="dot"></span>Active</span>
+            </div>
+            <div class="col-6 col-sm-4">
+              <div class="small opacity-60 mb-1">Valid Through</div>
+              <span class="fw-semibold mono" id="memberExpiryDate">--/--/----</span>
+            </div>
+            <div class="col-6 col-sm-4">
+              <div class="small opacity-60 mb-1">Daily Court Limit</div>
+              <span class="fw-semibold mono" id="memberMaxBookings">2 / day</span>
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- Quick Pro Shop Catalog Preview -->
-      <div class="cc-card mb-4">
-        <div class="cc-card-header d-flex justify-content-between align-items-center">
-          <h5><i class="bi bi-shop me-2 text-cc"></i>Featured Pro Shop Gear & Member Discounts</h5>
-          <a href="/member/shop.html" class="btn btn-cc btn-sm">Browse All Products &rarr;</a>
-        </div>
-        <div class="row g-3 mt-1" id="dashProductsGrid">
-          <div class="col-12 text-center py-3 text-muted">Loading available sports gear...</div>
+        <div class="col-lg-4 text-lg-end d-flex flex-column gap-2 align-items-lg-end">
+          <a href="book.html" class="btn btn-accent px-4 py-2">
+            <i class="bi bi-calendar-plus me-2"></i>Book a Court
+          </a>
+          <a href="membership.html" class="btn btn-sm btn-outline-custom border-secondary border-opacity-40 text-white">
+            <i class="bi bi-arrow-repeat me-1"></i>Renew Membership
+          </a>
         </div>
       </div>
+    </div>
 
-      <!-- Quick action: book court -->
-      <div class="cc-card mb-3">
-        <div class="cc-card-header">
-          <h5><i class="bi bi-calendar-plus me-2 text-cc"></i>Quick Book</h5>
-          <a href="/member/book.html" class="btn btn-cc btn-sm">Go to Booking Page</a>
-        </div>
-        <p class="text-muted mb-0">Select a court and date on the booking page to see available slots and confirm your session.</p>
-      </div>
-
-      <!-- Recent bookings -->
-      <div class="cc-card">
-        <div class="cc-card-header">
-          <h5><i class="bi bi-clock-history me-2 text-cc"></i>Recent Bookings</h5>
-          <a href="/member/bookings.html" class="btn btn-sm btn-outline-secondary">View All</a>
-        </div>
-        <div class="table-responsive">
-          <table class="table table-hover mb-0" id="recentTable">
-            <thead><tr><th>Court</th><th>Date</th><th>Time</th><th>Amount</th><th>Status</th></tr></thead>
-            <tbody><tr><td colspan="5" class="text-center text-muted py-3">Loading…</td></tr></tbody>
-          </table>
+    <!-- Quick Stats -->
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-lg-3">
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <div class="stat-icon-tile accent"><i class="bi bi-calendar-check-fill"></i></div>
+            <div class="stat-meta">
+              <div class="stat-label">Upcoming Sessions</div>
+              <div class="stat-value" id="statUpcoming">—</div>
+            </div>
+          </div>
+          <div class="stat-divider text-muted"><i class="bi bi-clock"></i> This week</div>
         </div>
       </div>
-    </main>
-  </div>
-</div>
-
-<div id="alert-bar"></div>
-<script src="/js/api.js"></script>
-<script src="/js/utils.js"></script>
-<script>
-(async () => {
-  const user = await loadSession();
-  if (!user) return;
-
-  document.getElementById('userNameSidebar').textContent = user.full_name;
-  document.getElementById('welcomeTitle').textContent    = `Welcome back, ${user.full_name.split(' ')[0]}!`;
-
-  let memberDiscountPct = 0;
-
-  // Load member profile
-  try {
-    const member = await api.get('/api/members/me');
-    if (member) {
-      memberDiscountPct = Number(member.shop_discount_pct) || 0;
-      document.getElementById('memberCode').textContent   = member.member_code;
-      document.getElementById('memberName').textContent   = member.full_name || user.full_name;
-      document.getElementById('planName').textContent     = member.plan_name;
-      document.getElementById('joinDate').textContent     = fmtDate(member.join_date);
-      document.getElementById('expiryDate').textContent   = fmtDate(member.expiry_date);
-      document.getElementById('memberStatus').textContent = member.status.toUpperCase();
-
-      // Benefits
-      document.getElementById('benefitsRow').innerHTML = `
-        <div class="col-md-4">
-          <div class="text-center p-3 rounded" style="background:#f5f7f5">
-            <div class="fs-2 fw-bold text-cc">${member.court_discount_pct}%</div>
-            <div class="small text-muted">Court Discount</div>
+      <div class="col-6 col-lg-3">
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <div class="stat-icon-tile success"><i class="bi bi-trophy-fill"></i></div>
+            <div class="stat-meta">
+              <div class="stat-label">Total Sessions</div>
+              <div class="stat-value" id="statTotal">—</div>
+            </div>
           </div>
+          <div class="stat-divider text-muted"><i class="bi bi-bar-chart"></i> All time</div>
         </div>
-        <div class="col-md-4">
-          <div class="text-center p-3 rounded" style="background:#f5f7f5">
-            <div class="fs-2 fw-bold text-cc">${member.shop_discount_pct}%</div>
-            <div class="small text-muted">Shop Discount</div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <div class="stat-icon-tile warning"><i class="bi bi-hourglass-split"></i></div>
+            <div class="stat-meta">
+              <div class="stat-label">Days Remaining</div>
+              <div class="stat-value" id="statDaysLeft">—</div>
+            </div>
           </div>
+          <div class="stat-divider text-warning"><i class="bi bi-bell"></i> Membership</div>
         </div>
-        <div class="col-md-4">
-          <div class="text-center p-3 rounded" style="background:#f5f7f5">
-            <div class="fs-2 fw-bold text-cc">${member.bar_discount_pct}%</div>
-            <div class="small text-muted">Bar Discount</div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <div class="stat-icon-tile info"><i class="bi bi-bag-check-fill"></i></div>
+            <div class="stat-meta">
+              <div class="stat-label">Shop Discount</div>
+              <div class="stat-value" id="statShopDisc">—</div>
+            </div>
           </div>
+          <div class="stat-divider text-muted"><i class="bi bi-tag"></i> Member perk</div>
         </div>
-        <div class="col-12">
-          <div class="p-3 rounded" style="background:#f5f7f5">
-            <i class="bi bi-calendar-check text-cc me-2"></i>
-            Up to <strong>${member.max_bookings_per_day}</strong> court bookings per day
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-md-3">
+        <a href="book.html" class="quick-action-tile">
+          <div class="tile-icon" style="background:var(--accent-soft);color:var(--accent);">
+            <i class="bi bi-calendar-check"></i>
           </div>
-        </div>`;
+          <span class="fw-semibold d-block mb-1">Reserve Court</span>
+          <small class="text-muted">Badminton, Tennis, Squash</small>
+        </a>
+      </div>
+      <div class="col-6 col-md-3">
+        <a href="bookings.html" class="quick-action-tile">
+          <div class="tile-icon" style="background:var(--info-soft);color:var(--info);">
+            <i class="bi bi-clock-history"></i>
+          </div>
+          <span class="fw-semibold d-block mb-1">My Bookings</span>
+          <small class="text-muted">View and cancel sessions</small>
+        </a>
+      </div>
+      <div class="col-6 col-md-3">
+        <a href="shop.html" class="quick-action-tile">
+          <div class="tile-icon" style="background:var(--success-soft);color:var(--success);">
+            <i class="bi bi-bag"></i>
+          </div>
+          <span class="fw-semibold d-block mb-1">Pro Shop</span>
+          <small class="text-muted" id="proShopPerkLabel">Exclusive discounts</small>
+        </a>
+      </div>
+      <div class="col-6 col-md-3">
+        <a href="cafeteria.html" class="quick-action-tile">
+          <div class="tile-icon" style="background:var(--warning-soft);color:#B87E0E;">
+            <i class="bi bi-cup-hot"></i>
+          </div>
+          <span class="fw-semibold d-block mb-1">Cafe &amp; Bar</span>
+          <small class="text-muted" id="cafePerkLabel">Healthy snacks &amp; shakes</small>
+        </a>
+      </div>
+    </div>
+
+    <!-- Upcoming Bookings Table -->
+    <div class="table-card">
+      <div class="table-card-header">
+        <div>
+          <h5 class="table-card-title"><i class="bi bi-calendar-week"></i> Upcoming Court Reservations</h5>
+          <p class="table-card-subtitle">Your confirmed sessions for this week and beyond</p>
+        </div>
+        <a href="book.html" class="btn btn-sm btn-outline-custom text-white border-light border-opacity-30">
+          <i class="bi bi-plus-lg me-1"></i>New Session
+        </a>
+      </div>
+
+      <div class="table-responsive">
+        <table class="cc-table" id="memberUpcomingBookingsTable">
+          <thead>
+            <tr>
+              <th>Booking Code</th>
+              <th>Court &amp; Sport</th>
+              <th>Date</th>
+              <th>Time Slot</th>
+              <th>Fee</th>
+              <th>Status</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="upcomingTableBody">
+            <tr><td colspan="7" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading your reservations…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-footer">
+        <span class="text-muted small" id="bookingsFooterNote">Showing upcoming reservations</span>
+        <a href="bookings.html" class="btn btn-sm btn-outline-custom">View All Bookings</a>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/shell.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadMemberProfile();
+      await loadUpcomingBookings();
+    });
+
+    async function loadMemberProfile() {
+      try {
+        const res = await api.get('/api/members/me/profile');
+        const m = res.data || res;
+        if (!m) return;
+
+        const name = m.name || m.full_name || 'Member';
+        document.getElementById('memberName').textContent = name;
+        document.getElementById('memberAvatar').textContent = utils.initials(name);
+        document.getElementById('memberCode').textContent = m.member_code || '—';
+        document.getElementById('memberPlanTier').textContent = m.plan_name || 'Standard';
+        document.getElementById('memberExpiryDate').textContent = utils.formatDate(m.expiry_date);
+        document.getElementById('memberMaxBookings').textContent = `${m.max_bookings_per_day || 2} / day`;
+
+        // Status badge
+        const isExpired = m.status === 'expired' || (m.expiry_date && new Date(m.expiry_date) < new Date());
+        const badge = document.getElementById('memberStatusBadge');
+        if (isExpired) {
+          badge.className = 'status-chip danger';
+          badge.innerHTML = '<span class="dot"></span>Expired';
+        } else {
+          badge.className = 'status-chip success';
+          badge.innerHTML = '<span class="dot"></span>Active';
+        }
+
+        // Days left
+        const daysLeft = m.expiry_date ? Math.max(0, Math.ceil((new Date(m.expiry_date) - new Date()) / 86400000)) : 0;
+        document.getElementById('statDaysLeft').textContent = daysLeft;
+
+        // Discounts
+        const shopDisc = m.discount_pro_shop || m.shop_discount_pct || 0;
+        document.getElementById('statShopDisc').textContent = `${shopDisc}%`;
+        if (shopDisc > 0) {
+          document.getElementById('proShopPerkLabel').textContent = `${shopDisc}% Member Perk`;
+        }
+        const barDisc = m.discount_bar || m.bar_discount_pct || 0;
+        if (barDisc > 0) {
+          document.getElementById('cafePerkLabel').textContent = `${barDisc}% F&B Perk`;
+        }
+      } catch (err) {
+        console.error('Failed to load profile:', err);
+      }
     }
-  } catch(e) { /* member data not critical */ }
 
-  // Load featured products
-  try {
-    const prods = await api.get('/api/products?dept=shop');
-    const pGrid = document.getElementById('dashProductsGrid');
-    if (Array.isArray(prods) && prods.length) {
-      pGrid.innerHTML = prods.slice(0, 4).map(p => {
-        const discPrice = memberDiscountPct > 0 ? (p.price * (1 - memberDiscountPct / 100)) : p.price;
-        const mainImg = p.image_url || ((p.images && p.images[0]) ? p.images[0] : 'https://images.unsplash.com/photo-1617083934555-563d309be04e?w=400');
-        return `
-          <div class="col-md-6 col-lg-3">
-            <div class="dash-prod-card">
-              <div class="dash-prod-img">
-                <img src="${escHtml(mainImg)}" alt="${escHtml(p.name)}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=400'">
-              </div>
-              <div class="p-3 d-flex flex-column flex-grow-1">
-                <span class="badge bg-light text-dark border align-self-start mb-1" style="font-size:0.7rem;">${escHtml(p.category || 'Gear')}</span>
-                <h6 class="fw-bold mb-1 text-truncate" title="${escHtml(p.name)}">${escHtml(p.name)}</h6>
-                <div class="mt-auto pt-2 d-flex justify-content-between align-items-center">
-                  <div>
-                    <span class="fw-bold text-success">${fmtINR(discPrice)}</span>
-                    ${memberDiscountPct > 0 ? `<span class="small text-muted text-decoration-line-through ms-1">${fmtINR(p.price)}</span>` : ''}
-                  </div>
-                  <a href="/member/shop.html" class="btn btn-sm btn-outline-success">Buy</a>
-                </div>
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
-    } else {
-      pGrid.innerHTML = `<div class="col-12 text-center py-3 text-muted">No products listed in catalog yet.</div>`;
+    async function loadUpcomingBookings() {
+      const tbody = document.getElementById('upcomingTableBody');
+      try {
+        const res = await api.get('/api/bookings/my', { limit: 8, status: 'confirmed' });
+        const bookings = res.data || res.bookings || res || [];
+
+        document.getElementById('statUpcoming').textContent = bookings.length;
+
+        // Load total too
+        try {
+          const totalRes = await api.get('/api/bookings/my', { limit: 1 });
+          document.getElementById('statTotal').textContent = totalRes.total || totalRes.data?.length || bookings.length;
+        } catch(e) { document.getElementById('statTotal').textContent = bookings.length; }
+
+        if (!bookings.length) {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted"><i class="bi bi-calendar-x fs-2 d-block mb-2 opacity-50"></i>No upcoming reservations. Book a court to get started.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = bookings.map(b => `
+          <tr>
+            <td><code class="mono fw-bold small">${utils.escapeHtml(b.booking_code || '')}</code></td>
+            <td>
+              <div class="fw-semibold">${utils.escapeHtml(b.court_name || '—')}</div>
+              <small class="text-muted">${utils.escapeHtml(b.sport || '')}</small>
+            </td>
+            <td><i class="bi bi-calendar-event me-1 text-muted"></i>${utils.formatDate(b.booking_date)}</td>
+            <td class="mono text-accent fw-semibold small">
+              <i class="bi bi-clock me-1 opacity-75"></i>${utils.formatTime(b.start_time)} – ${utils.formatTime(b.end_time)}
+            </td>
+            <td class="mono">${utils.formatINR(b.total_fee || b.amount_paid || 0)}</td>
+            <td>${utils.statusChip(b.status)}</td>
+            <td class="text-end">
+              ${b.status === 'confirmed' ? `
+                <button class="btn btn-sm btn-outline-custom" onclick="cancelMyBooking(${b.id})" title="Cancel this reservation">
+                  <i class="bi bi-calendar-x"></i> Cancel
+                </button>
+              ` : '<span class="text-muted small">—</span>'}
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger"><i class="bi bi-exclamation-triangle me-2"></i>${utils.escapeHtml(err.message)}</td></tr>`;
+      }
     }
-  } catch {}
 
-  // Load recent bookings
-  try {
-    const bookings = await api.get('/api/bookings');
-    const tbody    = document.querySelector('#recentTable tbody');
-    const recent   = bookings.slice(0, 5);
-    if (!recent.length) {
-      tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">No bookings yet. <a href="/member/book.html">Book a court!</a></td></tr>';
-    } else {
-      tbody.innerHTML = recent.map(b => `
-        <tr>
-          <td>${escHtml(b.court_name)} <small class="text-muted">(${escHtml(b.sport)})</small></td>
-          <td>${fmtDate(b.booking_date)}</td>
-          <td>${String(b.start_time).slice(0,5)} – ${String(b.end_time).slice(0,5)}</td>
-          <td>${fmtINR(b.price_charged)}</td>
-          <td>${statusBadge(b.status)}</td>
-        </tr>`).join('');
+    async function cancelMyBooking(id) {
+      const confirmed = await ui.confirmDialog({
+        title: 'Cancel Court Reservation',
+        message: 'Are you sure you want to cancel this booking? Cancellations up to 2 hours prior to start time receive a full refund.',
+        confirmText: 'Cancel Booking',
+        danger: true
+      });
+      if (!confirmed) return;
+
+      try {
+        await api.del(`/api/bookings/${id}`, { reason: 'Member online cancellation' });
+        ui.toast('Reservation cancelled successfully', 'success');
+        loadUpcomingBookings();
+      } catch (err) {
+        ui.toast(err.message || 'Failed to cancel reservation', 'error');
+      }
     }
-  } catch { }
-
-  document.getElementById('logoutBtn').addEventListener('click', async () => {
-    await api.post('/api/auth/logout');
-    window.location.href = '/shared/login.html';
-  });
-})();
-</script>
+  </script>
 </body>
 </html>

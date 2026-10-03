@@ -3,9 +3,9 @@
  * @description Product + variant routes using cc_products / cc_product_variants.
  */
 const express = require('express');
-const db      = require('../db');
+const db = require('../db');
 const { requireLogin, requireRole } = require('../middleware/auth');
-const router  = express.Router();
+const router = express.Router();
 
 function parseImages(image_url) {
   if (!image_url) return [];
@@ -22,9 +22,9 @@ router.get('/', async (req, res, next) => {
     const { dept, category, low_stock, search } = req.query;
     let sql = 'SELECT * FROM cc_products WHERE is_active = 1';
     const params = [];
-    if (dept)      { sql += ' AND department = ?'; params.push(dept); }
-    if (category)  { sql += ' AND category = ?';   params.push(category); }
-    if (search)    { sql += ' AND (name LIKE ? OR sku LIKE ?)'; params.push(`%${search}%`, `%${search}%`); }
+    if (dept) { sql += ' AND department = ?'; params.push(dept); }
+    if (category) { sql += ' AND category = ?'; params.push(category); }
+    if (search) { sql += ' AND (name LIKE ? OR sku LIKE ?)'; params.push(`%${search}%`, `%${search}%`); }
     if (low_stock === 'true' || low_stock === '1')
       sql += ' AND track_stock=1 AND stock_qty <= reorder_level';
     sql += ' ORDER BY department, category, name';
@@ -43,9 +43,9 @@ router.get('/', async (req, res, next) => {
 
     const formatted = rows.map(r => ({
       ...r,
-      images:       parseImages(r.image_url),
+      images: parseImages(r.image_url),
       is_low_stock: r.track_stock ? (r.stock_qty <= (r.reorder_level || 5)) : false,
-      variants:     variantMap[r.id] || []
+      variants: variantMap[r.id] || []
     }));
     res.json(formatted);
   } catch (err) { next(err); }
@@ -66,8 +66,10 @@ router.get('/:id', async (req, res, next) => {
     if (!rows.length) return res.status(404).json({ error: 'Product not found' });
     const r = rows[0];
     const [vars] = await db.query('SELECT * FROM cc_product_variants WHERE product_id=? AND is_active=1 ORDER BY variant_name', [r.id]);
-    res.json({ ...r, images: parseImages(r.image_url), variants: vars,
-               is_low_stock: r.track_stock ? (r.stock_qty <= (r.reorder_level || 5)) : false });
+    res.json({
+      ...r, images: parseImages(r.image_url), variants: vars,
+      is_low_stock: r.track_stock ? (r.stock_qty <= (r.reorder_level || 5)) : false
+    });
   } catch (err) { next(err); }
 });
 
@@ -75,7 +77,7 @@ router.get('/:id', async (req, res, next) => {
 router.post('/', requireLogin, requireRole('owner', 'staff'), async (req, res, next) => {
   try {
     let { sku, name, department, category, price, cost_price,
-          track_stock, stock_qty, reorder_level, image_url, images, description, variants } = req.body;
+      track_stock, stock_qty, reorder_level, image_url, images, description, variants } = req.body;
     if (!sku || !name || !department || !category || price == null)
       return res.status(400).json({ error: 'sku, name, department, category, price are required' });
 
@@ -91,7 +93,7 @@ router.post('/', requireLogin, requireRole('owner', 'staff'), async (req, res, n
       `INSERT INTO cc_products (sku,name,department,category,price,cost_price,track_stock,stock_qty,reorder_level,image_url,description)
        VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
       [sku, name, department, category, price, cost_price || 0,
-       track_stock ?? 1, stock_qty || 0, reorder_level || 5, image_url || null, description || null]
+        track_stock ?? 1, stock_qty || 0, reorder_level || 5, image_url || null, description || null]
     );
     const productId = result.insertId;
 
@@ -101,8 +103,8 @@ router.post('/', requireLogin, requireRole('owner', 'staff'), async (req, res, n
         if (!v.variant_name) continue;
         await db.query(
           `INSERT INTO cc_product_variants (product_id,variant_name,sku_suffix,price_offset,stock_qty,reorder_level) VALUES (?,?,?,?,?,?)`,
-          [productId, v.variant_name, v.sku_suffix || v.variant_name.replace(/\s+/g,'').slice(0,10),
-           v.price_offset || 0, v.stock_qty || 0, v.reorder_level || 3]
+          [productId, v.variant_name, v.sku_suffix || v.variant_name.replace(/\s+/g, '').slice(0, 10),
+            v.price_offset || 0, v.stock_qty || 0, v.reorder_level || 3]
         );
       }
     }
@@ -117,7 +119,7 @@ router.post('/', requireLogin, requireRole('owner', 'staff'), async (req, res, n
 router.put('/:id', requireLogin, requireRole('owner', 'staff'), async (req, res, next) => {
   try {
     let { sku, name, department, category, price, cost_price,
-          track_stock, stock_qty, reorder_level, image_url, images, description, is_active, variants } = req.body;
+      track_stock, stock_qty, reorder_level, image_url, images, description, is_active, variants } = req.body;
     if (Array.isArray(images) && images.length > 0) image_url = JSON.stringify(images);
 
     // If variants array is provided, sync variants
@@ -132,8 +134,8 @@ router.put('/:id', requireLogin, requireRole('owner', 'staff'), async (req, res,
           `INSERT INTO cc_product_variants (product_id,variant_name,sku_suffix,price_offset,stock_qty,reorder_level,is_active)
            VALUES (?,?,?,?,?,?,1)
            ON DUPLICATE KEY UPDATE variant_name=VALUES(variant_name), stock_qty=VALUES(stock_qty), reorder_level=VALUES(reorder_level), is_active=1`,
-          [req.params.id, v.variant_name, v.sku_suffix || v.variant_name.replace(/\s+/g,'').slice(0,10),
-           v.price_offset || 0, v.stock_qty || 0, v.reorder_level || 3]
+          [req.params.id, v.variant_name, v.sku_suffix || v.variant_name.replace(/\s+/g, '').slice(0, 10),
+          v.price_offset || 0, v.stock_qty || 0, v.reorder_level || 3]
         );
       }
       if (variants.length > 0 && varTotal > 0) stock_qty = varTotal;
@@ -144,8 +146,8 @@ router.put('/:id', requireLogin, requireRole('owner', 'staff'), async (req, res,
               track_stock=?,stock_qty=?,reorder_level=?,image_url=?,description=?,is_active=?
         WHERE id=?`,
       [sku, name, department, category, price, cost_price || 0,
-       track_stock ?? 1, stock_qty, reorder_level, image_url || null, description || null,
-       is_active ?? 1, req.params.id]
+        track_stock ?? 1, stock_qty, reorder_level, image_url || null, description || null,
+        is_active ?? 1, req.params.id]
     );
 
     const [rows] = await db.query('SELECT * FROM cc_products WHERE id = ?', [req.params.id]);
@@ -164,8 +166,8 @@ router.put('/:id/variant/:vid', requireLogin, requireRole('owner', 'staff'), asy
          reorder_level=COALESCE(?,reorder_level), variant_name=COALESCE(?,variant_name)
        WHERE id=? AND product_id=?`,
       [stock_qty != null ? stock_qty : null, price_offset != null ? price_offset : null,
-       reorder_level != null ? reorder_level : null, variant_name || null,
-       req.params.vid, req.params.id]
+      reorder_level != null ? reorder_level : null, variant_name || null,
+      req.params.vid, req.params.id]
     );
 
     // Re-calculate product total stock
@@ -188,8 +190,8 @@ router.post('/:id/variant', requireLogin, requireRole('owner', 'staff'), async (
     const [result] = await db.query(
       `INSERT INTO cc_product_variants (product_id,variant_name,sku_suffix,price_offset,stock_qty,reorder_level)
        VALUES (?,?,?,?,?,?)`,
-      [req.params.id, variant_name, sku_suffix || variant_name.replace(/\s+/g,'').slice(0,10),
-       price_offset || 0, stock_qty || 0, reorder_level || 3]
+      [req.params.id, variant_name, sku_suffix || variant_name.replace(/\s+/g, '').slice(0, 10),
+      price_offset || 0, stock_qty || 0, reorder_level || 3]
     );
 
     // Re-calculate product total stock

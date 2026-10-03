@@ -1,88 +1,146 @@
 /**
  * @file server/routes/reports.js
- * @description Owner dashboard report endpoints using cc_ tables.
+ * @description Owner Financial, Occupancy, P&L, and GST Analytics.
  */
-const express = require('express');
-const db      = require('../db');
-const { requireLogin, requireRole } = require('../middleware/auth');
-const router  = express.Router();
-router.use(requireLogin, requireRole('owner'));
 
-// ── GET /api/reports/summary ──────────────────────────────────────────────────
-router.get('/summary', async (req, res, next) => {
+const express = require('express');
+const db = require('../db');
+const { requireLogin, requireRole } = require('../middleware/auth');
+const { todayIST } = require('../utils/time');
+
+const router = express.Router();
+
+// ── GET /api/reports/dashboard ──────────────────────────────────────────────
+router.get('/dashboard', requireLogin, requireRole('owner', 'staff'), async (req, res, next) => {
   try {
-    const today = new Date().toISOString().slice(0, 10);
-    const [[rev]]   = await db.query(`SELECT IFNULL(SUM(amount),0) AS v FROM cc_payments WHERE DATE(paid_at)=? AND status='paid'`, [today]);
-    const [[bks]]   = await db.query(`SELECT COUNT(*) AS v FROM cc_bookings WHERE booking_date=? AND status='confirmed'`, [today]);
-    const [[mem]]   = await db.query(`SELECT COUNT(*) AS v FROM cc_members WHERE status='active'`);
-    const [[exp]]   = await db.query(`SELECT COUNT(*) AS v FROM cc_members WHERE status='active' AND expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(),INTERVAL 30 DAY)`);
-    const [[ls]]    = await db.query(`SELECT COUNT(*) AS v FROM cc_products WHERE is_active=1 AND track_stock=1 AND stock_qty<=reorder_level`);
-    const [[ord]]   = await db.query(`SELECT COUNT(*) AS v FROM cc_orders WHERE status='open'`);
-    const [[todayOrd]] = await db.query(`SELECT COUNT(*) AS v FROM cc_orders WHERE DATE(created_at)=?`, [today]);
-    const [[todayRev]] = await db.query(`SELECT IFNULL(SUM(amount),0) AS v FROM cc_payments WHERE DATE(paid_at)=? AND status='paid' AND source='shop'`, [today]);
-    const [[barRev]]   = await db.query(`SELECT IFNULL(SUM(amount),0) AS v FROM cc_payments WHERE DATE(paid_at)=? AND status='paid' AND source='bar'`, [today]);
+    const today = todayIST();
+
+    // Today's revenue
+    const [[{ todayRevenue }]] = await db.query(
+      `SELECT COALESCE(SUM(amount), 0) AS todayRevenue
+       FROM payments
+       WHERE DATE(paid_at) = ? AND status = 'paid'`,
+      [today]
+    );
+
+    // Active members
+    const [[{ activeMembers }]] = await db.query(
+      "SELECT COUNT(*) AS activeMembers FROM members WHERE status = 'active' AND expiry_date >= CURDATE()"
+    );
+
+    // Today's bookings
+    const [[{ todayBookings }]] = await db.query(
+      "SELECT COUNT(*) AS todayBookings FROM bookings WHERE booking_date = ? AND status != 'cancelled'",
+      [today]
+    );
+
+    // Expiring memberships in next 30 days
+    const [[{ expiring30d }]] = await db.query(
+      "SELECT COUNT(*) AS expiring30d FROM members WHERE status = 'active' AND expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)"
+    );
+
+    // Low stock items
+    const [[{ lowStockCount }]] = await db.query(
+      'SELECT COUNT(*) AS lowStockCount FROM products WHERE track_stock = 1 AND stock_qty <= reorder_level AND is_active = 1'
+    );
+
+    // Open orders
+    const [[{ openOrders }]] = await db.query(
+      "SELECT COUNT(*) AS openOrders FROM orders WHERE status = 'open'"
+    );
+
+    // Revenue by source (last 7 days)
+    const [revBySource] = await db.query(
+      `SELECT source, COALESCE(SUM(amount), 0) AS total, COUNT(id) AS transactions
+       FROM payments
+       WHERE paid_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND status = 'paid'
+       GROUP BY source`
+    );
+
+    // Revenue by method (last 7 days)
+    const [revByMethod] = await db.query(
+      `SELECT method, COALESCE(SUM(amount), 0) AS total
+       FROM payments
+       WHERE paid_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND status = 'paid'
+       GROUP BY method`
+    );
+
+    // Expiring members list (top 5)
+    const [expiringList] = await db.query(
+      `SELECT m.id, m.member_code, m.expiry_date,
+              u.full_name, u.email, u.phone,
+              p.name AS plan_name,
+              DATEDIFF(m.expiry_date, CURDATE()) AS days_left
+       FROM members m
+       JOIN users u ON m.user_id = u.id
+       JOIN plans p ON m.plan_id = p.id
+       WHERE m.status = 'active' AND m.expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+       ORDER BY m.expiry_date ASC LIMIT 5`
+    );
+
+    // 30-day revenue trend
+    const [trend30d] = await db.query(
+      `SELECT DATE(paid_at) AS pay_date, COALESCE(SUM(amount), 0) AS daily_total
+       FROM payments
+       WHERE paid_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND status = 'paid'
+       GROUP BY DATE(paid_at)
+       ORDER BY pay_date ASC`
+    );
 
     res.json({
-      today_revenue:  rev.v,
-      today_bookings: bks.v,
-      active_members: mem.v,
-      expiring_soon:  exp.v,
-      low_stock:      ls.v,
-      open_orders:    ord.v,
-      today_orders:   todayOrd.v,
-      shop_revenue:   todayRev.v,
-      bar_revenue:    barRev.v
+      todayRevenue: Number(todayRevenue),
+      activeMembers: Number(activeMembers),
+      todayBookings: Number(todayBookings),
+      expiring30d: Number(expiring30d),
+      lowStockCount: Number(lowStockCount),
+      openOrders: Number(openOrders),
+      revBySource,
+      revByMethod,
+      expiringList,
+      trend30d
     });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
-// ── GET /api/reports/revenue ──────────────────────────────────────────────────
-router.get('/revenue', async (req, res, next) => {
+// ── GET /api/reports/pnl ────────────────────────────────────────────────────
+router.get('/pnl', requireLogin, requireRole('owner'), async (req, res, next) => {
   try {
-    const from = req.query.from || new Date().toISOString().slice(0, 10);
-    const to   = req.query.to   || from;
-    const [bySource] = await db.query(
-      `SELECT source, SUM(amount) AS total, COUNT(*) AS count FROM cc_payments
-        WHERE DATE(paid_at) BETWEEN ? AND ? AND status='paid' GROUP BY source`, [from, to]
+    const [revenues] = await db.query(
+      `SELECT DATE_FORMAT(paid_at, '%Y-%m') AS month,
+              COALESCE(SUM(amount), 0) AS total_revenue
+       FROM payments
+       WHERE status = 'paid'
+       GROUP BY DATE_FORMAT(paid_at, '%Y-%m')
+       ORDER BY month DESC LIMIT 12`
     );
-    const [byMethod] = await db.query(
-      `SELECT method, SUM(amount) AS total FROM cc_payments
-        WHERE DATE(paid_at) BETWEEN ? AND ? AND status='paid' GROUP BY method`, [from, to]
-    );
-    const [daily] = await db.query(
-      `SELECT DATE(paid_at) AS day, SUM(amount) AS total FROM cc_payments
-        WHERE DATE(paid_at) BETWEEN ? AND ? AND status='paid' GROUP BY day ORDER BY day`, [from, to]
-    );
-    res.json({ by_source: bySource, by_method: byMethod, daily });
-  } catch (err) { next(err); }
-});
 
-// ── GET /api/reports/expiring ─────────────────────────────────────────────────
-router.get('/expiring', async (req, res, next) => {
-  try {
-    const days = parseInt(req.query.days || 30, 10);
-    const [rows] = await db.query(
-      `SELECT m.id, m.member_code, COALESCE(u.full_name,u.name) AS full_name, u.email, u.phone,
-              p.name AS plan_name, m.expiry_date, m.status,
-              DATEDIFF(m.expiry_date, CURDATE()) AS days_left
-         FROM cc_members m JOIN users u ON m.user_id=u.id JOIN cc_plans p ON m.plan_id=p.id
-        WHERE m.status='active' AND m.expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(),INTERVAL ? DAY)
-        ORDER BY m.expiry_date`, [days]
+    const [expenses] = await db.query(
+      `SELECT DATE_FORMAT(expense_date, '%Y-%m') AS month,
+              COALESCE(SUM(amount), 0) AS total_expenses
+       FROM expenses
+       GROUP BY DATE_FORMAT(expense_date, '%Y-%m')
+       ORDER BY month DESC LIMIT 12`
     );
-    res.json(rows);
-  } catch (err) { next(err); }
-});
 
-// ── GET /api/reports/low-stock ────────────────────────────────────────────────
-router.get('/low-stock', async (req, res, next) => {
-  try {
-    const [rows] = await db.query(
-      `SELECT id,sku,name,department,category,stock_qty,reorder_level
-         FROM cc_products WHERE is_active=1 AND track_stock=1 AND stock_qty<=reorder_level
-         ORDER BY stock_qty`
-    );
-    res.json(rows);
-  } catch (err) { next(err); }
+    const monthMap = {};
+    revenues.forEach(r => {
+      monthMap[r.month] = { month: r.month, revenue: Number(r.total_revenue), expense: 0, profit: Number(r.total_revenue) };
+    });
+    expenses.forEach(e => {
+      if (!monthMap[e.month]) {
+        monthMap[e.month] = { month: e.month, revenue: 0, expense: Number(e.total_expenses), profit: -Number(e.total_expenses) };
+      } else {
+        monthMap[e.month].expense = Number(e.total_expenses);
+        monthMap[e.month].profit = monthMap[e.month].revenue - Number(e.total_expenses);
+      }
+    });
+
+    res.json(Object.values(monthMap).sort((a, b) => b.month.localeCompare(a.month)));
+  } catch (err) {
+    next(err);
+  }
 });
 
 module.exports = router;

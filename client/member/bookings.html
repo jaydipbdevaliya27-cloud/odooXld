@@ -1,230 +1,288 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Bookings – Champions Club</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Bookings – The Champions Club</title>
+  <meta name="description" content="View and manage your court reservations at The Champions Club — upcoming sessions, history, and cancellation.">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  <link rel="stylesheet" href="/css/main.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="../css/main.css">
 </head>
 <body>
-<div class="cc-wrapper">
-  <!-- Sidebar -->
-  <nav class="cc-sidebar d-flex flex-column justify-content-between">
-    <div>
-      <div class="brand"><i class="bi bi-trophy-fill me-2 text-warning"></i>Champions Club</div>
-      <ul class="nav flex-column mt-2">
-        <li><a href="/member/dashboard.html"  class="nav-link"><i class="bi bi-house"></i>My Dashboard</a></li>
-        <li><a href="/member/membership.html" class="nav-link"><i class="bi bi-stars"></i>Membership Plans</a></li>
-        <li><a href="/member/shop.html"       class="nav-link"><i class="bi bi-shop"></i>Browse Products</a></li>
-        <li><a href="/member/cafeteria.html"  class="nav-link"><i class="bi bi-cup-hot"></i>Cafeteria & Bar</a></li>
-        <li><a href="/member/book.html"       class="nav-link"><i class="bi bi-calendar-plus"></i>Book a Court</a></li>
-        <li><a href="/member/bookings.html"   class="nav-link active"><i class="bi bi-calendar-check"></i>My Bookings</a></li>
-      </ul>
-    </div>
-    <div class="p-3 border-top border-secondary border-opacity-25">
-      <div class="d-flex align-items-center gap-2 mb-2 p-2 rounded" style="background:rgba(255,255,255,0.08);">
-        <div class="rounded-circle bg-warning text-dark fw-bold d-flex align-items-center justify-content-center" style="width:32px; height:32px; font-size:0.85rem;" id="userInitial">
-          M
-        </div>
-        <div class="overflow-hidden">
-          <span id="userNameSidebar" class="fw-semibold text-white d-block text-truncate small" style="max-width:140px;">Member</span>
-          <span id="userPlanSidebar" class="badge bg-warning text-dark py-0 px-1" style="font-size:0.68rem;">Member</span>
+  <div id="app-shell"></div>
+
+  <main class="content-container">
+    <!-- Topbar -->
+    <div class="app-topbar">
+      <div class="d-flex align-items-center gap-3">
+        <button class="icon-btn d-lg-none" id="sidebar-toggle-btn" aria-label="Toggle Navigation">
+          <i class="bi bi-list fs-5"></i>
+        </button>
+        <div class="breadcrumb-block">
+          <div class="breadcrumb-crumbs">
+            <a href="/member/dashboard.html">Champions Club</a>
+            <span>/</span>
+            <span>My Bookings</span>
+          </div>
+          <h2 class="page-title">My Court Bookings</h2>
         </div>
       </div>
-      <button id="logoutBtn" class="btn btn-sm btn-outline-light w-100"><i class="bi bi-box-arrow-right me-1"></i>Logout</button>
+      <div class="topbar-actions">
+        <a href="book.html" class="btn btn-accent btn-sm">
+          <i class="bi bi-calendar-plus me-1"></i>Book New Court
+        </a>
+        <button class="icon-btn" id="theme-toggle-btn" title="Toggle Theme" aria-label="Toggle Theme">
+          <i class="bi bi-moon-stars-fill"></i>
+        </button>
+      </div>
     </div>
-  </nav>
 
-  <!-- Main Content -->
-  <div class="d-flex flex-column flex-grow-1">
-    <div class="cc-topbar d-flex justify-content-between align-items-center">
-      <h5 class="page-title mb-0"><i class="bi bi-calendar-check me-2 text-cc"></i>My Court Bookings</h5>
-      <a href="/member/book.html" class="btn btn-cc btn-sm fw-bold"><i class="bi bi-plus-circle me-1"></i>Book New Session</a>
+    <!-- Booking Stats Row -->
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-lg-3">
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <div class="stat-icon-tile accent"><i class="bi bi-calendar-check-fill"></i></div>
+            <div class="stat-meta">
+              <div class="stat-label">Upcoming</div>
+              <div class="stat-value" id="statUpcoming">—</div>
+            </div>
+          </div>
+          <div class="stat-divider text-accent"><i class="bi bi-clock"></i> Confirmed sessions</div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <div class="stat-icon-tile success"><i class="bi bi-check-circle-fill"></i></div>
+            <div class="stat-meta">
+              <div class="stat-label">Completed</div>
+              <div class="stat-value" id="statCompleted">—</div>
+            </div>
+          </div>
+          <div class="stat-divider text-success"><i class="bi bi-trophy"></i> Played sessions</div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <div class="stat-icon-tile danger"><i class="bi bi-calendar-x-fill"></i></div>
+            <div class="stat-meta">
+              <div class="stat-label">Cancelled</div>
+              <div class="stat-value" id="statCancelled">—</div>
+            </div>
+          </div>
+          <div class="stat-divider text-muted"><i class="bi bi-x-circle"></i> This period</div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <div class="stat-icon-tile warning"><i class="bi bi-currency-rupee"></i></div>
+            <div class="stat-meta">
+              <div class="stat-label">Total Spent</div>
+              <div class="stat-value" id="statSpent">—</div>
+            </div>
+          </div>
+          <div class="stat-divider text-muted"><i class="bi bi-wallet2"></i> All time</div>
+        </div>
+      </div>
     </div>
 
-    <main class="cc-main">
-      <!-- Quick Stats -->
-      <div class="row g-3 mb-4">
-        <div class="col-md-4">
-          <div class="cc-card d-flex align-items-center gap-3">
-            <div class="rounded-circle bg-success bg-opacity-10 text-success p-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-              <i class="bi bi-calendar2-check fs-4"></i>
-            </div>
-            <div>
-              <h4 class="mb-0 fw-bold" id="statTotalBookings">0</h4>
-              <span class="text-muted small">Total Bookings</span>
-            </div>
-          </div>
+    <!-- Bookings Table Card -->
+    <div class="table-card">
+      <div class="table-card-header">
+        <div>
+          <h5 class="table-card-title"><i class="bi bi-calendar-week"></i> Booking History</h5>
+          <p class="table-card-subtitle">All your court reservations — upcoming, completed, and cancelled</p>
         </div>
-        <div class="col-md-4">
-          <div class="cc-card d-flex align-items-center gap-3">
-            <div class="rounded-circle bg-primary bg-opacity-10 text-primary p-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-              <i class="bi bi-clock-history fs-4"></i>
-            </div>
-            <div>
-              <h4 class="mb-0 fw-bold" id="statActiveBookings">0</h4>
-              <span class="text-muted small">Upcoming / Active</span>
-            </div>
-          </div>
+        <a href="book.html" class="btn btn-sm btn-outline-custom text-white border-light border-opacity-30">
+          <i class="bi bi-plus-lg me-1"></i>New Booking
+        </a>
+      </div>
+
+      <div class="table-toolbar">
+        <div class="search-input-wrap">
+          <i class="bi bi-search search-icon"></i>
+          <input type="search" class="form-control" id="myBookingSearchInput"
+            placeholder="Search by booking code or sport..." aria-label="Search my bookings">
+          <button class="search-clear-btn" id="searchClearBtn" style="display:none;" aria-label="Clear">
+            <i class="bi bi-x"></i>
+          </button>
         </div>
-        <div class="col-md-4">
-          <div class="cc-card d-flex align-items-center gap-3">
-            <div class="rounded-circle bg-warning bg-opacity-10 text-dark p-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-              <i class="bi bi-wallet2 fs-4 text-warning"></i>
-            </div>
-            <div>
-              <h4 class="mb-0 fw-bold" id="statTotalSpent">₹0</h4>
-              <span class="text-muted small">Total Court Spend</span>
-            </div>
-          </div>
+        <div class="d-flex gap-2 flex-wrap">
+          <select class="form-select" id="myBookingStatusFilter" style="width:auto;">
+            <option value="">All Statuses</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+            <option value="no_show">No Show</option>
+          </select>
+          <input type="date" class="form-control" id="myBookingDateFrom" style="width:auto;" title="From date">
+          <input type="date" class="form-control" id="myBookingDateTo" style="width:auto;" title="To date">
         </div>
       </div>
 
-      <!-- Bookings List Table -->
-      <div class="cc-card">
-        <div class="cc-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-          <h5 class="mb-0"><i class="bi bi-list-columns-reverse me-2 text-cc"></i>Booking History & Passes</h5>
-          <div class="d-flex gap-2">
-            <select id="statusFilter" class="form-select form-select-sm" style="width: 160px;" onchange="renderBookingsTable()">
-              <option value="all">All Statuses</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-            <button class="btn btn-sm btn-outline-secondary" onclick="loadBookings()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
-          </div>
-        </div>
-        
-        <div class="table-responsive">
-          <table class="table table-hover align-middle mb-0" id="bookTable">
-            <thead class="table-light">
-              <tr>
-                <th>Booking Code</th>
-                <th>Court / Facility</th>
-                <th>Sport</th>
-                <th>Date</th>
-                <th>Time Slot</th>
-                <th>Amount Paid</th>
-                <th>Status</th>
-                <th class="text-end">Action</th>
-              </tr>
-            </thead>
-            <tbody id="bookingsTableBody">
-              <tr><td colspan="8" class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading your bookings...</td></tr>
-            </tbody>
-          </table>
-        </div>
+      <div class="table-responsive">
+        <table class="cc-table">
+          <thead>
+            <tr>
+              <th>Booking Code</th>
+              <th>Court &amp; Sport</th>
+              <th>Date</th>
+              <th>Time Slot</th>
+              <th>Fee Paid</th>
+              <th>Status</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="myBookingsTableBody">
+            <tr><td colspan="7" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading your reservations…</td></tr>
+          </tbody>
+        </table>
       </div>
-    </main>
-  </div>
-</div>
+      <div class="table-footer" id="bookingsPagination">
+        <span class="text-muted small">Loading…</span>
+      </div>
+    </div>
+  </main>
 
-<div id="alert-bar"></div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/shell.js"></script>
+  <script>
+    let currentPage = 1;
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="/js/api.js"></script>
-<script src="/js/utils.js"></script>
-<script>
-let ALL_BOOKINGS = [];
+    document.addEventListener('DOMContentLoaded', () => {
+      loadMyBookings();
 
-async function loadBookings() {
-  const tbody = document.getElementById('bookingsTableBody');
-  try {
-    const bookings = await api.get('/api/bookings');
-    ALL_BOOKINGS = Array.isArray(bookings) ? bookings : [];
+      document.getElementById('myBookingStatusFilter').addEventListener('change', () => { currentPage = 1; loadMyBookings(); });
+      document.getElementById('myBookingDateFrom').addEventListener('change', () => { currentPage = 1; loadMyBookings(); });
+      document.getElementById('myBookingDateTo').addEventListener('change', () => { currentPage = 1; loadMyBookings(); });
 
-    // Update stats
-    const total = ALL_BOOKINGS.length;
-    const active = ALL_BOOKINGS.filter(b => b.status === 'confirmed').length;
-    const spend = ALL_BOOKINGS.filter(b => b.status !== 'cancelled').reduce((acc, b) => acc + (Number(b.price_charged) || 0), 0);
+      const searchInput = document.getElementById('myBookingSearchInput');
+      const clearBtn = document.getElementById('searchClearBtn');
+      searchInput.addEventListener('input', utils.debounce(() => { currentPage = 1; loadMyBookings(); }, 300));
+      searchInput.addEventListener('input', (e) => {
+        clearBtn.style.display = e.target.value ? 'block' : 'none';
+      });
+      clearBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        clearBtn.style.display = 'none';
+        currentPage = 1;
+        loadMyBookings();
+      });
+    });
 
-    document.getElementById('statTotalBookings').textContent = total;
-    document.getElementById('statActiveBookings').textContent = active;
-    document.getElementById('statTotalSpent').textContent = fmtINR(spend);
+    async function loadMyBookings() {
+      const q = document.getElementById('myBookingSearchInput').value.trim();
+      const status = document.getElementById('myBookingStatusFilter').value;
+      const from = document.getElementById('myBookingDateFrom').value;
+      const to = document.getElementById('myBookingDateTo').value;
+      const tbody = document.getElementById('myBookingsTableBody');
 
-    renderBookingsTable();
-  } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="8" class="text-center py-5 text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Failed to load bookings: ${escHtml(err.message)}</td></tr>`;
-  }
-}
+      tbody.innerHTML = '<tr><td colspan="7" class="text-center py-3 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading…</td></tr>';
 
-function renderBookingsTable() {
-  const tbody = document.getElementById('bookingsTableBody');
-  const filter = document.getElementById('statusFilter').value;
-  
-  const filtered = ALL_BOOKINGS.filter(b => filter === 'all' || b.status === filter);
+      try {
+        const res = await api.get('/api/bookings/my', { q, status, from, to, page: currentPage, limit: 20 });
+        const bookings = res.data || [];
+        const meta = res.meta || { total: bookings.length, page: 1, totalPages: 1 };
 
-  if (!filtered.length) {
-    tbody.innerHTML = `<tr><td colspan="8" class="text-center py-5 text-muted">
-      <i class="bi bi-calendar-x fs-1 opacity-50 d-block mb-3"></i>
-      No bookings found matching selected criteria. <a href="/member/book.html" class="text-cc fw-bold">Book a court session!</a>
-    </td></tr>`;
-    return;
-  }
+        // Compute stats from the full response
+        let upcoming = 0, completed = 0, cancelled = 0, spent = 0;
+        bookings.forEach(b => {
+          if (b.status === 'confirmed') upcoming++;
+          if (b.status === 'completed') completed++;
+          if (b.status === 'cancelled') cancelled++;
+          spent += Number(b.price || b.price_charged || 0);
+        });
 
-  tbody.innerHTML = filtered.map(b => {
-    let statusClass = 'bg-secondary';
-    if (b.status === 'confirmed') statusClass = 'bg-success';
-    else if (b.status === 'completed') statusClass = 'bg-primary';
-    else if (b.status === 'cancelled') statusClass = 'bg-danger';
+        // Update stat cards (only on first page with no filters)
+        if (currentPage === 1 && !q && !status) {
+          document.getElementById('statUpcoming').textContent = upcoming;
+          document.getElementById('statCompleted').textContent = completed;
+          document.getElementById('statCancelled').textContent = cancelled;
+          document.getElementById('statSpent').textContent = utils.formatINR(spent);
+        }
 
-    return `
-      <tr>
-        <td><strong class="text-dark"><code>${escHtml(b.booking_code)}</code></strong></td>
-        <td>
-          <div class="fw-semibold text-dark">${escHtml(b.court_name)}</div>
-          <small class="text-muted">${escHtml(b.surface_type || 'Standard')}</small>
-        </td>
-        <td><span class="badge bg-light text-dark border text-capitalize"><i class="bi bi-trophy text-warning me-1"></i>${escHtml(b.sport || 'Sports')}</span></td>
-        <td>${fmtDate(b.booking_date)}</td>
-        <td><span class="badge bg-light text-dark border">${String(b.start_time).slice(0,5)} – ${String(b.end_time).slice(0,5)}</span></td>
-        <td><strong class="text-success">${fmtINR(b.price_charged)}</strong></td>
-        <td><span class="badge ${statusClass}">${escHtml((b.status || '').toUpperCase())}</span></td>
-        <td class="text-end">
-          ${b.status === 'confirmed'
-            ? `<button class="btn btn-sm btn-outline-danger" onclick="cancelBooking(${b.id})"><i class="bi bi-x-circle me-1"></i>Cancel</button>`
-            : '<span class="text-muted small">—</span>'}
-        </td>
-      </tr>
-    `;
-  }).join('');
-}
+        if (!bookings.length) {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted"><i class="bi bi-calendar-x fs-2 d-block mb-2 opacity-50"></i>No reservations found for the selected filters.</td></tr>';
+          document.getElementById('bookingsPagination').innerHTML = '<span class="text-muted small">No results</span>';
+          return;
+        }
 
-async function cancelBooking(id) {
-  if (!confirm('Are you sure you want to cancel this booking session?')) return;
-  try {
-    await api.post(`/api/bookings/${id}/cancel`, { reason: 'Cancelled by member' });
-    showAlert('Booking cancelled successfully.', 'success');
-    await loadBookings();
-  } catch(e) {
-    showAlert(e.message || 'Error cancelling booking', 'danger');
-  }
-}
+        tbody.innerHTML = bookings.map(b => `
+          <tr>
+            <td><code class="mono fw-bold">${utils.escapeHtml(b.booking_code || '')}</code></td>
+            <td>
+              <div class="fw-semibold">${utils.escapeHtml(b.court_name || '—')}</div>
+              <small class="text-muted">${utils.escapeHtml(b.sport || '')}</small>
+            </td>
+            <td><i class="bi bi-calendar-event me-1 text-muted"></i>${utils.formatDate(b.booking_date)}</td>
+            <td class="mono text-accent fw-semibold small">
+              <i class="bi bi-clock me-1 opacity-75"></i>${utils.formatTime(b.start_time)} – ${utils.formatTime(b.end_time)}
+            </td>
+            <td class="mono">${utils.formatINR(b.price || b.price_charged || 0)}</td>
+            <td>${utils.statusChip(b.status)}</td>
+            <td class="text-end">
+              ${b.status === 'confirmed' ? `
+                <button class="btn btn-sm btn-outline-custom" style="color:var(--danger);border-color:var(--danger);"
+                  onclick="cancelBooking(${b.id})" title="Cancel Reservation">
+                  <i class="bi bi-calendar-x me-1"></i>Cancel
+                </button>
+              ` : '<span class="text-muted small">—</span>'}
+            </td>
+          </tr>
+        `).join('');
 
-(async () => {
-  const user = await loadSession();
-  if (!user || user.role !== 'member') {
-    window.location.href = '/shared/login.html';
-    return;
-  }
-  document.getElementById('userNameSidebar').textContent = user.full_name || user.name;
-  document.getElementById('userInitial').textContent = (user.full_name || user.name || 'M').charAt(0).toUpperCase();
+        // Pagination footer
+        const from_ = (meta.page - 1) * meta.limit + 1;
+        const to_ = Math.min(meta.page * meta.limit, meta.total);
+        let paginationHtml = `<span class="text-muted small">Showing ${from_}–${to_} of ${meta.total} reservations</span>`;
+        if (meta.totalPages > 1) {
+          paginationHtml += `<nav><ul class="pagination pagination-sm mb-0">`;
+          if (meta.page > 1) paginationHtml += `<li class="page-item"><button class="page-link" onclick="changePage(${meta.page - 1})">Prev</button></li>`;
+          for (let i = 1; i <= Math.min(meta.totalPages, 5); i++) {
+            paginationHtml += `<li class="page-item ${i === meta.page ? 'active' : ''}"><button class="page-link" onclick="changePage(${i})">${i}</button></li>`;
+          }
+          if (meta.page < meta.totalPages) paginationHtml += `<li class="page-item"><button class="page-link" onclick="changePage(${meta.page + 1})">Next</button></li>`;
+          paginationHtml += `</ul></nav>`;
+        }
+        document.getElementById('bookingsPagination').innerHTML = paginationHtml;
 
-  try {
-    const memberProfile = await api.get('/api/members/profile');
-    if (memberProfile && memberProfile.plan_name) {
-      document.getElementById('userPlanSidebar').textContent = memberProfile.plan_name;
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger"><i class="bi bi-exclamation-triangle me-2"></i>${utils.escapeHtml(err.message)}</td></tr>`;
+        document.getElementById('bookingsPagination').innerHTML = '';
+      }
     }
-  } catch(e) {}
 
-  await loadBookings();
+    function changePage(p) {
+      currentPage = p;
+      loadMyBookings();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 
-  document.getElementById('logoutBtn').addEventListener('click', async () => {
-    await api.post('/api/auth/logout');
-    window.location.href = '/shared/login.html';
-  });
-})();
-</script>
+    async function cancelBooking(id) {
+      const confirmed = await ui.confirmDialog({
+        title: 'Cancel Court Reservation',
+        message: 'Are you sure you want to cancel this booking? Free cancellation applies if cancelled at least 2 hours before the session.',
+        confirmText: 'Cancel Booking',
+        danger: true
+      });
+      if (!confirmed) return;
+
+      try {
+        await api.del(`/api/bookings/${id}`, { reason: 'Member cancelled online' });
+        ui.toast('Reservation cancelled successfully', 'success');
+        loadMyBookings();
+      } catch (err) {
+        ui.toast(err.message || 'Cancellation failed', 'error');
+      }
+    }
+  </script>
 </body>
 </html>

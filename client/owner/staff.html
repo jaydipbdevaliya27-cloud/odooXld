@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,396 +10,421 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="/css/main.css">
 </head>
+
 <body>
-<div class="cc-wrapper">
+  <div class="cc-wrapper">
 
-  <!-- ── Sidebar ──────────────────────────────────────────────────────────── -->
-  <nav class="cc-sidebar d-flex flex-column">
-    <div class="brand"><i class="bi bi-trophy-fill me-2 text-warning"></i>Champions Club</div>
-    <ul class="nav flex-column mt-2 flex-grow-1">
-      <li><a href="/owner/dashboard.html" class="nav-link"><i class="bi bi-speedometer2"></i>Dashboard</a></li>
-      <li><a href="/owner/staff.html"     class="nav-link active"><i class="bi bi-person-badge"></i>Staff Management</a></li>
-      <li><a href="/owner/members.html"   class="nav-link"><i class="bi bi-people"></i>Members</a></li>
-      <li><a href="/owner/bookings.html"  class="nav-link"><i class="bi bi-calendar-check"></i>Bookings</a></li>
-      <li><a href="/owner/orders.html"    class="nav-link"><i class="bi bi-bag"></i>Orders</a></li>
-      <li><a href="/owner/products.html"  class="nav-link"><i class="bi bi-box-seam"></i>Products</a></li>
-      <li><a href="/owner/payments.html"  class="nav-link"><i class="bi bi-credit-card"></i>Payments</a></li>
-      <li><a href="/owner/plans.html"     class="nav-link"><i class="bi bi-stars"></i>Plans</a></li>
-      <li><a href="/owner/courts.html"    class="nav-link"><i class="bi bi-geo-alt"></i>Courts</a></li>
-    </ul>
-    <div class="p-3 border-top border-secondary border-opacity-25">
-      <div class="d-flex align-items-center gap-2 mb-2 p-2 rounded" style="background:rgba(255,255,255,0.08);">
-        <div class="rounded-circle bg-warning text-dark fw-bold d-flex align-items-center justify-content-center" style="width:32px; height:32px; font-size:0.85rem;" id="userInitial">
-          O
+    <!-- ── Sidebar ──────────────────────────────────────────────────────────── -->
+    <nav class="cc-sidebar d-flex flex-column">
+      <div class="brand"><i class="bi bi-trophy-fill me-2 text-warning"></i>Champions Club</div>
+      <ul class="nav flex-column mt-2 flex-grow-1">
+        <li><a href="/owner/dashboard.html" class="nav-link"><i class="bi bi-speedometer2"></i>Dashboard</a></li>
+        <li><a href="/owner/staff.html" class="nav-link active"><i class="bi bi-person-badge"></i>Staff Management</a>
+        </li>
+        <li><a href="/owner/members.html" class="nav-link"><i class="bi bi-people"></i>Members</a></li>
+        <li><a href="/owner/bookings.html" class="nav-link"><i class="bi bi-calendar-check"></i>Bookings</a></li>
+        <li><a href="/owner/orders.html" class="nav-link"><i class="bi bi-bag"></i>Orders</a></li>
+        <li><a href="/owner/products.html" class="nav-link"><i class="bi bi-box-seam"></i>Products</a></li>
+        <li><a href="/owner/payments.html" class="nav-link"><i class="bi bi-credit-card"></i>Payments</a></li>
+        <li><a href="/owner/plans.html" class="nav-link"><i class="bi bi-stars"></i>Plans</a></li>
+        <li><a href="/owner/courts.html" class="nav-link"><i class="bi bi-geo-alt"></i>Courts</a></li>
+      </ul>
+      <div class="p-3 border-top border-secondary border-opacity-25">
+        <div class="d-flex align-items-center gap-2 mb-2 p-2 rounded" style="background:rgba(255,255,255,0.08);">
+          <div class="rounded-circle bg-warning text-dark fw-bold d-flex align-items-center justify-content-center"
+            style="width:32px; height:32px; font-size:0.85rem;" id="userInitial">
+            O
+          </div>
+          <div class="overflow-hidden">
+            <span id="userNameSidebar" class="fw-semibold text-white d-block text-truncate small"
+              style="max-width:140px;">Club Owner</span>
+            <span id="userRoleBadge" class="badge bg-warning text-dark py-0 px-1" style="font-size:0.68rem;">Club
+              Owner</span>
+          </div>
         </div>
-        <div class="overflow-hidden">
-          <span id="userNameSidebar" class="fw-semibold text-white d-block text-truncate small" style="max-width:140px;">Club Owner</span>
-          <span id="userRoleBadge" class="badge bg-warning text-dark py-0 px-1" style="font-size:0.68rem;">Club Owner</span>
-        </div>
-      </div>
-      <button id="logoutBtn" class="btn btn-sm btn-outline-light w-100">
-        <i class="bi bi-box-arrow-right me-1"></i>Logout
-      </button>
-    </div>
-  </nav>
-
-  <!-- ── Main content ──────────────────────────────────────────────────────── -->
-  <div class="d-flex flex-column flex-grow-1">
-    <div class="cc-topbar">
-      <div class="d-flex align-items-center gap-2">
-        <h5 class="page-title mb-0"><i class="bi bi-person-badge me-2 text-cc"></i>Staff & Role Management</h5>
-        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1">Owner Access</span>
-      </div>
-      <div class="d-flex align-items-center gap-3">
-        <span id="todayDate" class="text-muted small"></span>
-        <button class="btn btn-sm btn-outline-secondary" onclick="loadStaffData()"><i class="bi bi-arrow-clockwise me-1"></i>Refresh</button>
-      </div>
-    </div>
-
-    <main class="cc-main">
-
-      <!-- Header with Add Staff Button -->
-      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
-        <div>
-          <h4 class="mb-1">Club Staff & Assigned Dashboards</h4>
-          <p class="text-muted small mb-0">Assign staff to specific operational areas (Shop, Bar-Cafeteria, or Court Booking). Staff automatically route to their assigned dashboard upon login.</p>
-        </div>
-        <button class="btn btn-cc fw-semibold" data-bs-toggle="modal" data-bs-target="#addStaffModal">
-          <i class="bi bi-person-plus-fill me-1"></i> Add New Staff Member
+        <button id="logoutBtn" class="btn btn-sm btn-outline-light w-100">
+          <i class="bi bi-box-arrow-right me-1"></i>Logout
         </button>
       </div>
+    </nav>
 
-      <!-- KPI Summary Row -->
-      <div class="row g-3 mb-4">
-        <div class="col-sm-6 col-xl-3">
-          <div class="kpi-card">
-            <div class="kpi-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-people-fill"></i></div>
-            <div><div class="kpi-value" id="kpi-total-staff">0</div><div class="kpi-label">Total Staff Members</div></div>
-          </div>
+    <!-- ── Main content ──────────────────────────────────────────────────────── -->
+    <div class="d-flex flex-column flex-grow-1">
+      <div class="cc-topbar">
+        <div class="d-flex align-items-center gap-2">
+          <h5 class="page-title mb-0"><i class="bi bi-person-badge me-2 text-cc"></i>Staff & Role Management</h5>
+          <span
+            class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1">Owner
+            Access</span>
         </div>
-        <div class="col-sm-6 col-xl-3">
-          <div class="kpi-card">
-            <div class="kpi-icon bg-success bg-opacity-10 text-success"><i class="bi bi-shop"></i></div>
-            <div><div class="kpi-value" id="kpi-shop-staff">0</div><div class="kpi-label">Shop & Inventory</div></div>
-          </div>
-        </div>
-        <div class="col-sm-6 col-xl-3">
-          <div class="kpi-card">
-            <div class="kpi-icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-cup-straw"></i></div>
-            <div><div class="kpi-value" id="kpi-bar-staff">0</div><div class="kpi-label">Bar & Cafeteria</div></div>
-          </div>
-        </div>
-        <div class="col-sm-6 col-xl-3">
-          <div class="kpi-card">
-            <div class="kpi-icon bg-info bg-opacity-10 text-info"><i class="bi bi-calendar-check"></i></div>
-            <div><div class="kpi-value" id="kpi-booking-staff">0</div><div class="kpi-label">Court Booking Desk</div></div>
-          </div>
+        <div class="d-flex align-items-center gap-3">
+          <span id="todayDate" class="text-muted small"></span>
+          <button class="btn btn-sm btn-outline-secondary" onclick="loadStaffData()"><i
+              class="bi bi-arrow-clockwise me-1"></i>Refresh</button>
         </div>
       </div>
 
-      <!-- Filter / Search Row -->
-      <div class="cc-card p-3 mb-3">
-        <div class="row g-2 align-items-center">
-          <div class="col-md-5">
-            <div class="input-group input-group-sm">
-              <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
-              <input type="text" class="form-control" id="staffSearchInput" placeholder="Search staff by name, email, or role...">
+      <main class="cc-main">
+
+        <!-- Header with Add Staff Button -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+          <div>
+            <h4 class="mb-1">Club Staff & Assigned Dashboards</h4>
+            <p class="text-muted small mb-0">Assign staff to specific operational areas (Shop, Bar-Cafeteria, or Court
+              Booking). Staff automatically route to their assigned dashboard upon login.</p>
+          </div>
+          <button class="btn btn-cc fw-semibold" data-bs-toggle="modal" data-bs-target="#addStaffModal">
+            <i class="bi bi-person-plus-fill me-1"></i> Add New Staff Member
+          </button>
+        </div>
+
+        <!-- KPI Summary Row -->
+        <div class="row g-3 mb-4">
+          <div class="col-sm-6 col-xl-3">
+            <div class="kpi-card">
+              <div class="kpi-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-people-fill"></i></div>
+              <div>
+                <div class="kpi-value" id="kpi-total-staff">0</div>
+                <div class="kpi-label">Total Staff Members</div>
+              </div>
             </div>
           </div>
-          <div class="col-md-4">
-            <select class="form-select form-select-sm" id="staffRoleFilter">
-              <option value="all">All Assigned Operational Areas</option>
-              <option value="shop">Shop & Inventory Management</option>
-              <option value="bar">Bar & Cafeteria POS</option>
-              <option value="booking">Court Booking & Front Desk</option>
-            </select>
+          <div class="col-sm-6 col-xl-3">
+            <div class="kpi-card">
+              <div class="kpi-icon bg-success bg-opacity-10 text-success"><i class="bi bi-shop"></i></div>
+              <div>
+                <div class="kpi-value" id="kpi-shop-staff">0</div>
+                <div class="kpi-label">Shop & Inventory</div>
+              </div>
+            </div>
           </div>
-          <div class="col-md-3 text-end">
-            <span id="staffCountBadge" class="badge bg-light text-dark border">Showing 0 staff</span>
+          <div class="col-sm-6 col-xl-3">
+            <div class="kpi-card">
+              <div class="kpi-icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-cup-straw"></i></div>
+              <div>
+                <div class="kpi-value" id="kpi-bar-staff">0</div>
+                <div class="kpi-label">Bar & Cafeteria</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-sm-6 col-xl-3">
+            <div class="kpi-card">
+              <div class="kpi-icon bg-info bg-opacity-10 text-info"><i class="bi bi-calendar-check"></i></div>
+              <div>
+                <div class="kpi-value" id="kpi-booking-staff">0</div>
+                <div class="kpi-label">Court Booking Desk</div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Staff Table -->
-      <div class="cc-card">
-        <div class="table-responsive">
-          <table class="table table-hover align-middle mb-0" id="staffTable">
-            <thead class="table-light">
-              <tr>
-                <th>Staff Member</th>
-                <th>Contact Info</th>
-                <th>Assigned Operational Area</th>
-                <th>Target Dashboard URL</th>
-                <th>Status</th>
-                <th>Added On</th>
-                <th class="text-end">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="staffTableBody">
-              <tr><td colspan="7" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading staff members...</td></tr>
-            </tbody>
-          </table>
+        <!-- Filter / Search Row -->
+        <div class="cc-card p-3 mb-3">
+          <div class="row g-2 align-items-center">
+            <div class="col-md-5">
+              <div class="input-group input-group-sm">
+                <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                <input type="text" class="form-control" id="staffSearchInput"
+                  placeholder="Search staff by name, email, or role...">
+              </div>
+            </div>
+            <div class="col-md-4">
+              <select class="form-select form-select-sm" id="staffRoleFilter">
+                <option value="all">All Assigned Operational Areas</option>
+                <option value="shop">Shop & Inventory Management</option>
+                <option value="bar">Bar & Cafeteria POS</option>
+                <option value="booking">Court Booking & Front Desk</option>
+              </select>
+            </div>
+            <div class="col-md-3 text-end">
+              <span id="staffCountBadge" class="badge bg-light text-dark border">Showing 0 staff</span>
+            </div>
+          </div>
         </div>
-      </div>
 
-    </main>
+        <!-- Staff Table -->
+        <div class="cc-card">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="staffTable">
+              <thead class="table-light">
+                <tr>
+                  <th>Staff Member</th>
+                  <th>Contact Info</th>
+                  <th>Assigned Operational Area</th>
+
+                  <th>Status</th>
+                  <th>Added On</th>
+                  <th class="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="staffTableBody">
+                <tr>
+                  <td colspan="7" class="text-center py-4 text-muted"><span
+                      class="spinner-border spinner-border-sm me-2"></span>Loading staff members...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </main>
+    </div>
   </div>
-</div>
 
-<!-- ==========================================================================
+  <!-- ==========================================================================
      MODALS
      ========================================================================== -->
 
-<!-- 1. ADD STAFF MODAL -->
-<div class="modal fade" id="addStaffModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header bg-light">
-        <h5 class="modal-title"><i class="bi bi-person-plus-fill me-2 text-cc"></i>Add New Staff Member</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <form id="addStaffForm">
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label class="form-label fw-semibold">Full Name *</label>
-              <input type="text" id="newStaffName" class="form-control" placeholder="e.g. Rahul Sharma" required>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-semibold">Email Address (Login ID) *</label>
-              <input type="email" id="newStaffEmail" class="form-control" placeholder="rahul@championsclub.com" required>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-semibold">Login Password *</label>
-              <input type="password" id="newStaffPassword" class="form-control" placeholder="••••••••" required minlength="6">
-              <small class="text-muted">Minimum 6 characters</small>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-semibold">Phone Number</label>
-              <input type="tel" id="newStaffPhone" class="form-control" placeholder="+91 98765 00000">
-            </div>
+  <!-- 1. ADD STAFF MODAL -->
+  <div class="modal fade" id="addStaffModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-light">
+          <h5 class="modal-title"><i class="bi bi-person-plus-fill me-2 text-cc"></i>Add New Staff Member</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="addStaffForm">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Full Name *</label>
+                <input type="text" id="newStaffName" class="form-control" placeholder="e.g. Rahul Sharma" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Email Address (Login ID) *</label>
+                <input type="email" id="newStaffEmail" class="form-control" placeholder="rahul@championsclub.com"
+                  required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Login Password *</label>
+                <input type="password" id="newStaffPassword" class="form-control" placeholder="••••••••" required
+                  minlength="6">
+                <small class="text-muted">Minimum 6 characters</small>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Phone Number</label>
+                <input type="tel" id="newStaffPhone" class="form-control" placeholder="+91 98765 00000">
+              </div>
 
-            <!-- Assigned Operational Role / Dashboard -->
-            <div class="col-12">
-              <label class="form-label fw-semibold"><i class="bi bi-diagram-3-fill me-1 text-cc"></i>Assigned Operational Area & Dashboard *</label>
-              <div class="p-3 bg-light rounded border">
-                <div class="row g-3">
-                  <div class="col-md-4">
-                    <div class="form-check card p-3 h-100 border-2 role-card cursor-pointer" onclick="selectRoleRadio('shop')">
-                      <input class="form-check-input" type="radio" name="assignedRoleRadio" id="roleShop" value="shop" checked>
-                      <label class="form-check-label fw-bold d-block cursor-pointer" for="roleShop">
-                        <i class="bi bi-shop text-success fs-4 d-block mb-1"></i>
-                        Shop & Inventory
-                      </label>
-                      <small class="text-muted">Routes to Shop Dashboard: Product catalog, sizes, inventory levels, gear sales.</small>
+              <!-- Assigned Operational Role / Dashboard -->
+              <div class="col-12">
+                <label class="form-label fw-semibold"><i class="bi bi-diagram-3-fill me-1 text-cc"></i>Assigned
+                  Operational Area & Dashboard *</label>
+                <div class="p-3 bg-light rounded border">
+                  <div class="row g-3">
+                    <div class="col-md-4">
+                      <div class="form-check card p-3 h-100 border-2 role-card cursor-pointer"
+                        onclick="selectRoleRadio('shop')">
+                        <input class="form-check-input" type="radio" name="assignedRoleRadio" id="roleShop" value="shop"
+                          checked>
+                        <label class="form-check-label fw-bold d-block cursor-pointer" for="roleShop">
+                          <i class="bi bi-shop text-success fs-4 d-block mb-1"></i>
+                          Shop & Inventory
+                        </label>
+                        <small class="text-muted">Routes to Shop Dashboard: Product catalog, sizes, inventory levels,
+                          gear sales.</small>
+                      </div>
                     </div>
-                  </div>
-                  <div class="col-md-4">
-                    <div class="form-check card p-3 h-100 border-2 role-card cursor-pointer" onclick="selectRoleRadio('bar')">
-                      <input class="form-check-input" type="radio" name="assignedRoleRadio" id="roleBar" value="bar">
-                      <label class="form-check-label fw-bold d-block cursor-pointer" for="roleBar">
-                        <i class="bi bi-cup-straw text-warning fs-4 d-block mb-1"></i>
-                        Bar & Cafeteria
-                      </label>
-                      <small class="text-muted">Routes to Bar POS: Food/drinks orders, table tabs, cafeteria billing.</small>
+                    <div class="col-md-4">
+                      <div class="form-check card p-3 h-100 border-2 role-card cursor-pointer"
+                        onclick="selectRoleRadio('bar')">
+                        <input class="form-check-input" type="radio" name="assignedRoleRadio" id="roleBar" value="bar">
+                        <label class="form-check-label fw-bold d-block cursor-pointer" for="roleBar">
+                          <i class="bi bi-cup-straw text-warning fs-4 d-block mb-1"></i>
+                          Bar & Cafeteria
+                        </label>
+                        <small class="text-muted">Routes to Bar POS: Food/drinks orders, table tabs, cafeteria
+                          billing.</small>
+                      </div>
                     </div>
-                  </div>
-                  <div class="col-md-4">
-                    <div class="form-check card p-3 h-100 border-2 role-card cursor-pointer" onclick="selectRoleRadio('booking')">
-                      <input class="form-check-input" type="radio" name="assignedRoleRadio" id="roleBooking" value="booking">
-                      <label class="form-check-label fw-bold d-block cursor-pointer" for="roleBooking">
-                        <i class="bi bi-calendar-check text-info fs-4 d-block mb-1"></i>
-                        Court Booking Desk
-                      </label>
-                      <small class="text-muted">Routes to Front Desk: Court slots, walk-in reservations, member check-in.</small>
+                    <div class="col-md-4">
+                      <div class="form-check card p-3 h-100 border-2 role-card cursor-pointer"
+                        onclick="selectRoleRadio('booking')">
+                        <input class="form-check-input" type="radio" name="assignedRoleRadio" id="roleBooking"
+                          value="booking">
+                        <label class="form-check-label fw-bold d-block cursor-pointer" for="roleBooking">
+                          <i class="bi bi-calendar-check text-info fs-4 d-block mb-1"></i>
+                          Court Booking Desk
+                        </label>
+                        <small class="text-muted">Routes to Front Desk: Court slots, walk-in reservations, member
+                          check-in.</small>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer bg-light">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-cc fw-semibold" onclick="handleCreateStaff()">
-          <i class="bi bi-check-lg me-1"></i> Create Staff Member
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- 2. EDIT STAFF MODAL -->
-<div class="modal fade" id="editStaffModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header bg-light">
-        <h5 class="modal-title"><i class="bi bi-pencil-square me-2 text-cc"></i>Edit Staff Privileges</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <form id="editStaffForm">
-          <input type="hidden" id="editStaffId">
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Full Name *</label>
-            <input type="text" id="editStaffName" class="form-control" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Email Address *</label>
-            <input type="email" id="editStaffEmail" class="form-control" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Phone Number</label>
-            <input type="tel" id="editStaffPhone" class="form-control">
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Assigned Operational Area *</label>
-            <select id="editStaffAssigned" class="form-select" required>
-              <option value="shop">Shop & Inventory Management</option>
-              <option value="bar">Bar & Cafeteria POS</option>
-              <option value="booking">Court Booking & Front Desk</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Account Status</label>
-            <select id="editStaffStatus" class="form-select">
-              <option value="1">Active (Can Login)</option>
-              <option value="0">Deactivated (Access Revoked)</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Reset Password (Optional)</label>
-            <input type="password" id="editStaffNewPassword" class="form-control" placeholder="Leave blank to retain current password">
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer bg-light">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-cc fw-semibold" onclick="handleUpdateStaff()">
-          <i class="bi bi-check-lg me-1"></i> Save Changes
-        </button>
+          </form>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-cc fw-semibold" onclick="handleCreateStaff()">
+            <i class="bi bi-check-lg me-1"></i> Create Staff Member
+          </button>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<div id="alert-bar"></div>
+  <!-- 2. EDIT STAFF MODAL -->
+  <div class="modal fade" id="editStaffModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-light">
+          <h5 class="modal-title"><i class="bi bi-pencil-square me-2 text-cc"></i>Edit Staff Privileges</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="editStaffForm">
+            <input type="hidden" id="editStaffId">
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Full Name *</label>
+              <input type="text" id="editStaffName" class="form-control" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Email Address *</label>
+              <input type="email" id="editStaffEmail" class="form-control" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Phone Number</label>
+              <input type="tel" id="editStaffPhone" class="form-control">
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Assigned Operational Area *</label>
+              <select id="editStaffAssigned" class="form-select" required>
+                <option value="shop">Shop & Inventory Management</option>
+                <option value="bar">Bar & Cafeteria POS</option>
+                <option value="booking">Court Booking & Front Desk</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Account Status</label>
+              <select id="editStaffStatus" class="form-select">
+                <option value="1">Active (Can Login)</option>
+                <option value="0">Deactivated (Access Revoked)</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Reset Password (Optional)</label>
+              <input type="password" id="editStaffNewPassword" class="form-control"
+                placeholder="Leave blank to retain current password">
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-cc fw-semibold" onclick="handleUpdateStaff()">
+            <i class="bi bi-check-lg me-1"></i> Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="/js/api.js"></script>
-<script src="/js/utils.js"></script>
+  <div id="alert-bar"></div>
 
-<script>
-let STAFF_CACHE = [];
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/utils.js"></script>
 
-document.addEventListener('DOMContentLoaded', async () => {
-  // Session check (Owner only)
-  try {
-    const user = await loadSession(true);
-    if (!user || user.role !== 'owner') {
-      window.location.href = '/shared/login.html';
-      return;
-    }
-    document.getElementById('userNameSidebar').textContent = user.full_name || 'Club Owner';
-    if (document.getElementById('userInitial')) document.getElementById('userInitial').textContent = (user.full_name || 'O').charAt(0).toUpperCase();
-  } catch {
-    window.location.href = '/shared/login.html';
-    return;
-  }
+  <script>
+    let STAFF_CACHE = [];
 
-  document.getElementById('todayDate').textContent = new Date().toLocaleDateString('en-IN', {
-    weekday: 'long', year: 'numeric', month: 'short', day: 'numeric'
-  });
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Session check (Owner only)
+      try {
+        const user = await loadSession(true);
+        if (!user || user.role !== 'owner') {
+          window.location.href = '/shared/login.html';
+          return;
+        }
+        document.getElementById('userNameSidebar').textContent = user.full_name || 'Club Owner';
+        if (document.getElementById('userInitial')) document.getElementById('userInitial').textContent = (user.full_name || 'O').charAt(0).toUpperCase();
+      } catch {
+        window.location.href = '/shared/login.html';
+        return;
+      }
 
-  document.getElementById('staffSearchInput').addEventListener('input', applyStaffFilters);
-  document.getElementById('staffRoleFilter').addEventListener('change', applyStaffFilters);
+      document.getElementById('todayDate').textContent = new Date().toLocaleDateString('en-IN', {
+        weekday: 'long', year: 'numeric', month: 'short', day: 'numeric'
+      });
 
-  document.getElementById('logoutBtn').addEventListener('click', async () => {
-    await api.post('/api/auth/logout');
-    window.location.href = '/shared/login.html';
-  });
+      document.getElementById('staffSearchInput').addEventListener('input', applyStaffFilters);
+      document.getElementById('staffRoleFilter').addEventListener('change', applyStaffFilters);
 
-  await loadStaffData();
-});
+      document.getElementById('logoutBtn').addEventListener('click', async () => {
+        await api.post('/api/auth/logout');
+        window.location.href = '/shared/login.html';
+      });
 
-function selectRoleRadio(role) {
-  const radio = document.querySelector(`input[name="assignedRoleRadio"][value="${role}"]`);
-  if (radio) radio.checked = true;
-}
+      await loadStaffData();
+    });
 
-// ── Fetch Staff Data ────────────────────────────────────────────────────────
-async function loadStaffData() {
-  try {
-    const staff = await api.get('/api/staff');
-    STAFF_CACHE = Array.isArray(staff) ? staff : [];
-  } catch (err) {
-    STAFF_CACHE = [
-      { id: 2, email: 'shop@championsclub.com', full_name: 'Alex Carter', phone: '+91 98765 43210', role: 'staff', assigned_area: 'shop', is_active: 1, created_at: new Date().toISOString() },
-      { id: 4, email: 'bar@championsclub.com', full_name: 'Elena Rostova', phone: '+91 98765 43211', role: 'staff', assigned_area: 'bar', is_active: 1, created_at: new Date().toISOString() },
-      { id: 5, email: 'booking@championsclub.com', full_name: 'David Chen', phone: '+91 98765 43212', role: 'staff', assigned_area: 'booking', is_active: 1, created_at: new Date().toISOString() }
-    ];
-  }
-  updateKpis();
-  applyStaffFilters();
-}
-
-function updateKpis() {
-  const total = STAFF_CACHE.length;
-  const shopCount = STAFF_CACHE.filter(s => s.assigned_area === 'shop').length;
-  const barCount = STAFF_CACHE.filter(s => s.assigned_area === 'bar').length;
-  const bookingCount = STAFF_CACHE.filter(s => s.assigned_area === 'booking').length;
-
-  document.getElementById('kpi-total-staff').textContent = total;
-  document.getElementById('kpi-shop-staff').textContent = shopCount;
-  document.getElementById('kpi-bar-staff').textContent = barCount;
-  document.getElementById('kpi-booking-staff').textContent = bookingCount;
-}
-
-function applyStaffFilters() {
-  const query = document.getElementById('staffSearchInput').value.toLowerCase().trim();
-  const roleFilter = document.getElementById('staffRoleFilter').value;
-
-  const filtered = STAFF_CACHE.filter(s => {
-    const matchesSearch = !query ||
-      (s.full_name && s.full_name.toLowerCase().includes(query)) ||
-      (s.email && s.email.toLowerCase().includes(query)) ||
-      (s.phone && s.phone.includes(query));
-
-    const matchesRole = roleFilter === 'all' || (s.assigned_area === roleFilter);
-    return matchesSearch && matchesRole;
-  });
-
-  document.getElementById('staffCountBadge').textContent = `Showing ${filtered.length} of ${STAFF_CACHE.length} staff`;
-  renderStaffTable(filtered);
-}
-
-function renderStaffTable(staffList) {
-  const tbody = document.getElementById('staffTableBody');
-  if (!staffList.length) {
-    tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted"><i class="bi bi-people fs-4 d-block mb-1"></i>No staff members found matching criteria.</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = staffList.map(s => {
-    let areaBadge = '';
-    let dashboardUrl = '';
-    if (s.assigned_area === 'shop') {
-      areaBadge = '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25"><i class="bi bi-shop me-1"></i>Shop & Pro Store</span>';
-      dashboardUrl = '<code>/staff/shop-dashboard.html</code>';
-    } else if (s.assigned_area === 'bar') {
-      areaBadge = '<span class="badge bg-warning bg-opacity-10 text-dark border border-warning border-opacity-50"><i class="bi bi-cup-hot me-1"></i>Bar & Cafeteria</span>';
-      dashboardUrl = '<code>/staff/cafeteria.html</code>';
-    } else {
-      areaBadge = '<span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25"><i class="bi bi-calendar-check me-1"></i>Court Booking Desk</span>';
-      dashboardUrl = '<code>/staff/dashboard.html</code>';
+    function selectRoleRadio(role) {
+      const radio = document.querySelector(`input[name="assignedRoleRadio"][value="${role}"]`);
+      if (radio) radio.checked = true;
     }
 
-    const statusBadge = s.is_active ?
-      '<span class="badge bg-success">Active</span>' :
-      '<span class="badge bg-danger">Deactivated</span>';
+    // ── Fetch Staff Data ────────────────────────────────────────────────────────
+    async function loadStaffData() {
+      try {
+        const staff = await api.get('/api/staff');
+        STAFF_CACHE = Array.isArray(staff) ? staff : [];
+      } catch (err) {
+        STAFF_CACHE = [
+          { id: 2, email: 'shop@championsclub.com', full_name: 'Alex Carter', phone: '+91 98765 43210', role: 'staff', assigned_area: 'shop', is_active: 1, created_at: new Date().toISOString() },
+          { id: 4, email: 'bar@championsclub.com', full_name: 'Elena Rostova', phone: '+91 98765 43211', role: 'staff', assigned_area: 'bar', is_active: 1, created_at: new Date().toISOString() },
+          { id: 5, email: 'booking@championsclub.com', full_name: 'David Chen', phone: '+91 98765 43212', role: 'staff', assigned_area: 'booking', is_active: 1, created_at: new Date().toISOString() }
+        ];
+      }
+      updateKpis();
+      applyStaffFilters();
+    }
 
-    return `
+    function updateKpis() {
+      const total = STAFF_CACHE.length;
+      const shopCount = STAFF_CACHE.filter(s => s.assigned_area === 'shop').length;
+      const barCount = STAFF_CACHE.filter(s => s.assigned_area === 'bar').length;
+      const bookingCount = STAFF_CACHE.filter(s => s.assigned_area === 'booking').length;
+
+      document.getElementById('kpi-total-staff').textContent = total;
+      document.getElementById('kpi-shop-staff').textContent = shopCount;
+      document.getElementById('kpi-bar-staff').textContent = barCount;
+      document.getElementById('kpi-booking-staff').textContent = bookingCount;
+    }
+
+    function applyStaffFilters() {
+      const query = document.getElementById('staffSearchInput').value.toLowerCase().trim();
+      const roleFilter = document.getElementById('staffRoleFilter').value;
+
+      const filtered = STAFF_CACHE.filter(s => {
+        const matchesSearch = !query ||
+          (s.full_name && s.full_name.toLowerCase().includes(query)) ||
+          (s.email && s.email.toLowerCase().includes(query)) ||
+          (s.phone && s.phone.includes(query));
+
+        const matchesRole = roleFilter === 'all' || (s.assigned_area === roleFilter);
+        return matchesSearch && matchesRole;
+      });
+
+      document.getElementById('staffCountBadge').textContent = `Showing ${filtered.length} of ${STAFF_CACHE.length} staff`;
+      renderStaffTable(filtered);
+    }
+
+    function renderStaffTable(staffList) {
+      const tbody = document.getElementById('staffTableBody');
+      if (!staffList.length) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted"><i class="bi bi-people fs-4 d-block mb-1"></i>No staff members found matching criteria.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = staffList.map(s => {
+
+        const statusBadge = s.is_active ?
+          '<span class="badge bg-success">Active</span>' :
+          '<span class="badge bg-danger">Deactivated</span>';
+
+        return `
       <tr>
         <td>
           <div class="d-flex align-items-center">
@@ -416,7 +442,7 @@ function renderStaffTable(staffList) {
           <small class="text-muted">${escHtml(s.phone || 'No phone')}</small>
         </td>
         <td>${areaBadge}</td>
-        <td>${dashboardUrl}</td>
+        
         <td>${statusBadge}</td>
         <td class="text-muted small">${fmtDate(s.created_at)}</td>
         <td class="text-end">
@@ -429,96 +455,97 @@ function renderStaffTable(staffList) {
         </td>
       </tr>
     `;
-  }).join('');
-}
-
-// ── Create Staff ────────────────────────────────────────────────────────────
-async function handleCreateStaff() {
-  const name = document.getElementById('newStaffName').value.trim();
-  const email = document.getElementById('newStaffEmail').value.trim();
-  const password = document.getElementById('newStaffPassword').value;
-  const phone = document.getElementById('newStaffPhone').value.trim();
-  const assigned = document.querySelector('input[name="assignedRoleRadio"]:checked')?.value || 'shop';
-
-  if (!name || !email || !password) {
-    showAlert('Please provide Name, Email, and Password.', 'danger');
-    return;
-  }
-
-  try {
-    const res = await api.post('/api/staff', {
-      full_name: name,
-      email,
-      password,
-      phone,
-      assigned_area: assigned
-    });
-    showAlert(`Staff member "${name}" registered successfully! Assigned to ${assigned.toUpperCase()}.`, 'success');
-  } catch (err) {
-    showAlert(err.message || 'Staff created in local session', 'success');
-  }
-
-  bootstrap.Modal.getInstance(document.getElementById('addStaffModal')).hide();
-  document.getElementById('addStaffForm').reset();
-  await loadStaffData();
-}
-
-// ── Edit Staff ──────────────────────────────────────────────────────────────
-function openEditStaff(staffId) {
-  const s = STAFF_CACHE.find(item => item.id === staffId);
-  if (!s) return;
-
-  document.getElementById('editStaffId').value = s.id;
-  document.getElementById('editStaffName').value = s.full_name || '';
-  document.getElementById('editStaffEmail').value = s.email || '';
-  document.getElementById('editStaffPhone').value = s.phone || '';
-  document.getElementById('editStaffAssigned').value = s.assigned_area || 'shop';
-  document.getElementById('editStaffStatus').value = s.is_active ? '1' : '0';
-  document.getElementById('editStaffNewPassword').value = '';
-
-  new bootstrap.Modal(document.getElementById('editStaffModal')).show();
-}
-
-async function handleUpdateStaff() {
-  const staffId = document.getElementById('editStaffId').value;
-  const name = document.getElementById('editStaffName').value.trim();
-  const email = document.getElementById('editStaffEmail').value.trim();
-  const phone = document.getElementById('editStaffPhone').value.trim();
-  const assigned = document.getElementById('editStaffAssigned').value;
-  const isActive = parseInt(document.getElementById('editStaffStatus').value, 10);
-  const newPassword = document.getElementById('editStaffNewPassword').value;
-
-  try {
-    await api.put(`/api/staff/${staffId}`, {
-      full_name: name,
-      email,
-      phone,
-      assigned_area: assigned,
-      is_active: isActive,
-      password: newPassword || undefined
-    });
-    showAlert('Staff member updated successfully!', 'success');
-  } catch (err) {
-    showAlert('Staff updated!', 'success');
-  }
-
-  bootstrap.Modal.getInstance(document.getElementById('editStaffModal')).hide();
-  await loadStaffData();
-}
-
-async function toggleStaffStatus(staffId, newStatus) {
-  try {
-    if (newStatus === 0) {
-      await api.del(`/api/staff/${staffId}`);
-    } else {
-      await api.put(`/api/staff/${staffId}`, { is_active: 1 });
+      }).join('');
     }
-    showAlert('Staff status updated!', 'success');
-  } catch (err) {
-    showAlert('Status updated!', 'success');
-  }
-  await loadStaffData();
-}
-</script>
+
+    // ── Create Staff ────────────────────────────────────────────────────────────
+    async function handleCreateStaff() {
+      const name = document.getElementById('newStaffName').value.trim();
+      const email = document.getElementById('newStaffEmail').value.trim();
+      const password = document.getElementById('newStaffPassword').value;
+      const phone = document.getElementById('newStaffPhone').value.trim();
+      const assigned = document.querySelector('input[name="assignedRoleRadio"]:checked')?.value || 'shop';
+
+      if (!name || !email || !password) {
+        showAlert('Please provide Name, Email, and Password.', 'danger');
+        return;
+      }
+
+      try {
+        const res = await api.post('/api/staff', {
+          full_name: name,
+          email,
+          password,
+          phone,
+          assigned_area: assigned
+        });
+        showAlert(`Staff member "${name}" registered successfully! Assigned to ${assigned.toUpperCase()}.`, 'success');
+      } catch (err) {
+        showAlert(err.message || 'Staff created in local session', 'success');
+      }
+
+      bootstrap.Modal.getInstance(document.getElementById('addStaffModal')).hide();
+      document.getElementById('addStaffForm').reset();
+      await loadStaffData();
+    }
+
+    // ── Edit Staff ──────────────────────────────────────────────────────────────
+    function openEditStaff(staffId) {
+      const s = STAFF_CACHE.find(item => item.id === staffId);
+      if (!s) return;
+
+      document.getElementById('editStaffId').value = s.id;
+      document.getElementById('editStaffName').value = s.full_name || '';
+      document.getElementById('editStaffEmail').value = s.email || '';
+      document.getElementById('editStaffPhone').value = s.phone || '';
+      document.getElementById('editStaffAssigned').value = s.assigned_area || 'shop';
+      document.getElementById('editStaffStatus').value = s.is_active ? '1' : '0';
+      document.getElementById('editStaffNewPassword').value = '';
+
+      new bootstrap.Modal(document.getElementById('editStaffModal')).show();
+    }
+
+    async function handleUpdateStaff() {
+      const staffId = document.getElementById('editStaffId').value;
+      const name = document.getElementById('editStaffName').value.trim();
+      const email = document.getElementById('editStaffEmail').value.trim();
+      const phone = document.getElementById('editStaffPhone').value.trim();
+      const assigned = document.getElementById('editStaffAssigned').value;
+      const isActive = parseInt(document.getElementById('editStaffStatus').value, 10);
+      const newPassword = document.getElementById('editStaffNewPassword').value;
+
+      try {
+        await api.put(`/api/staff/${staffId}`, {
+          full_name: name,
+          email,
+          phone,
+          assigned_area: assigned,
+          is_active: isActive,
+          password: newPassword || undefined
+        });
+        showAlert('Staff member updated successfully!', 'success');
+      } catch (err) {
+        showAlert('Staff updated!', 'success');
+      }
+
+      bootstrap.Modal.getInstance(document.getElementById('editStaffModal')).hide();
+      await loadStaffData();
+    }
+
+    async function toggleStaffStatus(staffId, newStatus) {
+      try {
+        if (newStatus === 0) {
+          await api.del(`/api/staff/${staffId}`);
+        } else {
+          await api.put(`/api/staff/${staffId}`, { is_active: 1 });
+        }
+        showAlert('Staff status updated!', 'success');
+      } catch (err) {
+        showAlert('Status updated!', 'success');
+      }
+      await loadStaffData();
+    }
+  </script>
 </body>
+
 </html>

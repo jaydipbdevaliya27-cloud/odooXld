@@ -1,313 +1,623 @@
 /**
  * @file server/routes/members.js
- * @description Member management routes – fully dynamic CRUD on cc_members and users tables.
+ * @description Comprehensive Member Management API.
+ * Supports search with debouncing, junior memberships with guardian details,
+ * check-ins, renewal, history ledger, and status toggles.
  */
+
 const express = require('express');
-const bcrypt  = require('bcryptjs');
-const db      = require('../db');
+const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
+const db = require('../db');
 const { requireLogin, requireRole } = require('../middleware/auth');
-const router  = express.Router();
+const { validate } = require('../middleware/validate');
+const { todayIST } = require('../utils/time');
+
+const router = express.Router();
 
 // ── GET /api/members ─────────────────────────────────────────────────────────
 router.get('/', requireLogin, requireRole('staff', 'owner'), async (req, res, next) => {
   try {
-    const { search, status, plan_id, expiring_days, page = 1, limit = 50 } = req.query;
-    const offset = (Number(page) - 1) * Number(limit);
+    const {
+      q,
+      status,
+      plan_id,
+      expiring_days,
+      junior,
+      page = 1,
+      limit = 20,
+      sort = 'expiry_date',
+      order = 'asc'
+    } = req.query;
+
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+    const offset = (pageNum - 1) * limitNum;
+
     let where = '1=1';
     const params = [];
 
-    if (search) {
-      where += ` AND (u.full_name LIKE ? OR u.name LIKE ? OR u.email LIKE ? OR m.member_code LIKE ? OR u.phone LIKE ?)`;
-      const s = `%${search}%`;
-      params.push(s, s, s, s, s);
+    // Search query
+    if (q && q.trim().length >= 2) {
+      const s = `%${q.trim().replace(/[%_]/g, '\\$&')}%`;
+      where += ` AND (
+        u.full_name LIKE ? OR
+        u.email LIKE ? OR
+        u.phone LIKE ? OR
+        m.member_code LIKE ?
+      )`;
+      params.push(s, s, s, s);
     }
+
     if (status) {
       if (status === 'expiring') {
-        where += ` AND m.status='active' AND m.expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)`;
+        where += ` AND m.status = 'active' AND m.expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)`;
       } else if (status === 'expired') {
-        where += ` AND (m.status='expired' OR m.expiry_date < CURDATE())`;
+        where += ` AND (m.status = 'expired' OR m.expiry_date < CURDATE())`;
       } else {
         where += ' AND m.status = ?';
         params.push(status);
       }
     }
-    if (plan_id)      { where += ' AND m.plan_id = ?';   params.push(plan_id); }
+
+    if (plan_id) {
+      where += ' AND m.plan_id = ?';
+      params.push(plan_id);
+    }
+
     if (expiring_days) {
-      where += ` AND m.status='active' AND m.expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL ? DAY)`;
+      where += ` AND m.status = 'active' AND m.expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL ? DAY)`;
       params.push(Number(expiring_days));
     }
 
+    if (junior === '1' || junior === 'true') {
+      where += ' AND p.is_junior = 1';
+    }
+
+    // Sort column allowlist
+    const allowedSorts = ['expiry_date', 'join_date', 'full_name', 'member_code', 'created_at'];
+    const sortCol = allowedSorts.includes(sort) ? (sort === 'full_name' ? 'u.full_name' : `m.${sort}`) : 'm.expiry_date';
+    const sortDir = order && order.toLowerCase() === 'desc' ? 'DESC' : 'ASC';
+
+    // Total count
     const [[{ total }]] = await db.query(
-      `SELECT COUNT(*) AS total FROM cc_members m
-         JOIN users u ON m.user_id = u.id
-        WHERE ${where}`, params
+      `SELECT COUNT(*) AS total
+       FROM members m
+       JOIN users u ON m.user_id = u.id
+       JOIN plans p ON m.plan_id = p.id
+       WHERE ${where}`,
+      params
     );
 
+    // Member list
     const [rows] = await db.query(
-      `SELECT m.*, p.name AS plan_name, p.annual_fee, p.shop_discount_pct, p.bar_discount_pct, p.court_discount_pct,
-              COALESCE(u.full_name, u.name) AS full_name, u.email, u.phone,
+      `SELECT m.*,
+              p.name AS plan_name, p.code AS plan_code, p.annual_fee, p.is_junior,
+              p.court_discount_pct, p.shop_discount_pct, p.bar_discount_pct,
+              u.full_name, u.email, u.phone,
               DATEDIFF(m.expiry_date, CURDATE()) AS days_left
-         FROM cc_members m
-         JOIN users u ON m.user_id = u.id
-         JOIN cc_plans p ON m.plan_id = p.id
-        WHERE ${where}
-        ORDER BY m.expiry_date ASC
-        LIMIT ? OFFSET ?`,
-      [...params, Number(limit), offset]
+       FROM members m
+       JOIN users u ON m.user_id = u.id
+       JOIN plans p ON m.plan_id = p.id
+       WHERE ${where}
+       ORDER BY ${sortCol} ${sortDir}
+       LIMIT ? OFFSET ?`,
+      [...params, limitNum, offset]
     );
 
-    res.json({ members: rows, total, page: Number(page), pages: Math.ceil(total / Number(limit)) });
-  } catch (err) { next(err); }
+    res.json({
+      data: rows,
+      meta: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum) || 1
+      },
+      // Backward compatibility for legacy frontend tables
+      members: rows,
+      total,
+      page: pageNum,
+      pages: Math.ceil(total / limitNum) || 1
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
-// ── GET /api/members/profile (logged-in user profile from Nilesh branch) ────
+// ── GET /api/members/profile or /api/members/me ──────────────────────────────
 router.get('/profile', requireLogin, async (req, res, next) => {
   try {
     const [rows] = await db.query(
-      `SELECT m.*, p.name AS plan_name, p.code AS plan_code, p.annual_fee, p.shop_discount_pct, p.bar_discount_pct, p.court_discount_pct,
-              p.max_bookings_per_day,
-              COALESCE(u.full_name, u.name) AS full_name, u.email, u.phone,
+      `SELECT m.*,
+              p.name AS plan_name, p.code AS plan_code, p.annual_fee, p.is_junior,
+              p.court_discount_pct, p.shop_discount_pct, p.bar_discount_pct, p.max_bookings_per_day,
+              u.full_name, u.email, u.phone,
               DATEDIFF(m.expiry_date, CURDATE()) AS days_left
-         FROM cc_members m
-         JOIN users u ON m.user_id = u.id
-         JOIN cc_plans p ON m.plan_id = p.id
-        WHERE m.user_id = ?`,
+       FROM members m
+       JOIN users u ON m.user_id = u.id
+       JOIN plans p ON m.plan_id = p.id
+       WHERE m.user_id = ?`,
       [req.session.user.id]
     );
-    if (!rows.length) return res.status(404).json({ error: 'Member profile not found for this user' });
+    if (!rows.length) {
+      return res.status(404).json({ error: 'Member profile not found for this user', code: 'MEMBER_NOT_FOUND' });
+    }
     res.json(rows[0]);
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
-// ── GET /api/members/me ──────────────────────────────────────────────────────
 router.get('/me', requireLogin, async (req, res, next) => {
   try {
     const [rows] = await db.query(
-      `SELECT m.*, p.name AS plan_name, p.annual_fee, p.shop_discount_pct, p.bar_discount_pct, p.court_discount_pct,
-              p.max_bookings_per_day,
-              COALESCE(u.full_name, u.name) AS full_name, u.email, u.phone,
+      `SELECT m.*,
+              p.name AS plan_name, p.code AS plan_code, p.annual_fee, p.is_junior,
+              p.court_discount_pct, p.shop_discount_pct, p.bar_discount_pct, p.max_bookings_per_day,
+              u.full_name, u.email, u.phone,
               DATEDIFF(m.expiry_date, CURDATE()) AS days_left
-         FROM cc_members m
-         JOIN users u ON m.user_id = u.id
-         JOIN cc_plans p ON m.plan_id = p.id
-        WHERE m.user_id = ?`,
+       FROM members m
+       JOIN users u ON m.user_id = u.id
+       JOIN plans p ON m.plan_id = p.id
+       WHERE m.user_id = ?`,
       [req.session.user.id]
     );
-    if (!rows.length) return res.status(404).json({ error: 'Member record not found' });
+    if (!rows.length) {
+      return res.status(404).json({ error: 'Member record not found', code: 'MEMBER_NOT_FOUND' });
+    }
     res.json(rows[0]);
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 // ── GET /api/members/:id ─────────────────────────────────────────────────────
 router.get('/:id', requireLogin, async (req, res, next) => {
   try {
     const [rows] = await db.query(
-      `SELECT m.*, p.name AS plan_name, p.annual_fee, p.shop_discount_pct, p.bar_discount_pct, p.court_discount_pct,
-              COALESCE(u.full_name, u.name) AS full_name, u.email, u.phone,
+      `SELECT m.*,
+              p.name AS plan_name, p.code AS plan_code, p.annual_fee, p.is_junior,
+              p.court_discount_pct, p.shop_discount_pct, p.bar_discount_pct, p.max_bookings_per_day,
+              u.full_name, u.email, u.phone,
               DATEDIFF(m.expiry_date, CURDATE()) AS days_left
-         FROM cc_members m
-         JOIN users u ON m.user_id = u.id
-         JOIN cc_plans p ON m.plan_id = p.id
-        WHERE m.id = ?`, [req.params.id]
+       FROM members m
+       JOIN users u ON m.user_id = u.id
+       JOIN plans p ON m.plan_id = p.id
+       WHERE m.id = ?`,
+      [req.params.id]
     );
-    if (!rows.length) return res.status(404).json({ error: 'Member not found' });
-    const m = rows[0];
-    if (req.session.user.role === 'member' && m.user_id !== req.session.user.id)
-      return res.status(403).json({ error: 'Forbidden' });
-    res.json(m);
-  } catch (err) { next(err); }
-});
 
-// ── GET /api/members/by-user/:userId ─────────────────────────────────────────
-router.get('/by-user/:userId', requireLogin, async (req, res, next) => {
-  try {
-    const [rows] = await db.query(
-      `SELECT m.*, p.name AS plan_name, p.annual_fee, p.shop_discount_pct, p.bar_discount_pct, p.court_discount_pct,
-              p.max_bookings_per_day,
-              COALESCE(u.full_name, u.name) AS full_name, u.email, u.phone,
-              DATEDIFF(m.expiry_date, CURDATE()) AS days_left
-         FROM cc_members m
-         JOIN users u ON m.user_id = u.id
-         JOIN cc_plans p ON m.plan_id = p.id
-        WHERE m.user_id = ?`, [req.params.userId]
-    );
-    res.json(rows[0] || null);
-  } catch (err) { next(err); }
-});
-
-// ── POST /api/members (Insert Member) ─────────────────────────────────────────
-router.post('/', requireLogin, requireRole('staff', 'owner'), async (req, res, next) => {
-  try {
-    const { full_name, email, phone, date_of_birth, plan_id, payment_method,
-            password, emergency_contact_name, emergency_contact_phone, notes,
-            join_date, expiry_date, status } = req.body;
-
-    if (!full_name || !email || !plan_id)
-      return res.status(400).json({ error: 'Name, email, and plan are required' });
-
-    // Check plan exists
-    const [plans] = await db.query('SELECT * FROM cc_plans WHERE id = ? AND is_active = 1', [plan_id]);
-    if (!plans.length) return res.status(400).json({ error: 'Invalid plan selected' });
-    const plan = plans[0];
-
-    // Create or find user
-    let userId;
-    const cleanEmail = email.trim().toLowerCase();
-    const [existing] = await db.query('SELECT id FROM users WHERE email = ?', [cleanEmail]);
-    if (existing.length) {
-      userId = existing[0].id;
-      await db.query(
-        `UPDATE users SET full_name = ?, name = ?, phone = COALESCE(?, phone) WHERE id = ?`,
-        [full_name.trim(), full_name.trim(), phone || null, userId]
-      );
-    } else {
-      const hash = await bcrypt.hash(password || 'password123', 10);
-      const [ins] = await db.query(
-        `INSERT INTO users (name, full_name, email, password_hash, role, phone, assigned_area, is_active)
-         VALUES (?,?,?,?,'member',?,?,1)`,
-        [full_name.trim(), full_name.trim(), cleanEmail, hash, phone || null, 'member']
-      );
-      userId = ins.insertId;
+    if (!rows.length) {
+      return res.status(404).json({ error: 'Member not found', code: 'MEMBER_NOT_FOUND' });
     }
 
-    // Check not already a member
-    const [mCheck] = await db.query('SELECT id FROM cc_members WHERE user_id = ?', [userId]);
-    if (mCheck.length) return res.status(409).json({ error: 'This user already has a membership record' });
-
-    // Generate unique member code
-    const [[{ cnt }]] = await db.query('SELECT COUNT(*) AS cnt FROM cc_members');
-    const memberCode = `CC-${new Date().getFullYear()}-${String(cnt + 1).padStart(3, '0')}`;
-
-    const effectiveJoinDate = join_date || new Date().toISOString().slice(0, 10);
-    const effectiveExpiryDate = expiry_date || (() => {
-      const d = new Date(effectiveJoinDate);
-      d.setMonth(d.getMonth() + (plan.duration_months || 12));
-      return d.toISOString().slice(0, 10);
-    })();
-
-    const [ins] = await db.query(
-      `INSERT INTO cc_members (user_id, member_code, plan_id, date_of_birth, join_date, expiry_date, status, emergency_contact_name, emergency_contact_phone, notes)
-       VALUES (?,?,?,?,?,?,?,?,?,?)`,
-      [userId, memberCode, plan_id, date_of_birth || null, effectiveJoinDate, effectiveExpiryDate,
-       status || 'active', emergency_contact_name || null, emergency_contact_phone || null, notes || null]
-    );
-
-    // Record payment if method provided
-    if (payment_method) {
-      const payCode = `PAY-MBR-${Date.now()}`;
-      await db.query(
-        `INSERT INTO cc_payments (payment_code,source,reference_id,user_id,amount,method,status,paid_at)
-         VALUES (?,?,?,?,?,?,'paid',NOW())`,
-        [payCode, 'membership', ins.insertId, userId, plan.annual_fee, payment_method]
-      );
+    const member = rows[0];
+    if (req.session.user.role === 'member' && member.user_id !== req.session.user.id) {
+      return res.status(403).json({ error: 'Forbidden', code: 'FORBIDDEN' });
     }
 
-    const [rows] = await db.query(
-      `SELECT m.*, p.name AS plan_name, COALESCE(u.full_name, u.name) AS full_name, u.email, u.phone,
-              DATEDIFF(m.expiry_date, CURDATE()) AS days_left
-         FROM cc_members m JOIN users u ON m.user_id = u.id JOIN cc_plans p ON m.plan_id = p.id
-        WHERE m.id = ?`, [ins.insertId]
+    // Fetch guardians if junior
+    const [guardians] = await db.query(
+      'SELECT * FROM member_guardians WHERE member_id = ?',
+      [member.id]
     );
-    res.status(201).json(rows[0]);
+    member.guardians = guardians;
+
+    // Fetch history
+    const [history] = await db.query(
+      `SELECT h.*, p.name AS plan_name
+       FROM membership_history h
+       JOIN plans p ON h.plan_id = p.id
+       WHERE h.member_id = ?
+       ORDER BY h.created_at DESC`,
+      [member.id]
+    );
+    member.history = history;
+
+    // Fetch recent check-ins
+    const [checkins] = await db.query(
+      `SELECT c.*, u.full_name AS staff_name
+       FROM member_checkins c
+       LEFT JOIN users u ON c.checked_in_by = u.id
+       WHERE c.member_id = ?
+       ORDER BY c.checkin_time DESC LIMIT 10`,
+      [member.id]
+    );
+    member.checkins = checkins;
+
+    res.json(member);
   } catch (err) {
-    if (err.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'Email or member code already exists' });
     next(err);
   }
 });
 
-// ── PUT /api/members/:id (Update Member) ──────────────────────────────────────
+// ── POST /api/members ─────────────────────────────────────────────────────────
+router.post(
+  '/',
+  requireLogin,
+  requireRole('staff', 'owner'),
+  validate({
+    full_name: { required: true, minLength: 2, maxLength: 80, label: 'Full name' },
+    email: { required: true, type: 'email', label: 'Email address' },
+    phone: { required: true, type: 'phone', label: 'Phone number' }
+  }),
+  async (req, res, next) => {
+    try {
+      const {
+        full_name,
+        email,
+        phone,
+        date_of_birth,
+        plan_id,
+        plan_code,
+        payment_method = 'upi',
+        emergency_contact_name,
+        emergency_contact_phone,
+        notes,
+        guardian_name,
+        guardian_relationship,
+        guardian_phone
+      } = req.body;
+
+      const cleanEmail = email.trim().toLowerCase();
+      const cleanPhone = phone ? phone.replace(/[\s\-+]/g, '').slice(-10) : null;
+
+      // Validate plan by id or code
+      let planQuery = 'SELECT * FROM plans WHERE is_active = 1 AND ';
+      const planParams = [];
+      if (plan_id) {
+        planQuery += 'id = ?';
+        planParams.push(plan_id);
+      } else if (plan_code) {
+        planQuery += 'code = ?';
+        planParams.push(plan_code.toUpperCase());
+      } else {
+        return res.status(400).json({
+          error: 'Membership plan is required.',
+          code: 'VALIDATION_ERROR',
+          fields: { plan_id: 'Select a valid membership plan' }
+        });
+      }
+
+      const [plans] = await db.query(planQuery, planParams);
+      if (!plans.length) {
+        return res.status(400).json({ error: 'Selected membership plan is invalid or inactive.' });
+      }
+      const plan = plans[0];
+
+      // Age calculation if DOB is provided
+      let isUnder18 = false;
+      if (date_of_birth) {
+        const birthDate = new Date(date_of_birth);
+        const ageDifMs = Date.now() - birthDate.getTime();
+        const ageDate = new Date(ageDifMs);
+        const age = Math.abs(ageDate.getUTCFullYear() - 1970);
+        if (age < 18) {
+          isUnder18 = true;
+          if (!guardian_name || !guardian_phone) {
+            return res.status(400).json({
+              error: 'Guardian name and guardian contact number are mandatory for members under 18.',
+              code: 'GUARDIAN_REQUIRED',
+              fields: {
+                guardian_name: 'Guardian name is required for under-18 members',
+                guardian_phone: 'Guardian phone is required for under-18 members'
+              }
+            });
+          }
+          if (!plan.is_junior) {
+            return res.status(400).json({
+              error: 'Members under 18 must be enrolled on the Junior Sports Plan.',
+              code: 'JUNIOR_PLAN_REQUIRED',
+              fields: { plan_id: 'Under-18 members must select the Junior plan' }
+            });
+          }
+        } else if (plan.is_junior) {
+          return res.status(400).json({
+            error: 'The Junior Sports Plan is restricted to youth under 18 years old.',
+            code: 'JUNIOR_AGE_RESTRICTION',
+            fields: { plan_id: 'Junior plan is only for members under 18' }
+          });
+        }
+      }
+
+      // Emergency contact rule: if one is provided, require both
+      if ((emergency_contact_name && !emergency_contact_phone) || (!emergency_contact_name && emergency_contact_phone)) {
+        return res.status(400).json({
+          error: 'Please provide both emergency contact name and phone number.',
+          code: 'EMERGENCY_CONTACT_INCOMPLETE',
+          fields: {
+            emergency_contact_name: emergency_contact_name ? undefined : 'Emergency contact name required',
+            emergency_contact_phone: emergency_contact_phone ? undefined : 'Emergency contact phone required'
+          }
+        });
+      }
+
+      const result = await db.transaction(async (conn) => {
+        // 1. Create or find user
+        let userId;
+        const [existingUsers] = await conn.query('SELECT id FROM users WHERE email = ?', [cleanEmail]);
+
+        if (existingUsers.length) {
+          userId = existingUsers[0].id;
+          await conn.query(
+            `UPDATE users SET full_name = ?, phone = COALESCE(?, phone), role = 'member' WHERE id = ?`,
+            [full_name.trim(), cleanPhone, userId]
+          );
+        } else {
+          // Generate temporary password
+          const tempPassword = `Pass@${crypto.randomBytes(3).toString('hex')}`;
+          const hash = await bcrypt.hash(tempPassword, 10);
+
+          const [insUser] = await conn.query(
+            `INSERT INTO users (email, password_hash, role, full_name, phone, must_change_password, is_active)
+             VALUES (?, ?, 'member', ?, ?, 1, 1)`,
+            [cleanEmail, hash, full_name.trim(), cleanPhone]
+          );
+          userId = insUser.insertId;
+        }
+
+        const joinDate = todayIST();
+        const expDate = new Date();
+        expDate.setMonth(expDate.getMonth() + (plan.duration_months || 12));
+        const expiryDate = expDate.toISOString().slice(0, 10);
+
+        // 2. Check if member record already exists for this user
+        const [existingMember] = await conn.query('SELECT id, member_code FROM members WHERE user_id = ?', [userId]);
+        let memberId;
+
+        if (existingMember.length) {
+          memberId = existingMember[0].id;
+          await conn.query(
+            `UPDATE members
+             SET plan_id = ?, date_of_birth = COALESCE(?, date_of_birth),
+                 join_date = ?, expiry_date = ?, status = 'active',
+                 emergency_contact_name = COALESCE(?, emergency_contact_name),
+                 emergency_contact_phone = COALESCE(?, emergency_contact_phone),
+                 notes = COALESCE(?, notes)
+             WHERE id = ?`,
+            [
+              plan.id, date_of_birth || null, joinDate, expiryDate,
+              emergency_contact_name || null, emergency_contact_phone || null,
+              notes || null, memberId
+            ]
+          );
+        } else {
+          // Generate unique member code
+          const [[{ maxId }]] = await conn.query('SELECT COALESCE(MAX(id), 0) AS maxId FROM members');
+          let memberCode = `CC-${new Date().getFullYear()}-${String(Number(maxId) + 1).padStart(3, '0')}`;
+
+          const [dup] = await conn.query('SELECT id FROM members WHERE member_code = ?', [memberCode]);
+          if (dup.length) {
+            memberCode = `CC-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}`;
+          }
+
+          const [insMember] = await conn.query(
+            `INSERT INTO members (
+              user_id, member_code, plan_id, date_of_birth, join_date, expiry_date,
+              status, emergency_contact_name, emergency_contact_phone, notes
+            ) VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?, ?)`,
+            [
+              userId, memberCode, plan.id, date_of_birth || null, joinDate, expiryDate,
+              emergency_contact_name || null, emergency_contact_phone || null, notes || null
+            ]
+          );
+          memberId = insMember.insertId;
+        }
+
+        // 3. Save guardian details if under 18
+        if (isUnder18 && guardian_name) {
+          await conn.query(
+            `INSERT INTO member_guardians (member_id, guardian_name, relationship, phone, consent_given)
+             VALUES (?, ?, ?, ?, 1)`,
+            [memberId, guardian_name.trim(), guardian_relationship || 'Guardian', guardian_phone.trim()]
+          );
+        }
+
+        // 4. Record history
+        await conn.query(
+          `INSERT INTO membership_history (member_id, plan_id, action, start_date, end_date, amount_paid, notes)
+           VALUES (?, ?, 'joined', ?, ?, ?, 'Enrolled via admin portal')`,
+          [memberId, plan.id, joinDate, expiryDate, plan.annual_fee]
+        );
+
+        // 5. Record initial payment
+        if (plan.annual_fee > 0) {
+          const payCode = `PAY-MBR-${Date.now()}`;
+          await conn.query(
+            `INSERT INTO payments (payment_code, source, reference_id, user_id, amount, method, status, paid_at)
+             VALUES (?, 'membership', ?, ?, ?, ?, 'paid', NOW())`,
+            [payCode, memberId, userId, plan.annual_fee, payment_method]
+          );
+        }
+
+        // Return full member profile
+        const [mRows] = await conn.query(
+          `SELECT m.*, p.name AS plan_name, u.full_name, u.email, u.phone,
+                  DATEDIFF(m.expiry_date, CURDATE()) AS days_left
+           FROM members m
+           JOIN users u ON m.user_id = u.id
+           JOIN plans p ON m.plan_id = p.id
+           WHERE m.id = ?`,
+          [memberId]
+        );
+
+        return mRows[0];
+      });
+
+      res.status(201).json(result);
+    } catch (err) {
+      if (err.code === 'ER_DUP_ENTRY') {
+        return res.status(409).json({ error: 'Email or member record already exists.', code: 'DUPLICATE_ENTRY' });
+      }
+      next(err);
+    }
+  }
+);
+
+// ── PUT /api/members/:id ─────────────────────────────────────────────────────
 router.put('/:id', requireLogin, requireRole('staff', 'owner'), async (req, res, next) => {
   try {
-    const { full_name, email, phone, status, notes, emergency_contact_name, emergency_contact_phone,
-            plan_id, join_date, expiry_date } = req.body;
+    const memberId = req.params.id;
+    const {
+      full_name,
+      email,
+      phone,
+      status,
+      notes,
+      emergency_contact_name,
+      emergency_contact_phone,
+      plan_id,
+      expiry_date
+    } = req.body;
 
-    // Get current member record
-    const [mRows] = await db.query('SELECT * FROM cc_members WHERE id = ?', [req.params.id]);
+    const [mRows] = await db.query('SELECT * FROM members WHERE id = ?', [memberId]);
     if (!mRows.length) return res.status(404).json({ error: 'Member not found' });
-    const current = mRows[0];
+    const member = mRows[0];
 
-    // Update user table details if provided
+    // Update user info
     if (full_name || email || phone) {
       await db.query(
-        `UPDATE users SET
-           full_name = COALESCE(?, full_name),
-           name = COALESCE(?, name),
-           email = COALESCE(?, email),
-           phone = COALESCE(?, phone)
+        `UPDATE users
+         SET full_name = COALESCE(?, full_name),
+             email = COALESCE(?, email),
+             phone = COALESCE(?, phone)
          WHERE id = ?`,
-        [full_name ? full_name.trim() : null, full_name ? full_name.trim() : null,
-         email ? email.trim().toLowerCase() : null, phone || null, current.user_id]
+        [
+          full_name ? full_name.trim() : null,
+          email ? email.trim().toLowerCase() : null,
+          phone ? phone.replace(/[\s\-+]/g, '').slice(-10) : null,
+          member.user_id
+        ]
       );
     }
 
     // Update member record
     await db.query(
-      `UPDATE cc_members SET
-         status = COALESCE(?, status),
-         notes = COALESCE(?, notes),
-         emergency_contact_name = COALESCE(?, emergency_contact_name),
-         emergency_contact_phone = COALESCE(?, emergency_contact_phone),
-         plan_id = COALESCE(?, plan_id),
-         join_date = COALESCE(?, join_date),
-         expiry_date = COALESCE(?, expiry_date)
+      `UPDATE members
+       SET status = COALESCE(?, status),
+           notes = COALESCE(?, notes),
+           emergency_contact_name = COALESCE(?, emergency_contact_name),
+           emergency_contact_phone = COALESCE(?, emergency_contact_phone),
+           plan_id = COALESCE(?, plan_id),
+           expiry_date = COALESCE(?, expiry_date)
        WHERE id = ?`,
-      [status || null, notes !== undefined ? notes : null,
-       emergency_contact_name !== undefined ? emergency_contact_name : null,
-       emergency_contact_phone !== undefined ? emergency_contact_phone : null,
-       plan_id || null, join_date || null, expiry_date || null, req.params.id]
+      [
+        status || null,
+        notes !== undefined ? notes : null,
+        emergency_contact_name !== undefined ? emergency_contact_name : null,
+        emergency_contact_phone !== undefined ? emergency_contact_phone : null,
+        plan_id || null,
+        expiry_date || null,
+        memberId
+      ]
     );
 
-    const [rows] = await db.query(
-      `SELECT m.*, p.name AS plan_name, COALESCE(u.full_name,u.name) AS full_name, u.email, u.phone,
+    const [updated] = await db.query(
+      `SELECT m.*, p.name AS plan_name, u.full_name, u.email, u.phone,
               DATEDIFF(m.expiry_date, CURDATE()) AS days_left
-         FROM cc_members m JOIN users u ON m.user_id=u.id JOIN cc_plans p ON m.plan_id=p.id
-        WHERE m.id=?`, [req.params.id]
+       FROM members m
+       JOIN users u ON m.user_id = u.id
+       JOIN plans p ON m.plan_id = p.id
+       WHERE m.id = ?`,
+      [memberId]
     );
-    res.json(rows[0]);
-  } catch (err) { next(err); }
+
+    res.json(updated[0]);
+  } catch (err) {
+    next(err);
+  }
 });
 
 // ── POST /api/members/:id/renew ──────────────────────────────────────────────
 router.post('/:id/renew', requireLogin, requireRole('staff', 'owner'), async (req, res, next) => {
   try {
-    const { plan_id, payment_method } = req.body;
-    const [rows] = await db.query('SELECT * FROM cc_members WHERE id = ?', [req.params.id]);
-    if (!rows.length) return res.status(404).json({ error: 'Member not found' });
-    const m = rows[0];
+    const memberId = req.params.id;
+    const { plan_id, payment_method = 'upi' } = req.body;
 
-    const [plans] = await db.query('SELECT * FROM cc_plans WHERE id = ?', [plan_id || m.plan_id]);
-    if (!plans.length) return res.status(400).json({ error: 'Invalid plan selected' });
-    const plan = plans[0];
+    const [mRows] = await db.query('SELECT * FROM members WHERE id = ?', [memberId]);
+    if (!mRows.length) return res.status(404).json({ error: 'Member not found' });
+    const member = mRows[0];
 
-    // Extend from today or current expiry (whichever is later)
-    const base = new Date(Math.max(new Date(), new Date(m.expiry_date)));
-    base.setMonth(base.getMonth() + (plan.duration_months || 12));
-    const newExpiry = base.toISOString().slice(0, 10);
+    const targetPlanId = plan_id || member.plan_id;
+    const [pRows] = await db.query('SELECT * FROM plans WHERE id = ?', [targetPlanId]);
+    if (!pRows.length) return res.status(400).json({ error: 'Invalid plan selected' });
+    const plan = pRows[0];
 
-    await db.query(
-      `UPDATE cc_members SET plan_id=?, expiry_date=?, status='active' WHERE id=?`,
-      [plan.id, newExpiry, m.id]
-    );
+    // Compute new expiry date extending from max(today, current_expiry)
+    const today = new Date(todayIST());
+    const currExpiry = new Date(member.expiry_date);
+    const baseDate = currExpiry > today ? currExpiry : today;
+    baseDate.setMonth(baseDate.getMonth() + (plan.duration_months || 12));
+    const newExpiry = baseDate.toISOString().slice(0, 10);
 
-    if (payment_method) {
-      const payCode = `PAY-RNW-${Date.now()}`;
-      await db.query(
-        `INSERT INTO cc_payments (payment_code,source,reference_id,user_id,amount,method,status,paid_at)
-         VALUES (?,?,?,?,?,?,'paid',NOW())`,
-        [payCode, 'membership', m.id, m.user_id, plan.annual_fee, payment_method]
+    await db.transaction(async (conn) => {
+      await conn.query(
+        `UPDATE members SET plan_id = ?, expiry_date = ?, status = 'active' WHERE id = ?`,
+        [plan.id, newExpiry, memberId]
       );
-    }
 
-    res.json({ message: 'Membership renewed successfully', new_expiry: newExpiry });
-  } catch (err) { next(err); }
+      await conn.query(
+        `INSERT INTO membership_history (member_id, plan_id, action, start_date, end_date, amount_paid, notes)
+         VALUES (?, ?, 'renewed', CURDATE(), ?, ?, 'Plan renewal')`,
+        [memberId, plan.id, newExpiry, plan.annual_fee]
+      );
+
+      if (plan.annual_fee > 0) {
+        const payCode = `PAY-RNW-${Date.now()}`;
+        await conn.query(
+          `INSERT INTO payments (payment_code, source, reference_id, user_id, amount, method, status, paid_at)
+           VALUES (?, 'membership', ?, ?, ?, ?, 'paid', NOW())`,
+          [payCode, memberId, member.user_id, plan.annual_fee, payment_method]
+        );
+      }
+    });
+
+    res.json({ ok: true, message: 'Membership renewed successfully', newExpiry });
+  } catch (err) {
+    next(err);
+  }
 });
 
-// ── DELETE /api/members/:id ──────────────────────────────────────────────────
-router.delete('/:id', requireLogin, requireRole('owner'), async (req, res, next) => {
+// ── POST /api/members/:id/checkin ───────────────────────────────────────────
+router.post('/:id/checkin', requireLogin, requireRole('staff', 'owner'), async (req, res, next) => {
   try {
-    await db.query(`UPDATE cc_members SET status='suspended' WHERE id=?`, [req.params.id]);
-    res.json({ message: 'Member deactivated/suspended successfully' });
-  } catch (err) { next(err); }
+    const memberId = req.params.id;
+    const { method = 'manual', notes } = req.body;
+
+    const [mRows] = await db.query(
+      `SELECT m.*, u.full_name
+       FROM members m
+       JOIN users u ON m.user_id = u.id
+       WHERE m.id = ? OR m.member_code = ?`,
+      [memberId, memberId]
+    );
+
+    if (!mRows.length) {
+      return res.status(404).json({ error: 'Member not found', code: 'MEMBER_NOT_FOUND' });
+    }
+    const member = mRows[0];
+
+    if (member.status !== 'active') {
+      return res.status(400).json({
+        error: `Member status is ${member.status}. Cannot check in.`,
+        code: 'MEMBER_NOT_ACTIVE'
+      });
+    }
+
+    await db.query(
+      `INSERT INTO member_checkins (member_id, checked_in_by, method, notes)
+       VALUES (?, ?, ?, ?)`,
+      [member.id, req.session.user.id, method, notes || null]
+    );
+
+    res.json({
+      ok: true,
+      message: `Check-in recorded for ${member.full_name} (${member.member_code})`,
+      checkinTime: new Date()
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 module.exports = router;

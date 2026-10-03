@@ -3,327 +3,264 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Orders – Champions Club Admin</title>
+  <title>Orders &amp; Sales Ledger – The Champions Club</title>
+  <meta name="description" content="View store POS sales, bar dine-in tabs, online order fulfilment and deliveries.">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="/css/main.css">
-  <style>
-    .dept-shop{color:#3498db;} .dept-bar{color:#e67e22;}
-    .order-status-open{background:rgba(255,193,7,.15);color:#ffc107;}
-    .order-status-completed{background:rgba(46,204,113,.15);color:#2ecc71;}
-    .order-status-cancelled{background:rgba(231,76,60,.12);color:#e74c3c;}
-    .kpi-strip{display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1rem;}
-    .kpi-mini{background:var(--cc-card);border-radius:12px;padding:.7rem 1rem;flex:1;min-width:100px;border:1px solid rgba(255,255,255,.06);}
-    .kpi-mini .val{font-size:1.5rem;font-weight:700;color:var(--cc-green);}
-    .kpi-mini .lbl{font-size:.7rem;color:#888;text-transform:uppercase;letter-spacing:.04em;}
-  </style>
 </head>
 <body>
-<div class="cc-wrapper">
-  <nav class="cc-sidebar d-flex flex-column">
-    <div class="brand"><i class="bi bi-trophy-fill me-2 text-warning"></i>Champions Club</div>
-    <ul class="nav flex-column mt-2 flex-grow-1">
-      <li><a href="/owner/dashboard.html"  class="nav-link"><i class="bi bi-speedometer2"></i>Dashboard</a></li>
-      <li><a href="/owner/staff.html"      class="nav-link"><i class="bi bi-person-badge"></i>Staff Management</a></li>
-      <li><a href="/owner/members.html"    class="nav-link"><i class="bi bi-people"></i>Members</a></li>
-      <li><a href="/owner/bookings.html"   class="nav-link"><i class="bi bi-calendar-check"></i>Bookings</a></li>
-      <li><a href="/owner/orders.html"     class="nav-link active"><i class="bi bi-bag"></i>Orders</a></li>
-      <li><a href="/owner/products.html"   class="nav-link"><i class="bi bi-box-seam"></i>Products</a></li>
-      <li><a href="/owner/payments.html"   class="nav-link"><i class="bi bi-credit-card"></i>Payments</a></li>
-      <li><a href="/owner/plans.html"      class="nav-link"><i class="bi bi-stars"></i>Plans</a></li>
-      <li><a href="/owner/courts.html"     class="nav-link"><i class="bi bi-geo-alt"></i>Courts</a></li>
-    </ul>
-    <div class="p-3 border-top border-secondary border-opacity-25">
-      <div class="d-flex align-items-center gap-2 mb-2 p-2 rounded" style="background:rgba(255,255,255,0.08);">
-        <div class="rounded-circle bg-warning text-dark fw-bold d-flex align-items-center justify-content-center" style="width:32px; height:32px; font-size:0.85rem;" id="userInitial">
-          O
-        </div>
-        <div class="overflow-hidden">
-          <span id="userNameSidebar" class="fw-semibold text-white d-block text-truncate small" style="max-width:140px;">Club Owner</span>
-          <span id="userRoleBadge" class="badge bg-warning text-dark py-0 px-1" style="font-size:0.68rem;">Club Owner</span>
-        </div>
-      </div>
-      <button id="logoutBtn" class="btn btn-sm btn-outline-light w-100"><i class="bi bi-box-arrow-right me-1"></i>Logout</button>
-    </div>
-  </nav>
+  <div class="app-layout">
+    <div id="app-shell"></div>
 
-  <div class="d-flex flex-column flex-grow-1">
-    <div class="cc-topbar">
-      <h5 class="page-title"><i class="bi bi-bag me-2 text-cc"></i>Orders</h5>
-    </div>
-
-    <main class="cc-main">
-      <!-- KPIs -->
-      <div class="kpi-strip">
-        <div class="kpi-mini"><div class="val" id="k-total">—</div><div class="lbl">Total Today</div></div>
-        <div class="kpi-mini"><div class="val text-warning" id="k-open">—</div><div class="lbl">Open</div></div>
-        <div class="kpi-mini"><div class="val text-success" id="k-completed">—</div><div class="lbl">Completed</div></div>
-        <div class="kpi-mini"><div class="val text-info" id="k-shop">—</div><div class="lbl">Shop Orders</div></div>
-        <div class="kpi-mini"><div class="val" style="color:#e67e22" id="k-bar">—</div><div class="lbl">Bar Orders</div></div>
-      </div>
-
-      <!-- Filters -->
-      <div class="cc-card mb-3">
-        <div class="row g-2 align-items-end">
-          <div class="col-md-2">
-            <label class="form-label small fw-semibold">Department</label>
-            <select id="fDept" class="form-select form-select-sm">
-              <option value="">All</option>
-              <option value="shop">🛍️ Shop</option>
-              <option value="bar">🍹 Bar</option>
-            </select>
+    <main class="app-main">
+      <div class="table-card">
+        <div class="table-card-header">
+          <div>
+            <h5 class="table-card-title"><i class="bi bi-receipt"></i> Store &amp; Cafeteria Orders</h5>
+            <p class="table-card-subtitle">Transactions across Shop Counter, Bar Dine-in Tables &amp; Online Deliveries</p>
           </div>
-          <div class="col-md-2">
-            <label class="form-label small fw-semibold">Status</label>
-            <select id="fStatus" class="form-select form-select-sm">
-              <option value="">All</option>
+        </div>
+
+        <div class="table-card-toolbar">
+          <div class="search-input-group">
+            <i class="bi bi-search search-leading-icon"></i>
+            <input type="text" id="searchInput" placeholder="Search order code, customer, table..." aria-label="Search orders">
+            <button type="button" class="search-clear-btn d-none" id="searchClearBtn"><i class="bi bi-x"></i></button>
+          </div>
+
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <select id="deptFilter" class="form-select form-select-sm" style="width: auto;">
+              <option value="">All Departments</option>
+              <option value="shop">Pro Shop</option>
+              <option value="bar">Bar &amp; Cafe</option>
+            </select>
+            <select id="channelFilter" class="form-select form-select-sm" style="width: auto;">
+              <option value="">All Channels</option>
+              <option value="counter">Counter POS</option>
+              <option value="table">Table Dine-In</option>
+              <option value="online">Online Delivery</option>
+            </select>
+            <select id="statusFilter" class="form-select form-select-sm" style="width: auto;">
+              <option value="">All Statuses</option>
               <option value="open">Open</option>
               <option value="completed">Completed</option>
               <option value="cancelled">Cancelled</option>
             </select>
           </div>
-          <div class="col-md-2">
-            <label class="form-label small fw-semibold">Payment</label>
-            <select id="fPayment" class="form-select form-select-sm">
-              <option value="">All</option>
-              <option value="cash">Cash</option>
-              <option value="card">Card</option>
-              <option value="upi">UPI</option>
-              <option value="online">Online</option>
-            </select>
-          </div>
-          <div class="col-md-2">
-            <label class="form-label small fw-semibold">From Date</label>
-            <input type="date" id="fFrom" class="form-control form-control-sm">
-          </div>
-          <div class="col-md-2">
-            <label class="form-label small fw-semibold">To Date</label>
-            <input type="date" id="fTo" class="form-control form-control-sm">
-          </div>
-          <div class="col-md-2 d-flex gap-1">
-            <button class="btn btn-cc btn-sm flex-grow-1" onclick="loadOrders()"><i class="bi bi-funnel me-1"></i>Filter</button>
-            <button class="btn btn-outline-secondary btn-sm" onclick="resetFilters()">↺</button>
-          </div>
         </div>
-      </div>
 
-      <!-- Table -->
-      <div class="cc-card">
         <div class="table-responsive">
-          <table class="table table-hover mb-0" id="ordersTable">
+          <table class="cc-table" id="ordersTable">
             <thead>
               <tr>
-                <th>Order</th><th>Dept</th><th>Member/Guest</th>
-                <th>Items</th><th>Subtotal</th><th>Discount</th><th>Total</th>
-                <th>Status</th><th>Payment</th><th>Time</th><th>Actions</th>
+                <th>Order Code</th>
+                <th>Department &amp; Channel</th>
+                <th>Customer / Member</th>
+                <th>Items Total</th>
+                <th>Discounts</th>
+                <th>Net Total</th>
+                <th>Fulfilment</th>
+                <th>Date</th>
+                <th class="text-end">Actions</th>
               </tr>
             </thead>
-            <tbody><tr><td colspan="11" class="text-center py-4 text-muted">Loading…</td></tr></tbody>
+            <tbody>
+              <tr><td colspan="9" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading orders…</td></tr>
+            </tbody>
           </table>
         </div>
+
+        <div class="table-footer" id="pagination"></div>
       </div>
     </main>
   </div>
-</div>
 
-<!-- Order Detail Modal -->
-<div class="modal fade" id="orderDetailModal" tabindex="-1">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title"><i class="bi bi-receipt me-2 text-cc"></i>Order Details</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body" id="orderDetailBody">Loading…</div>
-      <div class="modal-footer" id="orderDetailFooter">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        <div id="completeSection" class="d-flex gap-2 d-none">
-          <select id="completePayMethod" class="form-select form-select-sm" style="width:140px">
-            <option value="cash">Cash</option>
-            <option value="card">Card</option>
-            <option value="upi">UPI</option>
-            <option value="online">Online</option>
-          </select>
-          <button type="button" id="completeOrderBtn" class="btn btn-cc btn-sm">
-            <i class="bi bi-check-circle me-1"></i>Mark Completed
-          </button>
-        </div>
-        <button type="button" id="cancelOrderBtn" class="btn btn-danger btn-sm d-none">
-          <i class="bi bi-x-circle me-1"></i>Cancel Order
-        </button>
-      </div>
+  <!-- ── Order Detail Drawer (Offcanvas) ────────────────────────────────────── -->
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="orderDrawer" style="width: 480px;">
+    <div class="offcanvas-header border-bottom">
+      <h5 class="offcanvas-title fw-bold" id="drawerOrderCode">Order Details</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body" id="orderDrawerBody">
+      <div class="text-center py-4"><span class="spinner-border spinner-border-sm"></span></div>
     </div>
   </div>
-</div>
 
-<div id="alert-bar"></div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="/js/api.js"></script>
-<script src="/js/utils.js"></script>
-<script>
-let currentOrderId = null;
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/utils.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/shell.js"></script>
+  <script>
+    let searchAbort = null;
 
-function resetFilters() {
-  ['fDept','fStatus','fPayment','fFrom','fTo'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.tagName === 'SELECT' ? el.value='' : el.value='';
-  });
-  loadOrders();
-}
+    async function loadOrders(page = 1) {
+      const q = document.getElementById('searchInput').value.trim();
+      const department = document.getElementById('deptFilter').value;
+      const channel = document.getElementById('channelFilter').value;
+      const status = document.getElementById('statusFilter').value;
 
-async function loadOrders() {
-  const tbody = document.querySelector('#ordersTable tbody');
-  tbody.innerHTML = `<tr><td colspan="11" class="text-center py-4"><span class="spinner-border spinner-sm"></span></td></tr>`;
-  const dept    = document.getElementById('fDept').value;
-  const status  = document.getElementById('fStatus').value;
-  const payment = document.getElementById('fPayment').value;
-  const from    = document.getElementById('fFrom').value;
-  const to      = document.getElementById('fTo').value;
-  let url = '/api/orders?';
-  if (dept)    url += `&dept=${dept}`;
-  if (status)  url += `&status=${status}`;
-  if (payment) url += `&payment_method=${payment}`;
-  if (from)    url += `&from=${from}`;
-  if (to)      url += `&to=${to}`;
+      if (searchAbort) searchAbort.abort();
+      searchAbort = new AbortController();
 
-  try {
-    const rows = await api.get(url);
-    // Update KPIs
-    const today = new Date().toISOString().slice(0,10);
-    document.getElementById('k-total').textContent     = rows.filter(r => r.created_at?.slice(0,10) === today).length;
-    document.getElementById('k-open').textContent      = rows.filter(r => r.status === 'open').length;
-    document.getElementById('k-completed').textContent = rows.filter(r => r.status === 'completed').length;
-    document.getElementById('k-shop').textContent      = rows.filter(r => r.department === 'shop').length;
-    document.getElementById('k-bar').textContent       = rows.filter(r => r.department === 'bar').length;
+      const tbody = document.querySelector('#ordersTable tbody');
+      tbody.innerHTML = ui.skeleton(5, 9);
 
-    if (!rows.length) {
-      tbody.innerHTML = `<tr><td colspan="11" class="text-center py-5 text-muted"><i class="bi bi-bag-x fs-2 d-block mb-2"></i>No orders found</td></tr>`;
-      return;
+      try {
+        const res = await api.get('/api/orders', { q, department, channel, status, page, limit: 15 }, { signal: searchAbort.signal });
+        const orders = res.data || [];
+        const meta = res.meta || { page, total: 0, totalPages: 1, limit: 15 };
+
+        if (!orders.length) {
+          tbody.innerHTML = `<tr><td colspan="9">${ui.emptyState({ headline: 'No orders found', message: 'No transactions match your search filters.' })}</td></tr>`;
+          document.getElementById('pagination').innerHTML = '';
+          return;
+        }
+
+        tbody.innerHTML = orders.map(o => `
+          <tr>
+            <td>
+              <strong class="mono text-dark d-block">${utils.escapeHtml(o.order_code)}</strong>
+              ${o.table_no ? `<span class="badge bg-light text-dark">Table ${utils.escapeHtml(o.table_no)}</span>` : ''}
+            </td>
+            <td>
+              <span class="badge ${o.department === 'shop' ? 'bg-success bg-opacity-10 text-success' : 'bg-warning bg-opacity-10 text-dark'} text-uppercase me-1">
+                ${o.department}
+              </span>
+              <span class="small text-muted text-capitalize">${utils.escapeHtml(o.channel)}</span>
+            </td>
+            <td>
+              <div><strong>${utils.escapeHtml(o.customer_name || 'Walk-in Guest')}</strong></div>
+              ${o.member_code ? `<code class="small text-muted">${utils.escapeHtml(o.member_code)}</code>` : ''}
+            </td>
+            <td class="mono small">${utils.formatINR(o.subtotal)}</td>
+            <td>${o.discount_amount > 0 ? `<span class="text-success mono small">-${utils.formatINR(o.discount_amount)} (${o.discount_pct}%)</span>` : '<span class="text-muted small">—</span>'}</td>
+            <td class="mono fw-bold text-dark">${utils.formatINR(o.total)}</td>
+            <td>${utils.statusChip(o.fulfilment_status || o.status)}</td>
+            <td class="small text-muted mono">${utils.formatDateTime(o.created_at)}</td>
+            <td class="text-end">
+              <button class="icon-btn" onclick="openOrderDrawer(${o.id})" title="View Order Details">
+                <i class="bi bi-eye"></i>
+              </button>
+            </td>
+          </tr>
+        `).join('');
+
+        document.getElementById('pagination').innerHTML = ui.renderPagination({
+          page: meta.page,
+          totalPages: meta.totalPages,
+          total: meta.total,
+          limit: meta.limit,
+          onPageChange: 'loadOrders'
+        });
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-danger">${utils.escapeHtml(err.message)}</td></tr>`;
+        }
+      }
     }
 
-    tbody.innerHTML = rows.map(o => {
-      const deptIcon  = o.department === 'shop' ? '🛍️' : '🍹';
-      const statClass = `order-status-${o.status}`;
-      return `<tr>
-        <td><code class="small">${escHtml(o.order_code)}</code></td>
-        <td><span class="badge rounded-pill" style="background:${o.department==='shop'?'rgba(52,152,219,.2)':'rgba(230,126,34,.2)'}; color:${o.department==='shop'?'#3498db':'#e67e22'}">${deptIcon} ${o.department.charAt(0).toUpperCase()+o.department.slice(1)}</span></td>
-        <td class="small">
-          ${o.member_name ? `<div class="fw-semibold">${escHtml(o.member_name)}</div><div class="text-muted">${escHtml(o.member_email||'')}</div>` : '<span class="text-muted">Guest</span>'}
-          ${o.table_no ? `<span class="badge bg-secondary">Table ${o.table_no}</span>` : ''}
-        </td>
-        <td>—</td>
-        <td class="small">${fmtINR(o.subtotal)}</td>
-        <td class="small">${o.discount_pct > 0 ? `<span class="badge bg-success bg-opacity-20 text-success">-${o.discount_pct}%</span>` : '—'}</td>
-        <td class="fw-semibold text-cc">${fmtINR(o.total)}</td>
-        <td><span class="badge rounded-pill ${statClass}">${o.status}</span></td>
-        <td class="small">${o.payment_method ? `<span class="badge bg-success bg-opacity-10 text-success">${o.payment_method}</span>` : '<span class="text-muted">—</span>'}</td>
-        <td class="small text-muted">${o.created_at ? new Date(o.created_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}) : '—'}</td>
-        <td>
-          <button class="btn btn-sm btn-outline-primary" onclick="showOrderDetail(${o.id})"><i class="bi bi-eye"></i></button>
-        </td>
-      </tr>`;
-    }).join('');
-  } catch(e) {
-    tbody.innerHTML = `<tr><td colspan="11" class="text-center py-4 text-danger">${escHtml(e.message)}</td></tr>`;
-  }
-}
+    async function openOrderDrawer(id) {
+      const drawerBody = document.getElementById('orderDrawerBody');
+      const drawerCode = document.getElementById('drawerOrderCode');
+      drawerBody.innerHTML = '<div class="text-center py-5"><span class="spinner-border text-accent"></span></div>';
 
-async function showOrderDetail(id) {
-  currentOrderId = id;
-  const body = document.getElementById('orderDetailBody');
-  body.innerHTML = '<div class="text-center py-4"><span class="spinner-border"></span></div>';
-  document.getElementById('completeSection').classList.add('d-none');
-  document.getElementById('cancelOrderBtn').classList.add('d-none');
-  new bootstrap.Modal(document.getElementById('orderDetailModal')).show();
-  try {
-    const o = await api.get(`/api/orders/${id}`);
-    const deptIcon = o.department === 'shop' ? '🛍️' : '🍹';
-    body.innerHTML = `
-      <div class="row g-3 mb-3">
-        <div class="col-md-6">
-          <div class="small text-muted">Order Code</div>
-          <div class="fw-bold">${escHtml(o.order_code)}</div>
-        </div>
-        <div class="col-md-3">
-          <div class="small text-muted">Department</div>
-          <div>${deptIcon} ${o.department.charAt(0).toUpperCase()+o.department.slice(1)}</div>
-        </div>
-        <div class="col-md-3">
-          <div class="small text-muted">Status</div>
-          <span class="badge order-status-${o.status}">${o.status}</span>
-        </div>
-        ${o.member_name ? `<div class="col-md-6"><div class="small text-muted">Member</div><div class="fw-semibold">${escHtml(o.member_name)}</div><div class="small text-muted">${escHtml(o.member_email||'')} · ${escHtml(o.member_phone||'')}</div></div>` : ''}
-        ${o.table_no ? `<div class="col-md-3"><div class="small text-muted">Table</div><div class="fw-bold">${escHtml(o.table_no)}</div></div>` : ''}
-        ${o.discount_pct > 0 ? `<div class="col-12"><div class="alert alert-success py-2 small">Member discount applied: ${o.discount_pct}% off — saved ${fmtINR(o.discount_amount)}</div></div>` : ''}
-      </div>
-      <h6 class="fw-semibold mb-2"><i class="bi bi-list-ul me-2"></i>Items</h6>
-      <div class="table-responsive">
-        <table class="table table-sm mb-3">
-          <thead><tr><th>Product</th><th>Variant</th><th>Qty</th><th>Unit Price</th><th>Total</th></tr></thead>
-          <tbody>
-            ${(o.items||[]).map(i => `<tr>
-              <td>${escHtml(i.product_name)}<br><span class="text-muted small">${escHtml(i.sku||'')}</span></td>
-              <td>${i.variant_name ? `<span class="badge bg-secondary">${escHtml(i.variant_name)}</span>` : '—'}</td>
-              <td>${i.quantity}</td>
-              <td>${fmtINR(i.unit_price)}</td>
-              <td class="fw-semibold">${fmtINR(i.line_total)}</td>
-            </tr>`).join('') || '<tr><td colspan="5" class="text-muted">No items</td></tr>'}
-          </tbody>
-        </table>
-      </div>
-      <div class="d-flex justify-content-end">
-        <table class="table table-sm w-auto">
-          <tr><td class="text-muted pe-4">Subtotal</td><td class="text-end">${fmtINR(o.subtotal)}</td></tr>
-          ${o.discount_amount > 0 ? `<tr><td class="text-success pe-4">Discount (${o.discount_pct}%)</td><td class="text-end text-success">-${fmtINR(o.discount_amount)}</td></tr>` : ''}
-          <tr class="border-top"><td class="fw-bold pe-4">Total</td><td class="fw-bold text-cc fs-5 text-end">${fmtINR(o.total)}</td></tr>
-        </table>
-      </div>`;
+      const drawer = new bootstrap.Offcanvas(document.getElementById('orderDrawer'));
+      drawer.show();
 
-    if (o.status === 'open') {
-      document.getElementById('completeSection').classList.remove('d-none');
-      document.getElementById('cancelOrderBtn').classList.remove('d-none');
-      document.getElementById('completeOrderBtn').dataset.id = id;
-      document.getElementById('cancelOrderBtn').dataset.id = id;
+      try {
+        const o = await api.get(`/api/orders/${id}`);
+        drawerCode.textContent = o.order_code;
+
+        let itemsHtml = (o.items || []).map(it => `
+          <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+            <div>
+              <strong class="d-block text-dark">${utils.escapeHtml(it.product_name)}</strong>
+              <span class="small text-muted mono">${it.quantity} × ${utils.formatINR(it.unit_price)}</span>
+            </div>
+            <div class="mono fw-bold text-dark">${utils.formatINR(it.line_total)}</div>
+          </div>
+        `).join('');
+
+        drawerBody.innerHTML = `
+          <div class="mb-3">
+            <div class="d-flex justify-content-between text-muted small mb-1">
+              <span>Department: <strong class="text-dark text-uppercase">${o.department}</strong></span>
+              <span>Channel: <strong class="text-dark text-capitalize">${o.channel}</strong></span>
+            </div>
+            <div class="d-flex justify-content-between text-muted small">
+              <span>Customer: <strong class="text-dark">${utils.escapeHtml(o.customer_name || 'Guest')}</strong></span>
+              <span>Status: ${utils.statusChip(o.status)}</span>
+            </div>
+          </div>
+
+          <div class="card bg-light border-0 p-3 rounded-3 mb-4">
+            <h6 class="fw-bold mb-2">Order Line Items</h6>
+            ${itemsHtml}
+            <div class="d-flex justify-content-between pt-2">
+              <span class="text-muted">Subtotal:</span>
+              <span class="mono">${utils.formatINR(o.subtotal)}</span>
+            </div>
+            ${o.discount_amount > 0 ? `
+              <div class="d-flex justify-content-between text-success">
+                <span>Member Plan Discount (${o.discount_pct}%):</span>
+                <span class="mono">-${utils.formatINR(o.discount_amount)}</span>
+              </div>
+            ` : ''}
+            <div class="d-flex justify-content-between pt-2 border-top mt-2 fs-6 fw-bold text-dark">
+              <span>Net Total:</span>
+              <span class="mono text-accent">${utils.formatINR(o.total)}</span>
+            </div>
+          </div>
+
+          ${o.channel === 'online' ? `
+            <div class="mb-4">
+              <label class="form-label small fw-bold">Update Fulfilment Status</label>
+              <div class="d-flex gap-2 flex-wrap">
+                <button class="btn btn-sm btn-outline-custom" onclick="updateFulfilment(${o.id}, 'packed')">Packed</button>
+                <button class="btn btn-sm btn-outline-custom" onclick="updateFulfilment(${o.id}, 'ready_for_pickup')">Ready for Pickup</button>
+                <button class="btn btn-sm btn-outline-custom" onclick="updateFulfilment(${o.id}, 'out_for_delivery')">Out for Delivery</button>
+                <button class="btn btn-sm btn-accent" onclick="updateFulfilment(${o.id}, 'delivered')">Delivered / Collected</button>
+              </div>
+            </div>
+          ` : ''}
+        `;
+      } catch (err) {
+        drawerBody.innerHTML = `<div class="alert alert-danger">${utils.escapeHtml(err.message)}</div>`;
+      }
     }
-  } catch(e) { body.innerHTML = `<div class="alert alert-danger">${escHtml(e.message)}</div>`; }
-}
 
-document.getElementById('completeOrderBtn').addEventListener('click', async function() {
-  const id  = this.dataset.id;
-  const pay = document.getElementById('completePayMethod').value;
-  try {
-    await api.post(`/api/orders/${id}/complete`, { payment_method: pay });
-    bootstrap.Modal.getInstance(document.getElementById('orderDetailModal')).hide();
-    showAlert('Order completed & payment recorded!');
-    loadOrders();
-  } catch(e) { showAlert(e.message, 'danger'); }
-});
+    async function updateFulfilment(id, status) {
+      try {
+        await api.put(`/api/orders/${id}/fulfilment`, { fulfilment_status: status });
+        ui.toast(`Order marked as ${status.replace(/_/g, ' ')}.`, 'success');
+        openOrderDrawer(id);
+        loadOrders(1);
+      } catch (err) {
+        ui.toast(err.message, 'error');
+      }
+    }
 
-document.getElementById('cancelOrderBtn').addEventListener('click', async function() {
-  if (!confirm('Cancel this order? Stock will be restored.')) return;
-  try {
-    await api.post(`/api/orders/${this.dataset.id}/cancel`);
-    bootstrap.Modal.getInstance(document.getElementById('orderDetailModal')).hide();
-    showAlert('Order cancelled, stock restored.', 'warning');
-    loadOrders();
-  } catch(e) { showAlert(e.message, 'danger'); }
-});
+    const searchInput = document.getElementById('searchInput');
+    const searchClearBtn = document.getElementById('searchClearBtn');
 
-(async () => {
-  const user = await loadSession();
-  if (!user || user.role !== 'owner') { window.location.href='/shared/login.html'; return; }
-  document.getElementById('userNameSidebar').textContent = user.full_name || 'Club Owner';
-  if (document.getElementById('userInitial')) document.getElementById('userInitial').textContent = (user.full_name || 'O').charAt(0).toUpperCase();
-  // Set default date range (today)
-  const today = new Date().toISOString().slice(0,10);
-  document.getElementById('fFrom').value = today;
-  document.getElementById('fTo').value   = today;
-  loadOrders();
-  document.getElementById('logoutBtn').addEventListener('click', async () => {
-    await api.post('/api/auth/logout');
-    window.location.href = '/shared/login.html';
-  });
-})();
-</script>
+    searchInput.addEventListener('input', utils.debounce((e) => {
+      searchClearBtn.classList.toggle('d-none', !e.target.value);
+      loadOrders(1);
+    }, 300));
+
+    searchClearBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      searchClearBtn.classList.add('d-none');
+      loadOrders(1);
+    });
+
+    document.getElementById('deptFilter').addEventListener('change', () => loadOrders(1));
+    document.getElementById('channelFilter').addEventListener('change', () => loadOrders(1));
+    document.getElementById('statusFilter').addEventListener('change', () => loadOrders(1));
+
+    document.addEventListener('DOMContentLoaded', () => loadOrders(1));
+  </script>
 </body>
 </html>

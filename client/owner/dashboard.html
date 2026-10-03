@@ -3,233 +3,290 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Owner Dashboard – Champions Club</title>
-  <meta name="description" content="Champions Club owner dashboard: KPIs, revenue, bookings, alerts">
+  <title>Owner Dashboard – The Champions Club</title>
+  <meta name="description" content="Champions Club executive dashboard: Revenue, court occupancy, expiring memberships, and inventory alerts.">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="/css/main.css">
 </head>
 <body>
-<div class="cc-wrapper">
+  <div class="app-layout">
+    <div id="app-shell"></div>
 
-  <!-- ── Sidebar ──────────────────────────────────────────────────────────── -->
-  <nav class="cc-sidebar d-flex flex-column">
-    <div class="brand"><i class="bi bi-trophy-fill me-2 text-warning"></i>Champions Club</div>
-    <ul class="nav flex-column mt-2 flex-grow-1">
-      <li><a href="/owner/dashboard.html"  class="nav-link active"><i class="bi bi-speedometer2"></i>Dashboard</a></li>
-      <li><a href="/owner/staff.html"      class="nav-link"><i class="bi bi-person-badge"></i>Staff Management</a></li>
-      <li><a href="/owner/members.html"    class="nav-link"><i class="bi bi-people"></i>Members</a></li>
-      <li><a href="/owner/bookings.html"   class="nav-link"><i class="bi bi-calendar-check"></i>Bookings</a></li>
-      <li><a href="/owner/orders.html"     class="nav-link"><i class="bi bi-bag"></i>Orders</a></li>
-      <li><a href="/owner/products.html"   class="nav-link"><i class="bi bi-box-seam"></i>Products</a></li>
-      <li><a href="/owner/payments.html"   class="nav-link"><i class="bi bi-credit-card"></i>Payments</a></li>
-      <li><a href="/owner/plans.html"      class="nav-link"><i class="bi bi-stars"></i>Plans</a></li>
-      <li><a href="/owner/courts.html"     class="nav-link"><i class="bi bi-geo-alt"></i>Courts</a></li>
-    </ul>
-    <div class="p-3 border-top border-secondary border-opacity-25">
-      <div class="d-flex align-items-center gap-2 mb-2 p-2 rounded" style="background:rgba(255,255,255,0.08);">
-        <div class="rounded-circle bg-warning text-dark fw-bold d-flex align-items-center justify-content-center" style="width:32px; height:32px; font-size:0.85rem;" id="userInitial">
-          O
-        </div>
-        <div class="overflow-hidden">
-          <span id="userNameSidebar" class="fw-semibold text-white d-block text-truncate small" style="max-width:140px;">Club Owner</span>
-          <span id="userRoleBadge" class="badge bg-warning text-dark py-0 px-1" style="font-size:0.68rem;">Club Owner</span>
-        </div>
-      </div>
-      <button id="logoutBtn" class="btn btn-sm btn-outline-light w-100">
-        <i class="bi bi-box-arrow-right me-1"></i>Logout
-      </button>
-    </div>
-  </nav>
-
-  <!-- ── Main content ──────────────────────────────────────────────────────── -->
-  <div class="d-flex flex-column flex-grow-1">
-    <div class="cc-topbar">
-      <h5 class="page-title"><i class="bi bi-speedometer2 me-2 text-cc"></i>Owner Dashboard</h5>
-      <span id="todayDate" class="text-muted small"></span>
-    </div>
-
-    <main class="cc-main">
-
-      <!-- KPI Row -->
-      <div class="row g-3 mb-4" id="kpiRow">
+    <main class="app-main">
+      <!-- Stat Cards Grid -->
+      <div class="row g-4 mb-4">
         <div class="col-sm-6 col-xl-2">
-          <div class="kpi-card">
-            <div class="kpi-icon bg-success bg-opacity-10 text-success"><i class="bi bi-currency-rupee"></i></div>
-            <div><div class="kpi-value" id="kpi-revenue">—</div><div class="kpi-label">Today's Revenue</div></div>
-          </div>
-        </div>
-        <div class="col-sm-6 col-xl-2">
-          <div class="kpi-card">
-            <div class="kpi-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-calendar-check"></i></div>
-            <div><div class="kpi-value" id="kpi-bookings">—</div><div class="kpi-label">Today's Bookings</div></div>
-          </div>
-        </div>
-        <div class="col-sm-6 col-xl-2">
-          <div class="kpi-card">
-            <div class="kpi-icon bg-cc bg-opacity-10" style="color:var(--cc-green)"><i class="bi bi-people"></i></div>
-            <div><div class="kpi-value" id="kpi-members">—</div><div class="kpi-label">Active Members</div></div>
-          </div>
-        </div>
-        <div class="col-sm-6 col-xl-2">
-          <div class="kpi-card">
-            <div class="kpi-icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-clock-history"></i></div>
-            <div><div class="kpi-value" id="kpi-expiring">—</div><div class="kpi-label">Expiring (30d)</div></div>
-          </div>
-        </div>
-        <div class="col-sm-6 col-xl-2">
-          <div class="kpi-card">
-            <div class="kpi-icon bg-danger bg-opacity-10 text-danger"><i class="bi bi-box-seam"></i></div>
-            <div><div class="kpi-value" id="kpi-lowstock">—</div><div class="kpi-label">Low Stock Items</div></div>
-          </div>
-        </div>
-        <div class="col-sm-6 col-xl-2">
-          <div class="kpi-card">
-            <div class="kpi-icon bg-info bg-opacity-10 text-info"><i class="bi bi-bag-check"></i></div>
-            <div><div class="kpi-value" id="kpi-orders">—</div><div class="kpi-label">Open Orders</div></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Revenue + Expiring Members row -->
-      <div class="row g-3 mb-3">
-        <!-- Revenue by source -->
-        <div class="col-lg-5">
-          <div class="cc-card h-100">
-            <div class="cc-card-header">
-              <h5><i class="bi bi-pie-chart me-2 text-cc"></i>Revenue This Week</h5>
-              <a href="/owner/payments.html" class="btn btn-sm btn-outline-secondary">View All</a>
+          <div class="stat-card">
+            <div class="stat-card-header">
+              <div class="stat-icon-tile success"><i class="bi bi-currency-rupee"></i></div>
+              <div class="stat-meta">
+                <div class="stat-label">Today's Revenue</div>
+                <div class="stat-value" id="k-revenue">—</div>
+              </div>
             </div>
-            <table class="table table-hover mb-0" id="revenueTable">
-              <thead><tr><th>Source</th><th>Transactions</th><th class="text-end">Amount</th></tr></thead>
-              <tbody><tr><td colspan="3" class="text-center text-muted py-3">Loading…</td></tr></tbody>
-            </table>
+            <div class="stat-divider text-success">
+              <i class="bi bi-arrow-up-right"></i> Live ledger total
+            </div>
           </div>
         </div>
 
-        <!-- Expiring members -->
-        <div class="col-lg-7">
-          <div class="cc-card h-100">
-            <div class="cc-card-header">
-              <h5><i class="bi bi-exclamation-triangle me-2 text-warning"></i>Expiring Memberships</h5>
-              <a href="/owner/members.html" class="btn btn-sm btn-outline-secondary">Manage</a>
+        <div class="col-sm-6 col-xl-2">
+          <div class="stat-card">
+            <div class="stat-card-header">
+              <div class="stat-icon-tile accent"><i class="bi bi-people-fill"></i></div>
+              <div class="stat-meta">
+                <div class="stat-label">Active Members</div>
+                <div class="stat-value" id="k-members">—</div>
+              </div>
             </div>
-            <div class="table-responsive">
-              <table class="table table-hover mb-0" id="expiringTable">
-                <thead><tr><th>Member</th><th>Plan</th><th>Expiry</th><th>Days Left</th></tr></thead>
-                <tbody><tr><td colspan="4" class="text-center text-muted py-3">Loading…</td></tr></tbody>
-              </table>
+            <div class="stat-divider text-muted">
+              <i class="bi bi-shield-check"></i> Valid memberships
+            </div>
+          </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-2">
+          <div class="stat-card">
+            <div class="stat-card-header">
+              <div class="stat-icon-tile info"><i class="bi bi-calendar-check-fill"></i></div>
+              <div class="stat-meta">
+                <div class="stat-label">Today's Bookings</div>
+                <div class="stat-value" id="k-bookings">—</div>
+              </div>
+            </div>
+            <div class="stat-divider text-muted">
+              <i class="bi bi-clock"></i> Scheduled sessions
+            </div>
+          </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-2">
+          <div class="stat-card">
+            <div class="stat-card-header">
+              <div class="stat-icon-tile warning"><i class="bi bi-hourglass-split"></i></div>
+              <div class="stat-meta">
+                <div class="stat-label">Expiring (30d)</div>
+                <div class="stat-value" id="k-expiring">—</div>
+              </div>
+            </div>
+            <div class="stat-divider text-warning">
+              <i class="bi bi-bell"></i> Reminders active
+            </div>
+          </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-2">
+          <div class="stat-card">
+            <div class="stat-card-header">
+              <div class="stat-icon-tile danger"><i class="bi bi-exclamation-triangle-fill"></i></div>
+              <div class="stat-meta">
+                <div class="stat-label">Low Stock</div>
+                <div class="stat-value" id="k-lowstock">—</div>
+              </div>
+            </div>
+            <div class="stat-divider text-danger">
+              <i class="bi bi-box-seam"></i> Reorder required
+            </div>
+          </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-2">
+          <div class="stat-card">
+            <div class="stat-card-header">
+              <div class="stat-icon-tile" style="background: linear-gradient(135deg, #6366F1 0%, #4338CA 100%);"><i class="bi bi-receipt"></i></div>
+              <div class="stat-meta">
+                <div class="stat-label">Open Orders</div>
+                <div class="stat-value" id="k-orders">—</div>
+              </div>
+            </div>
+            <div class="stat-divider text-muted">
+              <i class="bi bi-shop"></i> POS &amp; online orders
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Low stock alert -->
-      <div class="cc-card" id="lowStockCard" style="display:none">
-        <div class="cc-card-header">
-          <h5><i class="bi bi-exclamation-circle me-2 text-danger"></i>Low Stock Alert</h5>
-          <a href="/owner/products.html" class="btn btn-sm btn-outline-danger">View Products</a>
+      <!-- Charts Row -->
+      <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+          <div class="card border-0 rounded-4 shadow-sm p-4 bg-white h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h6 class="fw-bold mb-0">30-Day Revenue Trend</h6>
+                <span class="text-muted small">Daily revenue collection across all club operations</span>
+              </div>
+              <span class="badge bg-light text-dark border px-2 py-1 small">Last 30 Days</span>
+            </div>
+            <div style="height: 260px;">
+              <canvas id="trendChart"></canvas>
+            </div>
+          </div>
         </div>
+
+        <div class="col-lg-4">
+          <div class="card border-0 rounded-4 shadow-sm p-4 bg-white h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h6 class="fw-bold mb-0">Revenue by Source</h6>
+                <span class="text-muted small">7-day breakdown</span>
+              </div>
+            </div>
+            <div style="height: 260px;" class="d-flex align-items-center justify-content-center">
+              <canvas id="sourceChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Expiring Memberships Table Card -->
+      <div class="table-card">
+        <div class="table-card-header">
+          <div>
+            <h5 class="table-card-title"><i class="bi bi-hourglass-split"></i> Expiring Memberships</h5>
+            <p class="table-card-subtitle">Members whose membership expires within the next 30 days</p>
+          </div>
+          <a href="/owner/members.html?status=expiring" class="btn btn-sm btn-outline-custom text-white border-light border-opacity-50">
+            View All Members
+          </a>
+        </div>
+
         <div class="table-responsive">
-          <table class="table table-sm mb-0" id="lowStockTable">
-            <thead><tr><th>SKU</th><th>Product</th><th>Dept</th><th>Stock</th><th>Reorder</th></tr></thead>
-            <tbody></tbody>
+          <table class="cc-table" id="expiringTable">
+            <thead>
+              <tr>
+                <th>Member</th>
+                <th>Contact</th>
+                <th>Plan</th>
+                <th>Expiry Date</th>
+                <th>Days Left</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="6" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading metrics…</td></tr>
+            </tbody>
           </table>
         </div>
       </div>
-
     </main>
   </div>
-</div>
 
-<div id="alert-bar"></div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/utils.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/shell.js"></script>
+  <script>
+    let trendChartInstance = null;
+    let sourceChartInstance = null;
 
-<script src="/js/api.js"></script>
-<script src="/js/utils.js"></script>
-<script>
-(async () => {
-  // Verify session + owner role
-  const user = await loadSession();
-  if (!user || user.role !== 'owner') {
-    window.location.href = '/shared/login.html'; return;
-  }
-  document.getElementById('userNameSidebar').textContent = user.full_name || 'Owner';
-  if (document.getElementById('userInitial')) document.getElementById('userInitial').textContent = (user.full_name || 'O').charAt(0).toUpperCase();
-  document.getElementById('todayDate').textContent =
-    new Date().toLocaleDateString('en-IN', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+    async function loadDashboard() {
+      try {
+        const data = await api.get('/api/reports/dashboard');
 
-  // ── Load KPI summary ──────────────────────────────────────────────────────
-  try {
-    const s = await api.get('/api/reports/summary');
-    document.getElementById('kpi-revenue').textContent  = fmtINR(s.today_revenue);
-    document.getElementById('kpi-bookings').textContent = s.today_bookings;
-    document.getElementById('kpi-members').textContent  = s.active_members;
-    document.getElementById('kpi-expiring').textContent = s.expiring_soon;
-    document.getElementById('kpi-lowstock').textContent = s.low_stock;
-    document.getElementById('kpi-orders').textContent   = s.open_orders;
-  } catch { showAlert('Could not load KPI summary', 'warning'); }
+        document.getElementById('k-revenue').textContent = utils.formatINR(data.todayRevenue);
+        document.getElementById('k-members').textContent = data.activeMembers;
+        document.getElementById('k-bookings').textContent = data.todayBookings;
+        document.getElementById('k-expiring').textContent = data.expiring30d;
+        document.getElementById('k-lowstock').textContent = data.lowStockCount;
+        document.getElementById('k-orders').textContent = data.openOrders;
 
-  // ── Revenue this week ─────────────────────────────────────────────────────
-  try {
-    const today = new Date();
-    const from  = new Date(today); from.setDate(today.getDate() - 6);
-    const fmtD  = d => d.toISOString().slice(0, 10);
-    const rev   = await api.get(`/api/reports/revenue?from=${fmtD(from)}&to=${fmtD(today)}`);
-    const tbody = document.querySelector('#revenueTable tbody');
-    if (!rev.by_source.length) {
-      tbody.innerHTML = '<tr><td colspan="3" class="text-muted text-center">No revenue this week</td></tr>';
-    } else {
-      tbody.innerHTML = rev.by_source.map(r =>
-        `<tr>
-          <td><span class="badge bg-secondary text-capitalize">${escHtml(r.source)}</span></td>
-          <td>${r.count}</td>
-          <td class="text-end fw-semibold">${fmtINR(r.total)}</td>
-        </tr>`
-      ).join('');
+        // Render Expiring Table
+        const tbody = document.querySelector('#expiringTable tbody');
+        if (!data.expiringList || !data.expiringList.length) {
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted"><i class="bi bi-shield-check text-success fs-4 d-block mb-1"></i>No memberships expiring in the next 30 days.</td></tr>';
+        } else {
+          tbody.innerHTML = data.expiringList.map(m => `
+            <tr>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="user-avatar" style="width:32px;height:32px;font-size:0.78rem;">${utils.initials(m.full_name)}</div>
+                  <div>
+                    <strong class="d-block text-dark">${utils.escapeHtml(m.full_name)}</strong>
+                    <code class="small text-muted">${utils.escapeHtml(m.member_code)}</code>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div class="small">${utils.escapeHtml(m.email)}</div>
+                <div class="small text-muted">${utils.escapeHtml(m.phone || '—')}</div>
+              </td>
+              <td>${utils.planChip(m.plan_name, m.plan_name)}</td>
+              <td class="mono small">${utils.formatDate(m.expiry_date)}</td>
+              <td>${utils.statusChip(m.days_left <= 7 ? 'critical' : 'warning')} <span class="small text-muted ms-1">${m.days_left}d left</span></td>
+              <td class="text-end">
+                <a href="/owner/members.html?q=${encodeURIComponent(m.member_code)}" class="btn btn-sm btn-outline-custom">
+                  Manage
+                </a>
+              </td>
+            </tr>
+          `).join('');
+        }
+
+        // Render 30-Day Trend Chart
+        const trendCtx = document.getElementById('trendChart').getContext('2d');
+        const trendLabels = (data.trend30d || []).map(t => utils.formatDate(t.pay_date));
+        const trendValues = (data.trend30d || []).map(t => Number(t.daily_total));
+
+        if (trendChartInstance) trendChartInstance.destroy();
+        trendChartInstance = new Chart(trendCtx, {
+          type: 'line',
+          data: {
+            labels: trendLabels,
+            datasets: [{
+              label: 'Daily Revenue (₹)',
+              data: trendValues,
+              borderColor: '#0F766E',
+              backgroundColor: 'rgba(15, 118, 110, 0.08)',
+              fill: true,
+              tension: 0.35,
+              pointRadius: 3,
+              pointHoverRadius: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              y: { beginAtZero: true, grid: { color: '#E5E9ED' } },
+              x: { grid: { display: false } }
+            }
+          }
+        });
+
+        // Render Revenue by Source Chart
+        const sourceCtx = document.getElementById('sourceChart').getContext('2d');
+        const sourceLabels = (data.revBySource || []).map(s => s.source.toUpperCase());
+        const sourceValues = (data.revBySource || []).map(s => Number(s.total));
+
+        if (sourceChartInstance) sourceChartInstance.destroy();
+        sourceChartInstance = new Chart(sourceCtx, {
+          type: 'doughnut',
+          data: {
+            labels: sourceLabels.length ? sourceLabels : ['No data'],
+            datasets: [{
+              data: sourceValues.length ? sourceValues : [1],
+              backgroundColor: ['#0F766E', '#2F80ED', '#E8A317', '#2E9E5B', '#8B5CF6']
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }
+            }
+          }
+        });
+
+      } catch (err) {
+        ui.toast('Failed to load dashboard metrics: ' + err.message, 'error');
+      }
     }
-  } catch { }
 
-  // ── Expiring members ──────────────────────────────────────────────────────
-  try {
-    const exp   = await api.get('/api/reports/expiring');
-    const tbody = document.querySelector('#expiringTable tbody');
-    if (!exp.length) {
-      tbody.innerHTML = '<tr><td colspan="4" class="text-muted text-center">None expiring in 30 days</td></tr>';
-    } else {
-      tbody.innerHTML = exp.map(m =>
-        `<tr>
-          <td>${escHtml(m.full_name)}<br><span class="text-muted small">${escHtml(m.member_code)}</span></td>
-          <td>${escHtml(m.plan_name)}</td>
-          <td>${fmtDate(m.expiry_date)}</td>
-          <td><span class="badge ${m.days_left <= 7 ? 'badge-expired' : 'badge-suspended'}">${m.days_left}d</span></td>
-        </tr>`
-      ).join('');
-    }
-  } catch { }
-
-  // ── Low stock ─────────────────────────────────────────────────────────────
-  try {
-    const ls = await api.get('/api/reports/low-stock');
-    if (ls.length) {
-      document.getElementById('lowStockCard').style.display = '';
-      document.querySelector('#lowStockTable tbody').innerHTML = ls.map(p =>
-        `<tr>
-          <td>${escHtml(p.sku)}</td>
-          <td>${escHtml(p.name)}</td>
-          <td><span class="badge bg-secondary">${escHtml(p.department)}</span></td>
-          <td class="text-danger fw-bold">${p.stock_qty}</td>
-          <td>${p.reorder_level}</td>
-        </tr>`
-      ).join('');
-    }
-  } catch { }
-
-  // ── Logout ────────────────────────────────────────────────────────────────
-  document.getElementById('logoutBtn').addEventListener('click', async () => {
-    await api.post('/api/auth/logout');
-    window.location.href = '/shared/login.html';
-  });
-})();
-</script>
+    document.addEventListener('DOMContentLoaded', loadDashboard);
+  </script>
 </body>
 </html>

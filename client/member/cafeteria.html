@@ -1,480 +1,293 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cafeteria & Bar – Champions Club Dashboard</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <title>Cafe & Lounge - Champions Club</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  <link rel="stylesheet" href="/css/main.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="../css/main.css">
   <style>
-    .food-card {
-      background: #ffffff;
-      border-radius: 14px;
-      border: 1px solid #e2e8f0;
-      overflow: hidden;
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1.25rem;
+    }
+    .menu-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
       display: flex;
       flex-direction: column;
-      height: 100%;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+      justify-content: space-between;
+      transition: all 0.2s ease;
     }
-    .food-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-      border-color: #cbd5e1;
-    }
-    .food-img-box {
-      height: 155px;
-      background: #f8fafc;
-      overflow: hidden;
-      position: relative;
-    }
-    .food-img-box img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transition: transform 0.35s ease;
-    }
-    .food-card:hover .food-img-box img {
-      transform: scale(1.04);
-    }
-    .discount-badge-pill {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-      color: #fff;
-      font-size: 0.72rem;
-      font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 20px;
-      box-shadow: 0 2px 6px rgba(16, 185, 129, 0.35);
-      z-index: 2;
+    .menu-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
     }
   </style>
 </head>
-
 <body>
-  <div class="cc-wrapper">
-    <!-- Sidebar -->
-    <nav class="cc-sidebar d-flex flex-column justify-content-between">
+  <div id="app-shell"></div>
+
+  <div class="content-container">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
       <div>
-        <div class="brand"><i class="bi bi-trophy-fill me-2 text-warning"></i>Champions Club</div>
-        <ul class="nav flex-column mt-2">
-          <li><a href="/member/dashboard.html"  class="nav-link"><i class="bi bi-house"></i>My Dashboard</a></li>
-          <li><a href="/member/membership.html" class="nav-link"><i class="bi bi-stars"></i>Membership Plans</a></li>
-          <li><a href="/member/shop.html"       class="nav-link"><i class="bi bi-shop"></i>Browse Products</a></li>
-          <li><a href="/member/cafeteria.html"  class="nav-link active"><i class="bi bi-cup-hot"></i>Cafeteria & Bar</a></li>
-          <li><a href="/member/book.html"       class="nav-link"><i class="bi bi-calendar-plus"></i>Book a Court</a></li>
-          <li><a href="/member/bookings.html"   class="nav-link"><i class="bi bi-calendar-check"></i>My Bookings</a></li>
-        </ul>
+        <h2 class="fw-bold mb-1">Cafe & Sports Lounge</h2>
+        <p class="text-muted mb-0">Fuel your post-game recovery with nutrition shakes, artisanal coffee and meals.</p>
       </div>
-      <div class="p-3 border-top border-secondary border-opacity-25">
-        <div class="d-flex align-items-center gap-2 mb-2 p-2 rounded" style="background:rgba(255,255,255,0.08);">
-          <div class="rounded-circle bg-warning text-dark fw-bold d-flex align-items-center justify-content-center" style="width:32px; height:32px; font-size:0.85rem;" id="userInitial">
-            M
-          </div>
-          <div class="overflow-hidden">
-            <span id="userNameSidebar" class="fw-semibold text-white d-block text-truncate small" style="max-width:140px;">Member</span>
-            <span id="userPlanSidebar" class="badge bg-warning text-dark py-0 px-1" style="font-size:0.68rem;">Member</span>
+      <button class="btn btn-outline-primary position-relative" data-bs-toggle="offcanvas" data-bs-target="#cafeOrderDrawer">
+        <i class="bi bi-cup-hot me-1"></i> My Order
+        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cafeOrderBadge" style="display:none;">0</span>
+      </button>
+    </div>
+
+    <!-- Filter & Search Toolbar -->
+    <div class="card border-0 shadow-sm p-3 mb-4">
+      <div class="row g-2 align-items-center">
+        <div class="col-md-7">
+          <div class="search-input-wrap">
+            <i class="bi bi-search search-icon"></i>
+            <input type="search" class="form-control" id="memberCafeSearch" placeholder="Search menu (Espresso, Protein Shake, Smoothie, Bowl...)" aria-label="Search cafe">
           </div>
         </div>
-        <button id="logoutBtn" class="btn btn-sm btn-outline-light w-100"><i class="bi bi-box-arrow-right me-1"></i>Logout</button>
-      </div>
-    </nav>
-
-    <!-- Main Content -->
-    <div class="d-flex flex-column flex-grow-1">
-      <div class="cc-topbar d-flex justify-content-between align-items-center">
-        <div class="d-flex align-items-center gap-2">
-          <h5 class="page-title mb-0"><i class="bi bi-cup-hot me-2 text-cc"></i>Cafeteria & Bar Lounge</h5>
-          <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 d-none d-md-inline" id="memberDiscountBanner">
-            <i class="bi bi-tag-fill me-1"></i>Member Food & Beverage Discount
-          </span>
+        <div class="col-md-5">
+          <select class="form-select" id="memberCafeCategory">
+            <option value="">All Categories</option>
+            <option value="Beverages">Beverages & Coffee</option>
+            <option value="Snacks">Snacks & Bites</option>
+            <option value="Meals">Health Bowls & Meals</option>
+            <option value="Protein">Protein & Shakes</option>
+          </select>
         </div>
-        <button class="btn btn-outline-success d-flex align-items-center gap-2 fw-bold px-3 shadow-sm"
-          onclick="openCart()">
-          <i class="bi bi-cart3"></i> Cart <span class="badge bg-success rounded-pill" id="cartCount">0</span>
-        </button>
       </div>
+    </div>
 
-      <main class="cc-main">
-        <ul class="nav nav-tabs mb-4" id="cafeteriaTabs" role="tablist">
-          <li class="nav-item">
-            <button class="nav-link active fw-semibold" id="menu-tab" data-bs-toggle="tab" data-bs-target="#menu" type="button"
-              role="tab"><i class="bi bi-menu-button-wide me-1"></i>Food & Drinks Menu</button>
-          </li>
-          <li class="nav-item">
-            <button class="nav-link fw-semibold" id="orders-tab" data-bs-toggle="tab" data-bs-target="#orders" type="button"
-              role="tab"><i class="bi bi-receipt me-1"></i>My Food Orders</button>
-          </li>
-        </ul>
-
-        <div class="tab-content" id="myTabContent">
-          <!-- Menu Tab -->
-          <div class="tab-pane fade show active" id="menu" role="tabpanel">
-            <div class="row g-3" id="menuGrid">
-              <div class="col-12 text-center py-5 text-muted">
-                <span class="spinner-border spinner-border-sm me-2"></span>Loading delicious menu items...
-              </div>
-            </div>
-          </div>
-
-          <!-- My Orders Tab -->
-          <div class="tab-pane fade" id="orders" role="tabpanel">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <h6 class="mb-0 fw-bold"><i class="bi bi-clock-history me-1 text-cc"></i>Order History & Live Kitchen Status</h6>
-              <button class="btn btn-sm btn-outline-secondary" onclick="loadMyOrders()"><i
-                  class="bi bi-arrow-clockwise"></i> Refresh</button>
-            </div>
-            <div class="row g-3" id="myOrdersGrid">
-              <div class="col-12 text-center py-5 text-muted">
-                <span class="spinner-border spinner-border-sm me-2"></span>Loading orders...
-              </div>
-            </div>
-          </div>
-        </div>
-      </main>
+    <!-- Menu Grid -->
+    <div class="menu-grid" id="memberMenuGrid">
+      <!-- Injected via JS -->
     </div>
   </div>
 
-  <!-- Cart Offcanvas -->
-  <div class="offcanvas offcanvas-end shadow" tabindex="-1" id="cartOffcanvas" style="width: 420px;">
-    <div class="offcanvas-header border-bottom bg-light">
-      <h5 class="fw-bold mb-0"><i class="bi bi-cart4 me-2 text-success"></i>My Food & Bar Cart</h5>
+  <!-- Cafe Order Drawer -->
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="cafeOrderDrawer" style="width: 400px;">
+    <div class="offcanvas-header border-bottom">
+      <h5 class="offcanvas-title fw-bold"><i class="bi bi-receipt me-2 text-primary"></i>Cafe Order</h5>
       <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
-    <div class="offcanvas-body d-flex flex-column p-0">
-      <div id="cartItemsList" class="flex-grow-1 overflow-auto p-3">
-        <div class="text-center text-muted mt-5">
-          <i class="bi bi-cart-x fs-1 opacity-50 d-block mb-3"></i>
-          Your cart is empty.
+    <div class="offcanvas-body d-flex flex-column">
+      <div class="flex-grow-1 overflow-y-auto" id="cafeOrderItems">
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-cup-straw fs-1 d-block mb-2 text-dim"></i>
+          Your order is empty
         </div>
       </div>
-      <div class="border-top p-3 bg-light mt-auto">
-        <div class="d-flex justify-content-between align-items-center text-muted small mb-1">
-          <span>Subtotal:</span>
-          <span id="cartSubtotal" class="fw-semibold">₹0</span>
+
+      <div class="border-top pt-3 mt-auto">
+        <div class="d-flex justify-content-between text-muted small mb-1">
+          <span>Subtotal</span>
+          <span id="cafeSubtotal" class="font-monospace">₹0</span>
         </div>
-        <div class="d-flex justify-content-between align-items-center text-success small mb-2" id="discountRow">
-          <span>Member Discount (<span id="cartDiscountPct">0</span>%):</span>
-          <span id="cartDiscount" class="fw-bold">-₹0</span>
+        <div class="d-flex justify-content-between text-success small mb-1">
+          <span>Member F&B Discount</span>
+          <span id="cafeDiscount" class="font-monospace">-₹0</span>
         </div>
-        <div class="d-flex justify-content-between align-items-center fw-bold fs-5 mb-3 text-dark border-top pt-2">
-          <span>Grand Total:</span>
-          <span id="cartTotal" class="text-success">₹0</span>
+        <div class="d-flex justify-content-between fw-bold fs-5 mb-3">
+          <span>Total</span>
+          <span id="cafeTotal" class="font-monospace text-primary">₹0</span>
         </div>
-        <button class="btn btn-success w-100 py-2 fw-bold shadow-sm" id="checkoutBtn" onclick="checkout()" disabled>
-          <i class="bi bi-credit-card me-2"></i>Checkout & Place Order
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Dine-in / Pickup Option</label>
+          <select class="form-select form-select-sm" id="memberOrderTable">
+            <option value="Takeaway">Express Takeaway Counter</option>
+            <option value="Table 1">Lounge Table 1</option>
+            <option value="Table 2">Lounge Table 2</option>
+            <option value="Table 3">Lounge Table 3</option>
+            <option value="Table 4">Lounge Table 4</option>
+            <option value="Table 5">Lounge Table 5</option>
+          </select>
+        </div>
+
+        <button class="btn btn-primary w-100 py-2 fw-semibold" id="sendOrderBtn" onclick="submitCafeOrder()" disabled>
+          <i class="bi bi-fire me-1"></i> Send to Kitchen & Pay Online
         </button>
       </div>
     </div>
   </div>
 
-  <div id="alert-bar"></div>
-
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="/js/api.js"></script>
-  <script src="/js/utils.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/shell.js"></script>
   <script>
-    let currentProducts = {};
-    let cart = {};
-    let cartCanvas;
-    let memberBarDiscountPct = 0;
+    let menuItems = [];
+    let cafeOrder = [];
+    let memberDiscount = 0;
 
-    (async () => {
-      const user = await loadSession();
-      if (!user || user.role !== 'member') {
-        window.location.href = '/shared/login.html'; return;
-      }
-      document.getElementById('userNameSidebar').textContent = user.full_name || user.name;
-      document.getElementById('userInitial').textContent = (user.full_name || user.name || 'M').charAt(0).toUpperCase();
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadMemberProfile();
+      loadMenu();
 
-      // Fetch member profile for Bar discount
+      document.getElementById('memberCafeCategory').addEventListener('change', () => loadMenu());
+      document.getElementById('memberCafeSearch').addEventListener('input', utils.debounce(() => loadMenu(), 300));
+    });
+
+    async function loadMemberProfile() {
       try {
-        const memData = await api.get('/api/members/me');
-        if (memData && memData.member) {
-          memberBarDiscountPct = Number(memData.member.bar_discount_pct) || 0;
-          document.getElementById('userPlanSidebar').textContent = memData.member.plan_name || 'Member';
-          const banner = document.getElementById('memberDiscountBanner');
-          if (memberBarDiscountPct > 0) {
-            banner.innerHTML = `<i class="bi bi-tag-fill me-1"></i>${memberBarDiscountPct}% Member Discount Active`;
-            banner.classList.remove('d-none');
-          }
+        const res = await api.get('/api/members/me/profile');
+        if (res.data) {
+          memberDiscount = res.data.discount_bar || 0;
         }
       } catch (err) {
-        console.warn('Member profile fetch', err);
+        console.error(err);
       }
-
-      cartCanvas = new bootstrap.Offcanvas(document.getElementById('cartOffcanvas'));
-
-      loadMenu();
-      loadMyOrders();
-
-      setInterval(loadMyOrders, 8000);
-
-      document.getElementById('logoutBtn').addEventListener('click', async () => {
-        await api.post('/api/auth/logout');
-        window.location.href = '/shared/login.html';
-      });
-    })();
+    }
 
     async function loadMenu() {
+      const q = document.getElementById('memberCafeSearch').value.trim();
+      const category = document.getElementById('memberCafeCategory').value;
+      const grid = document.getElementById('memberMenuGrid');
+
       try {
-        const products = await api.get('/api/products?dept=bar');
-        const container = document.getElementById('menuGrid');
-        if (!products || !products.length) {
-          container.innerHTML = '<div class="col-12 text-center text-muted py-5"><i class="bi bi-cup-hot fs-1 d-block mb-2 opacity-50"></i>No cafeteria items available currently.</div>';
-          return;
-        }
-
-        currentProducts = {};
-        container.innerHTML = products.map(p => {
-          currentProducts[p.id] = p;
-          let parsedImgs = [];
-          try { 
-            parsedImgs = JSON.parse(p.image_url); 
-          } catch (e) { 
-            parsedImgs = p.image_url ? [p.image_url] : ['https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80']; 
-          }
-          if (!Array.isArray(parsedImgs)) parsedImgs = [parsedImgs];
-          if (parsedImgs.length === 0) parsedImgs.push('https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80');
-
-          const origPrice = Number(p.price);
-          const discPrice = memberBarDiscountPct > 0 ? (origPrice * (1 - memberBarDiscountPct / 100)) : origPrice;
-
-          // Carousel logic
-          const cid = 'carousel-member-' + p.id;
-          let imgHtml = '';
-          if (parsedImgs.length > 1) {
-            const indicators = parsedImgs.map((img, i) => `<button type="button" data-bs-target="#${cid}" data-bs-slide-to="${i}" ${i===0?'class="active"':''}></button>`).join('');
-            const items = parsedImgs.map((img, i) => `
-              <div class="carousel-item ${i===0?'active':''}">
-                <img src="${escHtml(img)}" class="d-block w-100" style="height:155px; object-fit:cover;" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80'">
-              </div>
-            `).join('');
-            imgHtml = `
-              <div id="${cid}" class="carousel slide" data-bs-ride="carousel">
-                <div class="carousel-indicators">${indicators}</div>
-                <div class="carousel-inner">${items}</div>
-                <button class="carousel-control-prev" type="button" data-bs-target="#${cid}" data-bs-slide="prev"><span class="carousel-control-prev-icon"></span></button>
-                <button class="carousel-control-next" type="button" data-bs-target="#${cid}" data-bs-slide="next"><span class="carousel-control-next-icon"></span></button>
-              </div>
-            `;
-          } else {
-            imgHtml = `<img src="${escHtml(parsedImgs[0])}" alt="${escHtml(p.name)}" class="w-100" style="height:155px; object-fit:cover;" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80'">`;
-          }
-
-          const discountBadge = memberBarDiscountPct > 0 
-            ? `<span class="discount-badge-pill"><i class="bi bi-tag-fill me-1"></i>${memberBarDiscountPct}% OFF</span>` 
-            : '';
-
-          const priceDisplay = memberBarDiscountPct > 0 
-            ? `<div>
-                 <span class="text-success fw-bold fs-6">${fmtINR(discPrice)}</span>
-                 <span class="text-muted text-decoration-line-through small ms-1">${fmtINR(origPrice)}</span>
-               </div>`
-            : `<h6 class="text-success fw-bold mb-0">${fmtINR(origPrice)}</h6>`;
-
-          return `
-          <div class="col-md-6 col-lg-3">
-            <div class="food-card p-0">
-              <div class="food-img-box">
-                ${discountBadge}
-                ${imgHtml}
-              </div>
-              <div class="p-3 d-flex flex-column flex-grow-1">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                  <span class="badge bg-light text-dark border small">${escHtml(p.category || 'Food')}</span>
-                  <small class="text-muted">${p.sku || ''}</small>
-                </div>
-                <h6 class="mb-1 fw-bold text-dark">${escHtml(p.name)}</h6>
-                <div class="d-flex justify-content-between align-items-center mt-auto pt-3 border-top">
-                   ${priceDisplay}
-                   <button class="btn btn-sm btn-outline-success fw-bold px-3 shadow-sm rounded-pill" onclick="addToCart(${p.id})">
-                     <i class="bi bi-cart-plus me-1"></i>Add
-                   </button>
-                </div>
-              </div>
-            </div>
-          </div>
-          `;
-        }).join('');
-      } catch(e) {
-        showAlert('Failed to load cafeteria menu', 'danger');
+        const res = await api.get('/api/products', { department: 'bar', q, category, limit: 100 });
+        menuItems = res.data || [];
+        renderMenu();
+      } catch (err) {
+        grid.innerHTML = `<div class="text-danger small">${err.message}</div>`;
       }
     }
 
-    function openCart() {
-      cartCanvas.show();
-    }
-
-    function addToCart(id) {
-      const prod = currentProducts[id];
-      if (!prod) return;
-
-      if (cart[id]) {
-        cart[id].quantity += 1;
-      } else {
-        cart[id] = { ...prod, quantity: 1 };
-      }
-      updateCartUI();
-      showAlert(`Added "${prod.name}" to cart.`, 'success');
-    }
-
-    function updateCartQty(id, delta) {
-      if (!cart[id]) return;
-      cart[id].quantity += delta;
-      if (cart[id].quantity <= 0) {
-        delete cart[id];
-      }
-      updateCartUI();
-    }
-
-    function updateCartUI() {
-      const container = document.getElementById('cartItemsList');
-      const items = Object.values(cart);
-      
-      let totalQty = 0;
-      let subtotal = 0;
-      
-      if (items.length === 0) {
-        container.innerHTML = '<div class="text-center text-muted mt-5"><i class="bi bi-cart-x fs-1 opacity-50 mb-3 d-block"></i>Your cart is empty.</div>';
-        document.getElementById('cartCount').textContent = '0';
-        document.getElementById('cartSubtotal').textContent = '₹0';
-        document.getElementById('cartDiscount').textContent = '-₹0';
-        document.getElementById('cartTotal').textContent = '₹0';
-        document.getElementById('checkoutBtn').disabled = true;
+    function renderMenu() {
+      const grid = document.getElementById('memberMenuGrid');
+      if (!menuItems.length) {
+        grid.innerHTML = '<div class="col-12 text-center py-5 text-muted">No menu items found.</div>';
         return;
       }
-      
-      let html = '';
-      items.forEach(item => {
-        totalQty += item.quantity;
-        const linePrice = item.price * item.quantity;
-        subtotal += linePrice;
-        
-        let parsedImgs = [];
-        try { parsedImgs = JSON.parse(item.image_url); } catch(e) { parsedImgs = item.image_url ? [item.image_url] : ['https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80']; }
-        if(!Array.isArray(parsedImgs)) parsedImgs = [parsedImgs];
-        if(parsedImgs.length === 0) parsedImgs.push('https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80');
 
-        html += `
-          <div class="d-flex align-items-center mb-3 p-2 border rounded bg-white shadow-sm">
-            <img src="${escHtml(parsedImgs[0])}" class="rounded me-3 object-fit-cover border" style="width: 55px; height: 55px;" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80'">
-            <div class="flex-grow-1 overflow-hidden">
-              <h6 class="mb-1 text-dark fw-bold text-truncate" style="font-size: 14px;">${escHtml(item.name)}</h6>
-              <div class="text-success fw-bold small">${fmtINR(Number(item.price))} each</div>
-            </div>
-            <div class="d-flex align-items-center flex-shrink-0 ms-2">
-               <button class="btn btn-sm btn-light border p-1 d-flex align-items-center justify-content-center text-dark" style="width:26px;height:26px;" onclick="updateCartQty(${item.id}, -1)">
-                 <i class="bi bi-dash"></i>
-               </button>
-               <span class="mx-2 fw-bold">${item.quantity}</span>
-               <button class="btn btn-sm btn-light border p-1 d-flex align-items-center justify-content-center text-dark" style="width:26px;height:26px;" onclick="updateCartQty(${item.id}, 1)">
-                 <i class="bi bi-plus"></i>
-               </button>
-            </div>
+      grid.innerHTML = menuItems.map(item => `
+        <div class="menu-card">
+          <div>
+            <span class="badge bg-light text-dark border mb-2">${utils.escapeHtml(item.category || 'Cafe')}</span>
+            <h6 class="fw-bold mb-1">${utils.escapeHtml(item.name)}</h6>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+            <span class="fw-bold font-monospace text-primary fs-5">${utils.formatINR(item.price)}</span>
+            <button class="btn btn-sm btn-primary" onclick="addToCafeOrder(${item.id})">
+              <i class="bi bi-plus-lg"></i> Add
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function addToCafeOrder(itemId) {
+      const item = menuItems.find(i => i.id === itemId);
+      if (!item) return;
+
+      const existing = cafeOrder.find(i => i.id === itemId);
+      if (existing) {
+        existing.qty += 1;
+      } else {
+        cafeOrder.push({ id: item.id, name: item.name, price: Number(item.price), qty: 1 });
+      }
+      updateDrawer();
+      ui.toast(`Added ${item.name} to order`, 'info');
+    }
+
+    function updateOrderQty(itemId, delta) {
+      const item = cafeOrder.find(i => i.id === itemId);
+      if (!item) return;
+
+      item.qty += delta;
+      if (item.qty <= 0) {
+        cafeOrder = cafeOrder.filter(i => i.id !== itemId);
+      }
+      updateDrawer();
+    }
+
+    function updateDrawer() {
+      const container = document.getElementById('cafeOrderItems');
+      const badge = document.getElementById('cafeOrderBadge');
+      const totalCount = cafeOrder.reduce((sum, i) => sum + i.qty, 0);
+
+      if (totalCount > 0) {
+        badge.textContent = totalCount;
+        badge.style.display = 'inline-block';
+      } else {
+        badge.style.display = 'none';
+      }
+
+      if (!cafeOrder.length) {
+        container.innerHTML = `
+          <div class="text-center py-5 text-muted">
+            <i class="bi bi-cup-straw fs-1 d-block mb-2 text-dim"></i>
+            Your order is empty
           </div>
         `;
-      });
-      
-      const discountAmount = memberBarDiscountPct > 0 ? (subtotal * memberBarDiscountPct / 100) : 0;
-      const grandTotal = Math.max(0, subtotal - discountAmount);
-
-      container.innerHTML = html;
-      document.getElementById('cartCount').textContent = totalQty;
-      document.getElementById('cartSubtotal').textContent = fmtINR(subtotal);
-      document.getElementById('cartDiscountPct').textContent = memberBarDiscountPct;
-      document.getElementById('cartDiscount').textContent = `-${fmtINR(discountAmount)}`;
-      document.getElementById('cartTotal').textContent = fmtINR(grandTotal);
-      document.getElementById('checkoutBtn').disabled = false;
-    }
-
-    async function checkout() {
-      const items = Object.values(cart);
-      if (items.length === 0) return;
-      
-      if (!confirm('Simulate payment and place your food order?')) return;
-      const orderItems = items.map(i => ({ product_id: i.id, quantity: i.quantity }));
-      
-      try {
-        document.getElementById('checkoutBtn').innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Processing...';
-        document.getElementById('checkoutBtn').disabled = true;
-
-        const res = await api.post('/api/orders', {
-          department: 'bar',
-          channel: 'online',
-          items: orderItems
-        });
-        
-        showAlert(`Order ${res.order_code || ''} placed successfully! Sent to kitchen.`, 'success');
-        cart = {};
-        updateCartUI();
-        cartCanvas.hide();
-        
-        await loadMyOrders();
-        const tabTrigger = new bootstrap.Tab(document.querySelector('#orders-tab'));
-        tabTrigger.show();
-      } catch(e) {
-        document.getElementById('checkoutBtn').innerHTML = '<i class="bi bi-credit-card me-2"></i>Checkout & Place Order';
-        document.getElementById('checkoutBtn').disabled = false;
-        showAlert(e.message || 'Error checking out', 'danger');
+        document.getElementById('sendOrderBtn').disabled = true;
+        updateTotals();
+        return;
       }
+
+      container.innerHTML = cafeOrder.map(i => `
+        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+          <div style="max-width:160px;">
+            <div class="fw-semibold small text-truncate">${utils.escapeHtml(i.name)}</div>
+            <small class="text-muted font-monospace">${utils.formatINR(i.price)}</small>
+          </div>
+          <div class="d-flex align-items-center gap-1">
+            <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="updateOrderQty(${i.id}, -1)">-</button>
+            <span class="font-monospace small px-1">${i.qty}</span>
+            <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="updateOrderQty(${i.id}, 1)">+</button>
+          </div>
+          <div class="font-monospace fw-semibold small">${utils.formatINR(i.price * i.qty)}</div>
+        </div>
+      `).join('');
+
+      document.getElementById('sendOrderBtn').disabled = false;
+      updateTotals();
     }
 
-    async function loadMyOrders() {
+    function updateTotals() {
+      const subtotal = cafeOrder.reduce((sum, i) => sum + (i.price * i.qty), 0);
+      const discountAmount = (subtotal * memberDiscount) / 100;
+      const total = Math.max(0, subtotal - discountAmount);
+
+      document.getElementById('cafeSubtotal').textContent = utils.formatINR(subtotal);
+      document.getElementById('cafeDiscount').textContent = `-${utils.formatINR(discountAmount)} (${memberDiscount}%)`;
+      document.getElementById('cafeTotal').textContent = utils.formatINR(total);
+    }
+
+    async function submitCafeOrder() {
+      if (!cafeOrder.length) return;
+
+      const tableNumber = document.getElementById('memberOrderTable').value;
+      const payload = {
+        department: 'bar',
+        channel: 'online',
+        table_number: tableNumber,
+        payment_method: 'online',
+        items: cafeOrder.map(i => ({ product_id: i.id, quantity: i.qty }))
+      };
+
       try {
-        const orders = await api.get('/api/orders?dept=bar');
-        const container = document.getElementById('myOrdersGrid');
-        if (!orders || !orders.length) {
-          container.innerHTML = '<div class="col-12 text-muted text-center py-5"><i class="bi bi-receipt fs-1 d-block mb-3 opacity-50"></i>You have no ongoing or recent cafeteria orders.</div>';
-          return;
-        }
-        
-        let html = '';
-        for (const o of orders) {
-          let details;
-          try { details = await api.get('/api/orders/' + o.id); } catch(e) { continue; }
-          const itemsHtml = (details.items || []).map(i => `<li class="mb-1"><span class="badge bg-secondary rounded-pill me-2">${i.quantity}x</span> ${escHtml(i.product_name)}</li>`).join('');
-          let statusHtml = '';
-          if (o.status === 'open') {
-            statusHtml = '<span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i> Kitchen Preparing</span>';
-          } else if (o.status === 'completed') {
-            statusHtml = '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> Order Ready / Served</span>';
-          } else {
-            statusHtml = '<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i> Cancelled</span>';
-          }
-          
-          html += `
-           <div class="col-md-6 col-lg-4">
-             <div class="cc-card h-100 d-flex flex-column shadow-sm border-0 bg-white">
-               <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
-                 <div>
-                   <strong class="text-dark d-block">${escHtml(o.order_code)}</strong>
-                   <small class="text-muted">${fmtDate(o.created_at)}</small>
-                 </div>
-                 ${statusHtml}
-               </div>
-               <ul class="mb-3 ps-0 list-unstyled flex-grow-1 text-muted small">
-                 ${itemsHtml}
-               </ul>
-               <div class="d-flex justify-content-between align-items-center border-top pt-3 mt-auto">
-                  <span class="text-muted small">Total Paid:</span>
-                  <span class="fw-bold text-success fs-6">${fmtINR(Number(o.total))}</span>
-               </div>
-             </div>
-           </div>
-          `;
-        }
-        container.innerHTML = html;
-      } catch(e) {
-        console.error('Failed to load my orders', e);
+        const res = await api.post('/api/orders', payload);
+        ui.toast(`Order placed! Order Code: ${res.data.order_code}`, 'success');
+        cafeOrder = [];
+        updateDrawer();
+        bootstrap.Offcanvas.getInstance(document.getElementById('cafeOrderDrawer')).hide();
+      } catch (err) {
+        ui.toast(err.message || 'Failed to place order', 'error');
       }
     }
   </script>
 </body>
-
 </html>

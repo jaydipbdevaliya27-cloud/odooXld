@@ -3,1182 +3,356 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Browse Products – Champions Club Pro Shop</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <title>Pro Shop Catalog - Champions Club</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  <link rel="stylesheet" href="/css/main.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="../css/main.css">
   <style>
-    /* ==========================================================================
-       PRO SHOP CUSTOM CARD & LAYOUT STYLES
-       ========================================================================== */
-    .product-grid-container {
+    .product-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
       gap: 1.25rem;
     }
-
-    .shop-product-card {
-      background: #ffffff;
-      border-radius: 14px;
-      border: 1px solid #e2e8f0;
+    .product-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      height: 100%;
-      min-height: 420px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s;
+      justify-content: space-between;
+      transition: all 0.2s ease;
     }
-
-    .shop-product-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
-      border-color: #cbd5e1;
+    .product-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
     }
-
-    .product-img-box {
-      position: relative;
-      height: 175px;
-      background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .product-img-box img {
+    .product-card-img {
+      height: 160px;
+      object-fit: cover;
+      background: var(--surface-alt);
       width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transition: transform 0.35s ease;
     }
-
-    .shop-product-card:hover .product-img-box img {
-      transform: scale(1.05);
-    }
-
-    .badge-discount-tag {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-      color: #ffffff;
-      font-weight: 700;
-      font-size: 0.75rem;
-      padding: 3px 9px;
-      border-radius: 20px;
-      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
-      z-index: 2;
-      display: flex;
-      align-items: center;
-      gap: 3px;
-    }
-
-    .badge-category-tag {
-      position: absolute;
-      bottom: 8px;
-      left: 10px;
-      background: rgba(15, 23, 42, 0.78);
-      backdrop-filter: blur(4px);
-      color: #ffffff;
-      font-size: 0.72rem;
-      font-weight: 600;
-      padding: 3px 8px;
-      border-radius: 6px;
-      z-index: 2;
-    }
-
-    .card-body-content {
+    .product-card-body {
       padding: 1rem;
+      flex: 1;
       display: flex;
       flex-direction: column;
-      flex-grow: 1;
+      justify-content: space-between;
     }
-
-    .card-product-title {
-      font-weight: 700;
-      font-size: 0.95rem;
-      line-height: 1.35;
-      color: #0f172a;
-      margin-bottom: 0.25rem;
-      height: 2.7em;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-
-    .card-product-desc {
-      font-size: 0.8rem;
-      color: #64748b;
-      margin-bottom: 0.6rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .variant-selector-wrapper {
-      min-height: 48px;
-      margin-bottom: 0.5rem;
-    }
-
-    .price-member-val {
-      color: var(--cc-green, #15803d);
-      font-weight: 800;
-      font-size: 1.15rem;
-      line-height: 1.1;
-    }
-
-    .price-strike-val {
-      text-decoration: line-through;
-      color: #94a3b8;
-      font-size: 0.82rem;
-      margin-left: 4px;
-    }
-
-    .qty-stepper-compact {
-      width: 95px;
-    }
-
-    .qty-stepper-compact .btn {
-      padding: 0.25rem 0.5rem;
-      font-size: 0.8rem;
-    }
-
-    .qty-stepper-compact input {
-      padding: 0.25rem;
-      font-size: 0.82rem;
-      font-weight: 700;
-    }
-
-    .benefit-banner {
-      background: linear-gradient(135deg, #15803d 0%, #14532d 100%);
-      border-radius: 14px;
-      color: #ffffff;
-      padding: 1.15rem 1.4rem;
-      box-shadow: 0 4px 16px rgba(21, 128, 61, 0.18);
-    }
-
-    .nav-pills .nav-link {
-      border-radius: 20px;
-      padding: 5px 14px;
-      font-size: 0.84rem;
-      font-weight: 600;
-      color: #475569;
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      margin-right: 6px;
-      margin-bottom: 6px;
-      transition: all 0.18s ease;
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-    .nav-pills .nav-link.active, .nav-pills .nav-link:hover {
-      background: var(--cc-green, #15803d);
-      color: #ffffff;
-      border-color: var(--cc-green, #15803d);
-    }
-
-    .cart-thumb {
-      width: 54px;
-      height: 54px;
-      object-fit: cover;
-      border-radius: 8px;
-      border: 1px solid #e2e8f0;
-    }
-
-    .cart-item-row {
-      border-bottom: 1px solid #f1f5f9;
-      padding: 0.65rem 0;
-    }
-    .cart-item-row:last-child {
-      border-bottom: none;
-    }
-
-    .sidebar-user-card {
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 10px;
-      padding: 0.75rem;
-    }
-
-    .section-view { display: none; }
-    .section-view.active { display: block; animation: fadeIn 0.2s ease-in-out; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
 <body>
-<div class="cc-wrapper">
-  <!-- ========================================================================
-       SIDEBAR NAVIGATION
-       ======================================================================== -->
-  <nav class="cc-sidebar d-flex flex-column justify-content-between">
-    <div>
-      <div class="brand">
-        <i class="bi bi-trophy-fill me-2 text-warning"></i>Champions Club
+  <div id="app-shell"></div>
+
+  <div class="content-container">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+      <div>
+        <h2 class="fw-bold mb-1">Champions Pro Shop</h2>
+        <p class="text-muted mb-0">Rackets, footwear, apparel and accessories with member discount perks.</p>
       </div>
-      <ul class="nav flex-column mt-2">
-        <li><a href="/member/dashboard.html"  class="nav-link"><i class="bi bi-house"></i>My Dashboard</a></li>
-        <li><a href="/member/membership.html" class="nav-link"><i class="bi bi-stars"></i>Membership Plans</a></li>
-        <li><a href="/member/shop.html"       class="nav-link active"><i class="bi bi-shop"></i>Browse Products</a></li>
-        <li><a href="/member/cafeteria.html"  class="nav-link"><i class="bi bi-cup-hot"></i>Cafeteria & Bar</a></li>
-        <li><a href="/member/book.html"       class="nav-link"><i class="bi bi-calendar-plus"></i>Book a Court</a></li>
-        <li><a href="/member/bookings.html"   class="nav-link"><i class="bi bi-calendar-check"></i>My Bookings</a></li>
-      </ul>
+      <button class="btn btn-outline-primary position-relative" data-bs-toggle="offcanvas" data-bs-target="#cartDrawer">
+        <i class="bi bi-cart3 me-1"></i> Cart
+        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cartBadge" style="display:none;">0</span>
+      </button>
     </div>
 
-    <!-- Sidebar User Footer -->
-    <div class="p-3 border-top border-secondary border-opacity-25">
-      <div class="sidebar-user-card mb-2">
-        <div class="d-flex align-items-center gap-2">
-          <div class="rounded-circle bg-warning text-dark fw-bold d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-size: 0.85rem;" id="userInitial">
-            M
-          </div>
-          <div class="overflow-hidden">
-            <span id="userNameSidebar" class="fw-semibold text-white d-block text-truncate small" style="max-width: 140px;">Member</span>
-            <span id="userPlanSidebar" class="badge bg-warning text-dark py-0 px-1" style="font-size: 0.68rem;">Gold Member</span>
+    <!-- Filters & Search Toolbar -->
+    <div class="card border-0 shadow-sm p-3 mb-4">
+      <div class="row g-2 align-items-center">
+        <div class="col-md-6">
+          <div class="search-input-wrap">
+            <i class="bi bi-search search-icon"></i>
+            <input type="search" class="form-control" id="shopSearchInput" placeholder="Search gear (Yonex, Astrox, Shoes, Grips...)" aria-label="Search pro shop">
           </div>
         </div>
-      </div>
-      <button id="logoutBtn" class="btn btn-sm btn-outline-light w-100"><i class="bi bi-box-arrow-right me-1"></i>Logout</button>
-    </div>
-  </nav>
-
-  <!-- ========================================================================
-       MAIN WORKSPACE
-       ======================================================================== -->
-  <div class="d-flex flex-column flex-grow-1">
-    <!-- Topbar -->
-    <div class="cc-topbar">
-      <div class="d-flex align-items-center gap-2">
-        <h5 class="page-title mb-0"><i class="bi bi-shop me-2 text-cc"></i>Sports Pro Shop</h5>
-        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1" id="memberTierBadge">
-          Gold Member • 15% Shop Discount
-        </span>
-      </div>
-      <div class="d-flex align-items-center gap-2">
-        <button class="btn btn-outline-secondary btn-sm" onclick="switchMainView('orders')" id="myOrdersBtn">
-          <i class="bi bi-receipt me-1"></i>My Purchases
-        </button>
-        <button class="btn btn-cc btn-sm position-relative d-flex align-items-center gap-2 px-3" onclick="openCartModal()">
-          <i class="bi bi-cart3"></i>
-          <span>Cart</span>
-          <span class="badge bg-white text-dark rounded-pill" id="cartCountBadge" style="font-size: 0.72rem;">0</span>
-          <span class="fw-bold ms-1" id="cartHeaderTotal">₹0.00</span>
-        </button>
+        <div class="col-md-3">
+          <select class="form-select" id="shopCategoryFilter">
+            <option value="">All Categories</option>
+            <option value="Rackets">Rackets</option>
+            <option value="Footwear">Footwear</option>
+            <option value="Apparel">Apparel</option>
+            <option value="Accessories">Accessories</option>
+            <option value="Strings">Strings & Grips</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <select class="form-select" id="shopSortSelect">
+            <option value="featured">Featured First</option>
+            <option value="price_asc">Price: Low to High</option>
+            <option value="price_desc">Price: High to Low</option>
+          </select>
+        </div>
       </div>
     </div>
 
-    <main class="cc-main">
-
-      <!-- ====================================================================
-           1. SHOP / BROWSE PRODUCTS VIEW
-           ==================================================================== -->
-      <div id="shopView" class="section-view active">
-        <!-- Dynamic Membership Discount Benefit Banner -->
-        <div class="benefit-banner mb-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
-          <div class="d-flex align-items-center gap-3">
-            <div class="bg-white bg-opacity-20 p-3 rounded-circle fs-3 text-warning">
-              <i class="bi bi-stars"></i>
-            </div>
-            <div>
-              <h5 class="mb-1 fw-bold" id="bannerGreeting">Member Exclusive Pro Shop Pricing</h5>
-              <p class="mb-0 small text-white-50" id="bannerSubtext">
-                Your <span class="text-warning fw-bold" id="bannerPlanName">Gold</span> membership automatically deducts <span class="text-white fw-bold" id="bannerDiscountPct">15%</span> at checkout on all sports gear and accessories!
-              </p>
-            </div>
-          </div>
-          <div class="text-end">
-            <span class="badge bg-warning text-dark px-3 py-2 fw-bold" style="font-size: 0.88rem;" id="bannerSavingsHighlight">
-              <i class="bi bi-percent me-1"></i><span id="bannerDiscountText">15% Member Discount Active</span>
-            </span>
-          </div>
-        </div>
-
-        <!-- Search and Category Filters -->
-        <div class="cc-card p-3 mb-4">
-          <div class="row g-2 align-items-center justify-content-between">
-            <div class="col-md-5">
-              <div class="input-group input-group-sm">
-                <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
-                <input type="text" class="form-control" id="productSearchInput" placeholder="Search rackets, shoes, balls, jerseys, apparel..." oninput="renderProducts()">
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="form-check form-switch pt-1">
-                <input class="form-check-input" type="checkbox" id="inStockOnlyToggle" onchange="renderProducts()">
-                <label class="form-check-label small fw-semibold text-muted" for="inStockOnlyToggle">
-                  Show In-Stock Items Only
-                </label>
-              </div>
-            </div>
-            <div class="col-md-3 text-md-end">
-              <span class="badge bg-light text-muted border px-2 py-1" id="productResultsCount">Showing 0 products</span>
-            </div>
-          </div>
-
-          <!-- Dynamic Category Filter Pills -->
-          <div class="nav nav-pills mt-3 mb-0" id="categoryPills">
-            <button class="nav-link active" onclick="setCategoryFilter('all', this)"><i class="bi bi-grid-fill"></i>All Sports Gear</button>
-            <!-- Injected via JavaScript based on actual database categories -->
-          </div>
-        </div>
-
-        <!-- Dynamic Product Cards Grid -->
-        <div class="product-grid-container" id="productsGrid">
-          <div class="col-12 text-center py-5 text-muted">
-            <div class="spinner-border text-success mb-2" role="status"></div>
-            <div>Loading live shop catalog...</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ====================================================================
-           2. MY ORDERS / PURCHASES VIEW
-           ==================================================================== -->
-      <div id="ordersView" class="section-view">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <div>
-            <h4 class="mb-1"><i class="bi bi-receipt me-2 text-cc"></i>My Pro Shop Orders</h4>
-            <p class="text-muted small mb-0">Track your order statuses, invoices, and collected items.</p>
-          </div>
-          <button class="btn btn-outline-secondary btn-sm" onclick="switchMainView('shop')">
-            <i class="bi bi-arrow-left me-1"></i>Back to Browse Products
-          </button>
-        </div>
-
-        <div class="cc-card">
-          <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0" id="myOrdersTable">
-              <thead class="table-light">
-                <tr>
-                  <th>Order Code</th>
-                  <th>Date</th>
-                  <th>Pickup / Delivery</th>
-                  <th>Payment</th>
-                  <th>Subtotal</th>
-                  <th>Member Discount</th>
-                  <th>Total Paid</th>
-                  <th>Status</th>
-                  <th class="text-end">Action</th>
-                </tr>
-              </thead>
-              <tbody id="myOrdersTableBody">
-                <tr><td colspan="9" class="text-center py-4 text-muted">Loading your past orders...</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-    </main>
-  </div>
-</div>
-
-<!-- ========================================================================
-     MODALS
-     ======================================================================== -->
-
-<!-- 1. CART & CHECKOUT MODAL -->
-<div class="modal fade" id="cartModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header bg-light">
-        <div class="d-flex align-items-center gap-2">
-          <i class="bi bi-cart3 text-cc fs-4"></i>
-          <h5 class="modal-title mb-0">Your Shopping Cart</h5>
-          <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25" id="cartModalItemCount">0 items</span>
-        </div>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <div id="cartEmptyState" class="text-center py-5 d-none">
-          <i class="bi bi-bag-x text-muted" style="font-size: 3rem;"></i>
-          <h5 class="mt-3 text-muted">Your cart is empty</h5>
-          <p class="text-muted small">Explore the sports catalog and add tennis rackets, apparel, or accessories!</p>
-          <button class="btn btn-cc btn-sm mt-2" data-bs-dismiss="modal">Browse Products</button>
-        </div>
-
-        <div id="cartContent">
-          <!-- Items List -->
-          <div id="cartItemsList" class="mb-3"></div>
-
-          <hr>
-
-          <!-- Delivery & Pickup Options -->
-          <div class="row g-3 mb-3">
-            <div class="col-md-6">
-              <label class="form-label fw-semibold small"><i class="bi bi-geo-alt me-1 text-cc"></i>Pickup / Delivery Location</label>
-              <select class="form-select form-select-sm" id="checkoutDeliveryLocation">
-                <option value="Pro Shop Counter Collection">Pro Shop Counter (Collect in Person)</option>
-                <option value="Deliver to Court 1 (Tennis Clay)">Deliver to Court 1 (Tennis Clay)</option>
-                <option value="Deliver to Court 2 (Tennis Hard)">Deliver to Court 2 (Tennis Hard)</option>
-                <option value="Deliver to Court 3 (Badminton)">Deliver to Court 3 (Badminton)</option>
-                <option value="Deliver to Court 4 (Badminton)">Deliver to Court 4 (Badminton)</option>
-                <option value="Deliver to Court 5 (Squash Glass)">Deliver to Court 5 (Squash Glass)</option>
-                <option value="Deliver to Court 6 (Padel Outdoor)">Deliver to Court 6 (Padel Outdoor)</option>
-              </select>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-semibold small"><i class="bi bi-credit-card me-1 text-cc"></i>Payment Method</label>
-              <select class="form-select form-select-sm" id="checkoutPaymentMethod">
-                <option value="upi">UPI / QR Code (Instant Mobile Pay)</option>
-                <option value="card">Credit / Debit Card</option>
-                <option value="cash">Pay at Pro Shop Counter / Cash</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Price Calculation Breakdown -->
-          <div class="card bg-light border-0 p-3">
-            <div class="d-flex justify-content-between mb-1 small">
-              <span class="text-muted">Cart Subtotal:</span>
-              <span class="fw-semibold" id="cartSubtotalVal">₹0.00</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2 small text-success">
-              <span>
-                <i class="bi bi-tag-fill me-1"></i>Membership Discount (<span id="cartDiscountPercentLabel">0%</span>):
-              </span>
-              <span class="fw-bold" id="cartDiscountVal">-₹0.00</span>
-            </div>
-            <div class="d-flex justify-content-between pt-2 border-top">
-              <div>
-                <strong class="fs-5">Final Total Payable:</strong>
-                <div class="small text-muted">Inclusive of all club GST and taxes</div>
-              </div>
-              <strong class="fs-4 text-dark" id="cartNetTotalVal">₹0.00</strong>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer bg-light d-flex justify-content-between">
-        <button type="button" class="btn btn-outline-danger btn-sm" onclick="clearCart()" id="clearCartBtn">
-          <i class="bi bi-trash me-1"></i>Clear Cart
-        </button>
-        <div class="d-flex gap-2">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Continue Shopping</button>
-          <button type="button" class="btn btn-cc fw-semibold" onclick="handleCheckout()" id="checkoutBtn">
-            <i class="bi bi-check2-circle me-1"></i>Confirm & Buy Now
-          </button>
-        </div>
-      </div>
+    <!-- Products Catalog Grid -->
+    <div class="product-grid" id="productGrid">
+      <!-- Injected via JS -->
     </div>
   </div>
-</div>
 
-<!-- 2. ORDER CONFIRMATION MODAL -->
-<div class="modal fade" id="orderConfirmModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content text-center p-4">
-      <div class="mb-3">
-        <div class="bg-success bg-opacity-10 text-success rounded-circle d-inline-flex justify-content-center align-items-center" style="width:70px; height:70px; font-size:2rem;">
-          <i class="bi bi-check-lg"></i>
-        </div>
-      </div>
-      <h4 class="fw-bold mb-1 text-success">Order Placed Successfully!</h4>
-      <p class="text-muted small mb-3">Your order has been recorded and transmitted to the Pro Shop staff.</p>
-
-      <div class="p-3 bg-light rounded text-start mb-3 small">
-        <div class="d-flex justify-content-between mb-1">
-          <span class="text-muted">Order Reference:</span>
-          <strong id="confirmOrderCode">—</strong>
-        </div>
-        <div class="d-flex justify-content-between mb-1">
-          <span class="text-muted">Fulfillment:</span>
-          <span id="confirmDelivery">—</span>
-        </div>
-        <div class="d-flex justify-content-between mb-1">
-          <span class="text-muted">Payment Method:</span>
-          <span id="confirmPayment">—</span>
-        </div>
-        <div class="d-flex justify-content-between border-top pt-1 mt-1">
-          <span class="fw-bold">Total Paid:</span>
-          <strong class="text-success fs-6" id="confirmTotal">—</strong>
+  <!-- Cart Offcanvas Drawer -->
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="cartDrawer" style="width: 420px;">
+    <div class="offcanvas-header border-bottom">
+      <h5 class="offcanvas-title fw-bold"><i class="bi bi-bag-check me-2 text-primary"></i>Shopping Cart</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body d-flex flex-column">
+      <div class="flex-grow-1 overflow-y-auto" id="cartDrawerItems">
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-cart-x fs-1 d-block mb-2 text-dim"></i>
+          Your shopping cart is empty
         </div>
       </div>
 
-      <div class="d-flex gap-2 justify-content-center">
-        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Keep Browsing</button>
-        <button class="btn btn-cc" onclick="bootstrap.Modal.getInstance(document.getElementById('orderConfirmModal')).hide(); switchMainView('orders');">
-          <i class="bi bi-receipt me-1"></i>View My Orders
+      <div class="border-top pt-3 mt-auto">
+        <div class="d-flex justify-content-between text-muted small mb-1">
+          <span>Subtotal</span>
+          <span id="drawerSubtotal" class="font-monospace">₹0</span>
+        </div>
+        <div class="d-flex justify-content-between text-success small mb-1">
+          <span>Member Discount</span>
+          <span id="drawerDiscount" class="font-monospace">-₹0</span>
+        </div>
+        <div class="d-flex justify-content-between fw-bold fs-5 mb-3">
+          <span>Total</span>
+          <span id="drawerTotal" class="font-monospace text-primary">₹0</span>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Fulfilment Method</label>
+          <div class="d-flex gap-2">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="fulfilment" id="fulfilmentPickup" value="pickup" checked onchange="toggleDeliveryAddress()">
+              <label class="form-check-label small" for="fulfilmentPickup">Club Store Pickup</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="fulfilment" id="fulfilmentDelivery" value="delivery" onchange="toggleDeliveryAddress()">
+              <label class="form-check-label small" for="fulfilmentDelivery">Home Delivery</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-3 d-none" id="deliveryAddressWrap">
+          <label class="form-label small fw-bold">Delivery Address</label>
+          <textarea class="form-control form-control-sm" id="deliveryAddress" rows="2" placeholder="Full residential delivery address"></textarea>
+        </div>
+
+        <button class="btn btn-primary w-100 py-2 fw-semibold" id="checkoutBtn" onclick="checkoutOnlineOrder()" disabled>
+          <i class="bi bi-credit-card me-1"></i> Place Online Order
         </button>
       </div>
     </div>
   </div>
-</div>
 
-<!-- 3. ORDER DETAIL VIEW MODAL -->
-<div class="modal fade" id="memberOrderDetailModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header bg-light">
-        <div>
-          <h5 class="modal-title mb-0" id="modDetailCode">Order Details</h5>
-          <span class="text-muted small" id="modDetailDate"></span>
-        </div>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <div class="d-flex justify-content-between align-items-center mb-3 p-2 bg-light rounded">
-          <span class="small text-muted">Status:</span>
-          <span id="modDetailStatusBadge" class="badge bg-success">Completed</span>
-        </div>
-        <h6 class="fw-bold mb-2 small text-muted">ITEMS PURCHASED</h6>
-        <div class="table-responsive">
-          <table class="table table-sm table-bordered align-middle mb-3">
-            <thead class="table-light">
-              <tr><th>Item</th><th>Qty</th><th>Price</th><th class="text-end">Total</th></tr>
-            </thead>
-            <tbody id="modDetailItemsBody"></tbody>
-            <tfoot>
-              <tr><td colspan="3" class="text-end fw-semibold">Subtotal:</td><td class="text-end" id="modDetailSubtotal">₹0</td></tr>
-              <tr><td colspan="3" class="text-end text-success fw-semibold">Member Discount:</td><td class="text-end text-success" id="modDetailDiscount">-₹0</td></tr>
-              <tr class="table-active"><td colspan="3" class="text-end fw-bold">Total Paid:</td><td class="text-end fw-bold" id="modDetailTotal">₹0</td></tr>
-            </tfoot>
-          </table>
-        </div>
-      </div>
-      <div class="modal-footer bg-light">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-      </div>
-    </div>
-  </div>
-</div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/shell.js"></script>
+  <script>
+    let productsList = [];
+    let cart = [];
+    let memberPerkDiscount = 0;
 
-<div id="alert-bar"></div>
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadMemberPerk();
+      loadProducts();
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="/js/api.js"></script>
-<script src="/js/utils.js"></script>
-
-<script>
-// ============================================================================
-// APP STATE & IMAGE FALLBACK MAP
-// ============================================================================
-let CURRENT_USER = null;
-let MEMBER_PROFILE = null;
-let PRODUCTS_LIST = [];
-let CART = []; 
-let ACTIVE_CATEGORY = 'all';
-
-// Fallback high quality imagery by sports category / name
-const FALLBACK_CATEGORY_IMAGES = {
-  'tennis rackets': 'https://images.unsplash.com/photo-1617083934555-563d309be04e?w=600&auto=format&fit=crop&q=80',
-  'badminton rackets': 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=600&auto=format&fit=crop&q=80',
-  'tennis balls': 'https://images.unsplash.com/photo-1587280501635-68a0e82cd5ff?w=600&auto=format&fit=crop&q=80',
-  'sports shoes': 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&auto=format&fit=crop&q=80',
-  'sports bags': 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&auto=format&fit=crop&q=80',
-  'accessories': 'https://images.unsplash.com/photo-1584824486509-112e4181ff6b?w=600&auto=format&fit=crop&q=80',
-  'services': 'https://images.unsplash.com/photo-1530549387789-4c1017266635?w=600&auto=format&fit=crop&q=80',
-  'beverages': 'https://images.unsplash.com/photo-1523362628745-0c100150b504?w=600&auto=format&fit=crop&q=80',
-  'snacks': 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=600&auto=format&fit=crop&q=80',
-  'general': 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=600&auto=format&fit=crop&q=80'
-};
-
-function getProductImageUrl(p) {
-  if (p.image_url && p.image_url.trim().startsWith('http')) return p.image_url.trim();
-  if (p.images && Array.isArray(p.images) && p.images.length > 0 && p.images[0].startsWith('http')) return p.images[0];
-  const catKey = (p.category || '').toLowerCase().trim();
-  return FALLBACK_CATEGORY_IMAGES[catKey] || FALLBACK_CATEGORY_IMAGES['general'];
-}
-
-// ============================================================================
-// INITIALIZATION
-// ============================================================================
-document.addEventListener('DOMContentLoaded', async () => {
-  // Load session
-  CURRENT_USER = await loadSession();
-  if (!CURRENT_USER) return;
-
-  const fullName = CURRENT_USER.full_name || CURRENT_USER.name || 'Member';
-  document.getElementById('userNameSidebar').textContent = fullName;
-  document.getElementById('userInitial').textContent = fullName.charAt(0).toUpperCase();
-
-  // Load Member discount configurations
-  await loadMemberProfile();
-
-  // Load live products catalog
-  await loadProductsCatalog();
-
-  // Load cart from localStorage if present
-  loadCartFromStorage();
-
-  // Handle Logout
-  document.getElementById('logoutBtn').addEventListener('click', async () => {
-    await api.post('/api/auth/logout');
-    window.location.href = '/shared/login.html';
-  });
-});
-
-// ============================================================================
-// 1. MEMBER PROFILE & DISCOUNT CONFIGURATION
-// ============================================================================
-async function loadMemberProfile() {
-  try {
-    const member = await api.get('/api/members/me');
-    if (member) {
-      MEMBER_PROFILE = member;
-      const planName = member.plan_name || 'Gold';
-      const discPct = Number(member.shop_discount_pct) || 15;
-
-      document.getElementById('memberTierBadge').textContent = `${planName} Member • ${discPct}% Shop Discount`;
-      document.getElementById('userPlanSidebar').textContent = `${planName} Member`;
-      document.getElementById('bannerPlanName').textContent = planName;
-      document.getElementById('bannerDiscountPct').textContent = `${discPct}%`;
-      document.getElementById('bannerDiscountText').textContent = `${discPct}% Member Discount Active`;
-      document.getElementById('bannerSavingsHighlight').classList.remove('d-none');
-      document.getElementById('cartDiscountPercentLabel').textContent = `${discPct}%`;
-    }
-  } catch (err) {
-    MEMBER_PROFILE = { plan_name: 'Gold', shop_discount_pct: 15 };
-    document.getElementById('memberTierBadge').textContent = `Gold Member • 15% Shop Discount`;
-  }
-}
-
-// ============================================================================
-// 2. FETCH & RENDER LIVE PRODUCTS CATALOG
-// ============================================================================
-async function loadProductsCatalog() {
-  try {
-    const products = await api.get('/api/products?dept=shop');
-    PRODUCTS_LIST = Array.isArray(products) ? products : [];
-  } catch (err) {
-    PRODUCTS_LIST = [];
-  }
-  buildCategoryPills();
-  renderProducts();
-}
-
-function buildCategoryPills() {
-  const container = document.getElementById('categoryPills');
-  const distinctCategories = [...new Set(PRODUCTS_LIST.map(p => p.category).filter(Boolean))];
-
-  const pillsHtml = `
-    <button class="nav-link ${ACTIVE_CATEGORY === 'all' ? 'active' : ''}" onclick="setCategoryFilter('all', this)">
-      <i class="bi bi-grid-fill"></i>All Sports Gear
-    </button>
-    ${distinctCategories.map(cat => {
-      let icon = 'bi-trophy';
-      const lower = cat.toLowerCase();
-      if (lower.includes('ball')) icon = 'bi-circle';
-      else if (lower.includes('shoe') || lower.includes('footwear')) icon = 'bi-box';
-      else if (lower.includes('bag')) icon = 'bi-backpack';
-      else if (lower.includes('access') || lower.includes('grip')) icon = 'bi-tag';
-      else if (lower.includes('service')) icon = 'bi-tools';
-      else if (lower.includes('apparel') || lower.includes('shirt')) icon = 'bi-person';
-
-      return `
-        <button class="nav-link ${ACTIVE_CATEGORY === cat ? 'active' : ''}" onclick="setCategoryFilter('${escHtml(cat)}', this)">
-          <i class="bi ${icon}"></i>${escHtml(cat)}
-        </button>
-      `;
-    }).join('')}
-  `;
-
-  container.innerHTML = pillsHtml;
-}
-
-function setCategoryFilter(category, btnEl) {
-  ACTIVE_CATEGORY = category;
-  document.querySelectorAll('#categoryPills .nav-link').forEach(btn => btn.classList.remove('active'));
-  if (btnEl) btnEl.classList.add('active');
-  renderProducts();
-}
-
-function renderProducts() {
-  const container = document.getElementById('productsGrid');
-  const search = document.getElementById('productSearchInput').value.toLowerCase().trim();
-  const inStockOnly = document.getElementById('inStockOnlyToggle').checked;
-  const discPct = MEMBER_PROFILE ? (Number(MEMBER_PROFILE.shop_discount_pct) || 0) : 0;
-
-  const filtered = PRODUCTS_LIST.filter(p => {
-    const matchesCat = ACTIVE_CATEGORY === 'all' || (p.category && p.category.toLowerCase() === ACTIVE_CATEGORY.toLowerCase());
-    const matchesSearch = !search ||
-      p.name.toLowerCase().includes(search) ||
-      (p.sku && p.sku.toLowerCase().includes(search)) ||
-      (p.category && p.category.toLowerCase().includes(search));
-    const isAvailable = (p.stock_qty > 0);
-    const matchesStock = !inStockOnly || isAvailable;
-    return matchesCat && matchesSearch && matchesStock;
-  });
-
-  document.getElementById('productResultsCount').textContent = `Showing ${filtered.length} of ${PRODUCTS_LIST.length} products`;
-
-  if (!filtered.length) {
-    container.innerHTML = `
-      <div class="col-12 text-center py-5 text-muted bg-white rounded shadow-sm">
-        <i class="bi bi-inbox fs-1 text-muted d-block mb-2"></i>
-        <h5>No products match your criteria</h5>
-        <p class="small text-muted mb-0">Try clearing your search query or selecting "All Sports Gear".</p>
-      </div>`;
-    return;
-  }
-
-  container.innerHTML = filtered.map(p => {
-    const variants = p.variants && p.variants.length ? p.variants : [
-      { id: null, variant_name: 'Standard', price_offset: 0, stock_qty: p.stock_qty }
-    ];
-
-    const basePrice = Number(p.price) || 0;
-    const initialVar = variants[0];
-    const itemPrice = basePrice + (Number(initialVar.price_offset) || 0);
-    const discountedPrice = discPct > 0 ? (itemPrice * (1 - discPct / 100)) : itemPrice;
-    const isOutOfStock = (p.stock_qty <= 0);
-    const mainImg = getProductImageUrl(p);
-
-    const stockBadgeClass = isOutOfStock ? 'bg-danger text-white' :
-                           (p.stock_qty <= (p.reorder_level || 5) ? 'bg-warning text-dark' : 'bg-success bg-opacity-10 text-success border border-success border-opacity-25');
-
-    return `
-      <div class="shop-product-card" id="prod-card-${p.id}">
-        <!-- Image Box with Category Tag & Discount Pill -->
-        <div class="product-img-box">
-          ${discPct > 0 ? `<div class="badge-discount-tag"><i class="bi bi-stars"></i> ${discPct}% OFF</div>` : ''}
-          <div class="badge-category-tag">${escHtml(p.category || 'Sports Gear')}</div>
-          <img src="${escHtml(mainImg)}" alt="${escHtml(p.name)}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=600';">
-        </div>
-
-        <!-- Card Content Body -->
-        <div class="card-body-content">
-          <!-- SKU & Stock Status -->
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <code class="small text-muted fw-bold">${escHtml(p.sku || 'SKU-001')}</code>
-            <span class="badge ${stockBadgeClass}">
-              ${isOutOfStock ? 'Out of Stock' : `${p.stock_qty} in stock`}
-            </span>
-          </div>
-
-          <!-- Product Title -->
-          <h6 class="card-product-title" title="${escHtml(p.name)}">${escHtml(p.name)}</h6>
-          
-          <!-- Short Description -->
-          <div class="card-product-desc">${escHtml(p.description || 'Professional sports equipment available at Champions Club.')}</div>
-
-          <!-- Variant Selector (or empty spacer to maintain card alignment) -->
-          <div class="variant-selector-wrapper">
-            ${variants.length > 1 ? `
-              <label class="small text-muted fw-bold mb-1" style="font-size:0.72rem;">SELECT SIZE / VARIANT:</label>
-              <select class="form-select form-select-sm variant-selector" onchange="onVariantChange(${p.id}, this)">
-                ${variants.map((v, i) => `
-                  <option value="${v.id || ''}" data-price-offset="${v.price_offset || 0}" data-stock="${v.stock_qty ?? p.stock_qty}" ${i===0?'selected':''}>
-                    ${escHtml(v.variant_name)} (Stock: ${v.stock_qty ?? p.stock_qty})
-                  </option>
-                `).join('')}
-              </select>
-            ` : ''}
-          </div>
-
-          <!-- Price & Add-to-Cart Action (Pinned to Bottom) -->
-          <div class="mt-auto pt-2 border-top">
-            <div class="d-flex justify-content-between align-items-baseline mb-2">
-              <div>
-                <span class="price-member-val" id="price-member-${p.id}">${fmtINR(discountedPrice)}</span>
-                ${discPct > 0 ? `<span class="price-strike-val" id="price-base-${p.id}">${fmtINR(itemPrice)}</span>` : ''}
-              </div>
-              <span class="badge bg-success bg-opacity-10 text-success fw-bold" style="font-size: 0.7rem;">Member Price</span>
-            </div>
-
-            <!-- Stepper & Add to Cart Button -->
-            <div class="d-flex gap-2 align-items-center">
-              <div class="input-group input-group-sm qty-stepper-compact">
-                <button class="btn btn-outline-secondary" type="button" onclick="adjustCardQty(${p.id}, -1)">-</button>
-                <input type="number" class="form-control text-center card-qty-input" id="qty-input-${p.id}" value="1" min="1" max="${p.stock_qty || 1}" ${isOutOfStock ? 'disabled' : ''}>
-                <button class="btn btn-outline-secondary" type="button" onclick="adjustCardQty(${p.id}, 1)">+</button>
-              </div>
-              <button class="btn btn-cc btn-sm flex-grow-1 fw-bold d-flex align-items-center justify-content-center gap-1"
-                      onclick="addToCart(${p.id})"
-                      id="add-btn-${p.id}"
-                      ${isOutOfStock ? 'disabled' : ''}>
-                <i class="bi bi-cart-plus"></i> Add to Cart
-              </button>
-            </div>
-          </div>
-
-        </div>
-      </div>
-    `;
-  }).join('');
-}
-
-function adjustCardQty(productId, delta) {
-  const input = document.getElementById(`qty-input-${productId}`);
-  if (!input) return;
-  let val = parseInt(input.value, 10) || 1;
-  const max = parseInt(input.getAttribute('max'), 10) || 99;
-  val = Math.max(1, Math.min(max, val + delta));
-  input.value = val;
-}
-
-function onVariantChange(productId, selectEl) {
-  const p = PRODUCTS_LIST.find(x => x.id === productId);
-  if (!p) return;
-  const selectedOpt = selectEl.options[selectEl.selectedIndex];
-  const offset = parseFloat(selectedOpt.getAttribute('data-price-offset')) || 0;
-  const stock = parseInt(selectedOpt.getAttribute('data-stock'), 10) || 0;
-  const discPct = MEMBER_PROFILE ? (Number(MEMBER_PROFILE.shop_discount_pct) || 0) : 0;
-
-  const basePrice = (Number(p.price) || 0) + offset;
-  const discounted = discPct > 0 ? (basePrice * (1 - discPct / 100)) : basePrice;
-
-  const memEl = document.getElementById(`price-member-${productId}`);
-  const baseEl = document.getElementById(`price-base-${productId}`);
-  const qtyInput = document.getElementById(`qty-input-${productId}`);
-  const addBtn = document.getElementById(`add-btn-${productId}`);
-
-  if (memEl) memEl.textContent = fmtINR(discounted);
-  if (baseEl) baseEl.textContent = fmtINR(basePrice);
-
-  if (qtyInput) {
-    qtyInput.setAttribute('max', stock);
-    if (stock <= 0) {
-      qtyInput.disabled = true;
-      qtyInput.value = 0;
-    } else {
-      qtyInput.disabled = false;
-      if (parseInt(qtyInput.value, 10) > stock) qtyInput.value = stock;
-      if (parseInt(qtyInput.value, 10) === 0) qtyInput.value = 1;
-    }
-  }
-
-  if (addBtn) {
-    if (stock <= 0) {
-      addBtn.disabled = true;
-      addBtn.innerHTML = `<i class="bi bi-x-circle"></i> Out of Stock`;
-    } else {
-      addBtn.disabled = false;
-      addBtn.innerHTML = `<i class="bi bi-cart-plus"></i> Add to Cart`;
-    }
-  }
-}
-
-// ============================================================================
-// 3. SHOPPING CART & DYNAMIC DISCOUNT CALCULATION
-// ============================================================================
-function addToCart(productId) {
-  const p = PRODUCTS_LIST.find(x => x.id === productId);
-  if (!p) return;
-
-  const card = document.getElementById(`prod-card-${productId}`);
-  const varSelect = card ? card.querySelector('.variant-selector') : null;
-  const qtyInput = document.getElementById(`qty-input-${productId}`);
-  const qtyToAdd = parseInt(qtyInput ? qtyInput.value : 1, 10) || 1;
-
-  let variantId = null;
-  let variantName = 'Standard';
-  let priceOffset = 0;
-  let maxStock = p.stock_qty || 0;
-
-  if (varSelect) {
-    const opt = varSelect.options[varSelect.selectedIndex];
-    variantId = opt.value ? parseInt(opt.value, 10) : null;
-    variantName = opt.textContent.split('(Stock:')[0].trim();
-    priceOffset = parseFloat(opt.getAttribute('data-price-offset')) || 0;
-    maxStock = parseInt(opt.getAttribute('data-stock'), 10) || maxStock;
-  } else if (p.variants && p.variants.length === 1) {
-    variantId = p.variants[0].id;
-    variantName = p.variants[0].variant_name;
-    priceOffset = Number(p.variants[0].price_offset) || 0;
-    maxStock = p.variants[0].stock_qty ?? maxStock;
-  }
-
-  if (maxStock <= 0) {
-    showAlert('Selected item is currently out of stock.', 'warning');
-    return;
-  }
-
-  const basePrice = (Number(p.price) || 0) + priceOffset;
-  const imgUrl = getProductImageUrl(p);
-
-  // Check if already in cart with same variant
-  const existingIndex = CART.findIndex(item => item.productId === productId && item.variantId === variantId);
-  if (existingIndex > -1) {
-    const newQty = CART[existingIndex].qty + qtyToAdd;
-    if (newQty > maxStock) {
-      showAlert(`Cannot add more than available stock (${maxStock} units).`, 'warning');
-      CART[existingIndex].qty = maxStock;
-    } else {
-      CART[existingIndex].qty = newQty;
-      showAlert(`Updated ${p.name} quantity in cart!`, 'success');
-    }
-  } else {
-    CART.push({
-      productId,
-      variantId,
-      name: p.name,
-      variantName,
-      unitPrice: basePrice,
-      qty: Math.min(qtyToAdd, maxStock),
-      image: imgUrl,
-      maxStock
+      document.getElementById('shopCategoryFilter').addEventListener('change', () => loadProducts());
+      document.getElementById('shopSortSelect').addEventListener('change', () => loadProducts());
+      document.getElementById('shopSearchInput').addEventListener('input', utils.debounce(() => loadProducts(), 300));
     });
-    showAlert(`Added ${p.name} to cart!`, 'success');
-  }
 
-  saveCartToStorage();
-  updateCartUI();
-}
-
-function updateCartQty(index, delta) {
-  if (!CART[index]) return;
-  const item = CART[index];
-  const newQty = item.qty + delta;
-  if (newQty <= 0) {
-    CART.splice(index, 1);
-  } else if (newQty > item.maxStock) {
-    showAlert(`Only ${item.maxStock} units available in stock.`, 'warning');
-    item.qty = item.maxStock;
-  } else {
-    item.qty = newQty;
-  }
-  saveCartToStorage();
-  updateCartUI();
-  renderCartModalContent();
-}
-
-function removeCartItem(index) {
-  CART.splice(index, 1);
-  saveCartToStorage();
-  updateCartUI();
-  renderCartModalContent();
-}
-
-function clearCart() {
-  CART = [];
-  saveCartToStorage();
-  updateCartUI();
-  renderCartModalContent();
-}
-
-function calculateCartTotals() {
-  const discPct = MEMBER_PROFILE ? (Number(MEMBER_PROFILE.shop_discount_pct) || 0) : 0;
-  const subtotal = CART.reduce((acc, item) => acc + (item.unitPrice * item.qty), 0);
-  const discountAmount = parseFloat((subtotal * (discPct / 100)).toFixed(2));
-  const netTotal = parseFloat(Math.max(0, subtotal - discountAmount).toFixed(2));
-  const totalCount = CART.reduce((acc, item) => acc + item.qty, 0);
-
-  return { subtotal, discountAmount, netTotal, totalCount, discPct };
-}
-
-function updateCartUI() {
-  const { netTotal, totalCount } = calculateCartTotals();
-  document.getElementById('cartCountBadge').textContent = totalCount;
-  document.getElementById('cartHeaderTotal').textContent = fmtINR(netTotal);
-}
-
-function openCartModal() {
-  renderCartModalContent();
-  new bootstrap.Modal(document.getElementById('cartModal')).show();
-}
-
-function renderCartModalContent() {
-  const { subtotal, discountAmount, netTotal, totalCount, discPct } = calculateCartTotals();
-  const emptyState = document.getElementById('cartEmptyState');
-  const cartContent = document.getElementById('cartContent');
-  const clearBtn = document.getElementById('clearCartBtn');
-  const checkoutBtn = document.getElementById('checkoutBtn');
-  const itemsContainer = document.getElementById('cartItemsList');
-
-  document.getElementById('cartModalItemCount').textContent = `${totalCount} item(s)`;
-
-  if (!CART.length) {
-    emptyState.classList.remove('d-none');
-    cartContent.classList.add('d-none');
-    clearBtn.classList.add('d-none');
-    checkoutBtn.disabled = true;
-    return;
-  }
-
-  emptyState.classList.add('d-none');
-  cartContent.classList.remove('d-none');
-  clearBtn.classList.remove('d-none');
-  checkoutBtn.disabled = false;
-
-  itemsContainer.innerHTML = CART.map((item, idx) => {
-    const lineTotal = item.unitPrice * item.qty;
-    return `
-      <div class="cart-item-row d-flex align-items-center justify-content-between gap-3">
-        <div class="d-flex align-items-center gap-3">
-          <img src="${escHtml(item.image)}" class="cart-thumb" alt="${escHtml(item.name)}" onerror="this.src='https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=200'">
-          <div>
-            <h6 class="mb-0 fw-bold">${escHtml(item.name)}</h6>
-            <div class="small text-muted">Variant: <span class="badge bg-light text-dark border">${escHtml(item.variantName)}</span></div>
-            <div class="small text-muted">Unit Price: ${fmtINR(item.unitPrice)}</div>
-          </div>
-        </div>
-        <div class="d-flex align-items-center gap-3">
-          <div class="input-group input-group-sm" style="width: 100px;">
-            <button class="btn btn-outline-secondary" type="button" onclick="updateCartQty(${idx}, -1)">-</button>
-            <span class="form-control text-center px-1 fw-bold">${item.qty}</span>
-            <button class="btn btn-outline-secondary" type="button" onclick="updateCartQty(${idx}, 1)">+</button>
-          </div>
-          <div class="text-end" style="min-width: 90px;">
-            <div class="fw-bold">${fmtINR(lineTotal)}</div>
-          </div>
-          <button class="btn btn-sm btn-outline-danger" onclick="removeCartItem(${idx})" title="Remove item">
-            <i class="bi bi-trash"></i>
-          </button>
-        </div>
-      </div>
-    `;
-  }).join('');
-
-  document.getElementById('cartSubtotalVal').textContent = fmtINR(subtotal);
-  document.getElementById('cartDiscountVal').textContent = `-${fmtINR(discountAmount)}`;
-  document.getElementById('cartDiscountPercentLabel').textContent = `${discPct}%`;
-  document.getElementById('cartNetTotalVal').textContent = fmtINR(netTotal);
-}
-
-function saveCartToStorage() {
-  try {
-    localStorage.setItem('cc_member_cart', JSON.stringify(CART));
-  } catch {}
-}
-
-function loadCartFromStorage() {
-  try {
-    const saved = localStorage.getItem('cc_member_cart');
-    if (saved) CART = JSON.parse(saved);
-  } catch {}
-  updateCartUI();
-}
-
-// ============================================================================
-// 4. CHECKOUT & ORDER SUBMISSION
-// ============================================================================
-async function handleCheckout() {
-  if (!CART.length) {
-    showAlert('Cart is empty', 'warning');
-    return;
-  }
-
-  const deliveryLocation = document.getElementById('checkoutDeliveryLocation').value;
-  const paymentMethod = document.getElementById('checkoutPaymentMethod').value;
-  const checkoutBtn = document.getElementById('checkoutBtn');
-
-  checkoutBtn.disabled = true;
-  checkoutBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status"></span>Processing Order...`;
-
-  const orderPayload = {
-    department: 'shop',
-    channel: 'online',
-    delivery_address: deliveryLocation,
-    payment_method: paymentMethod,
-    items: CART.map(item => ({
-      product_id: item.productId,
-      variant_id: item.variantId || null,
-      quantity: item.qty
-    }))
-  };
-
-  try {
-    const response = await api.post('/api/orders', orderPayload);
-
-    // Hide cart modal
-    bootstrap.Modal.getInstance(document.getElementById('cartModal')).hide();
-
-    // Populate and open Confirmation Modal
-    document.getElementById('confirmOrderCode').textContent = response.order_code || 'ORD-SHOP';
-    document.getElementById('confirmDelivery').textContent = deliveryLocation;
-    document.getElementById('confirmPayment').textContent = paymentMethod.toUpperCase();
-    document.getElementById('confirmTotal').textContent = fmtINR(response.total);
-
-    new bootstrap.Modal(document.getElementById('orderConfirmModal')).show();
-
-    // Empty cart and sync products catalog to update stock immediately
-    clearCart();
-    await loadProductsCatalog();
-
-  } catch (err) {
-    showAlert(err.message || 'Failed to place order. Please try again.', 'danger');
-  } finally {
-    checkoutBtn.disabled = false;
-    checkoutBtn.innerHTML = `<i class="bi bi-check2-circle me-1"></i>Confirm & Buy Now`;
-  }
-}
-
-// ============================================================================
-// 5. MEMBER PURCHASES & ORDER HISTORY
-// ============================================================================
-function switchMainView(viewName) {
-  document.querySelectorAll('.section-view').forEach(v => v.classList.remove('active'));
-  if (viewName === 'orders') {
-    document.getElementById('ordersView').classList.add('active');
-    loadMyOrders();
-  } else {
-    document.getElementById('shopView').classList.add('active');
-  }
-}
-
-async function loadMyOrders() {
-  const tbody = document.getElementById('myOrdersTableBody');
-  try {
-    const orders = await api.get('/api/orders?dept=shop');
-    if (!orders || !orders.length) {
-      tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-muted">You haven't placed any shop orders yet.</td></tr>`;
-      return;
+    async function loadMemberPerk() {
+      try {
+        const res = await api.get('/api/members/me/profile');
+        if (res.data) {
+          memberPerkDiscount = res.data.discount_pro_shop || 0;
+        }
+      } catch (err) {
+        console.error(err);
+      }
     }
 
-    tbody.innerHTML = orders.map(o => {
-      const isCompleted = o.status === 'completed' || o.status === 'delivered';
-      const statusBadge = isCompleted ?
-        '<span class="badge bg-success">Completed</span>' :
-        '<span class="badge bg-warning text-dark">Pending Pickup</span>';
+    async function loadProducts() {
+      const q = document.getElementById('shopSearchInput').value.trim();
+      const category = document.getElementById('shopCategoryFilter').value;
+      const grid = document.getElementById('productGrid');
 
-      return `
-        <tr>
-          <td><strong>${escHtml(o.order_code)}</strong></td>
-          <td>${fmtDate(o.created_at)}</td>
-          <td><span class="small text-muted">${escHtml(o.delivery_address || 'Pro Shop Counter')}</span></td>
-          <td><span class="badge bg-light text-dark border">${(o.payment_method || 'card').toUpperCase()}</span></td>
-          <td>${fmtINR(o.subtotal || o.total)}</td>
-          <td class="text-success fw-semibold">-${fmtINR(o.discount_amount || 0)}</td>
-          <td class="fw-bold">${fmtINR(o.total)}</td>
-          <td>${statusBadge}</td>
-          <td class="text-end">
-            <button class="btn btn-sm btn-outline-primary" onclick="viewOrderDetail(${o.id})">
-              <i class="bi bi-receipt"></i> Details
-            </button>
-          </td>
-        </tr>
-      `;
-    }).join('');
-  } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-danger">Failed to load past orders.</td></tr>`;
-  }
-}
+      try {
+        const res = await api.get('/api/products', { department: 'shop', q, category, limit: 100 });
+        productsList = res.data || [];
+        renderProducts();
+      } catch (err) {
+        grid.innerHTML = `<div class="text-danger small">${err.message}</div>`;
+      }
+    }
 
-async function viewOrderDetail(orderId) {
-  try {
-    const o = await api.get(`/api/orders/${orderId}`);
-    document.getElementById('modDetailCode').textContent = `Order ${o.order_code}`;
-    document.getElementById('modDetailDate').textContent = fmtDate(o.created_at);
+    function renderProducts() {
+      const grid = document.getElementById('productGrid');
+      if (!productsList.length) {
+        grid.innerHTML = '<div class="col-12 text-center py-5 text-muted">No gear found matching your search.</div>';
+        return;
+      }
 
-    const isCompleted = o.status === 'completed' || o.status === 'delivered';
-    const statusBadge = document.getElementById('modDetailStatusBadge');
-    statusBadge.className = isCompleted ? 'badge bg-success' : 'badge bg-warning text-dark';
-    statusBadge.textContent = isCompleted ? 'Completed' : 'Pending Pickup';
+      grid.innerHTML = productsList.map(p => {
+        const isOut = p.stock_quantity <= 0;
+        return `
+          <div class="product-card ${isOut ? 'opacity-50' : ''}">
+            <div class="position-relative">
+              <img src="${p.image_url || 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=400&q=80'}" alt="${utils.escapeHtml(p.name)}" class="product-card-img" onerror="this.src='https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=400&q=80'">
+              <span class="position-absolute top-0 end-0 m-2 badge ${isOut ? 'bg-danger' : 'bg-light text-dark border'}">
+                ${isOut ? 'Out of Stock' : `${p.stock_quantity} available`}
+              </span>
+            </div>
+            <div class="product-card-body">
+              <div>
+                <small class="text-muted d-block">${utils.escapeHtml(p.category || 'Gear')}</small>
+                <div class="fw-bold text-truncate mb-1" title="${utils.escapeHtml(p.name)}">${utils.escapeHtml(p.name)}</div>
+                <small class="text-muted d-block font-monospace mb-2">${p.sku}</small>
+              </div>
+              <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+                <div class="font-monospace fw-bold text-primary fs-5">${utils.formatINR(p.price)}</div>
+                <button class="btn btn-sm btn-primary" ${isOut ? 'disabled' : ''} onclick="addToCart(${p.id})">
+                  <i class="bi bi-bag-plus"></i> Add
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
 
-    const items = o.items || [];
-    document.getElementById('modDetailItemsBody').innerHTML = items.map(it => `
-      <tr>
-        <td>${escHtml(it.product_name)} ${it.variant_name ? `<span class="badge bg-light text-dark border ms-1">${escHtml(it.variant_name)}</span>` : ''}</td>
-        <td class="text-center">${it.quantity}</td>
-        <td>${fmtINR(it.unit_price)}</td>
-        <td class="text-end fw-semibold">${fmtINR(it.line_total)}</td>
-      </tr>
-    `).join('');
+    function addToCart(productId) {
+      const p = productsList.find(i => i.id === productId);
+      if (!p || p.stock_quantity <= 0) return;
 
-    document.getElementById('modDetailSubtotal').textContent = fmtINR(o.subtotal || o.total);
-    document.getElementById('modDetailDiscount').textContent = `-${fmtINR(o.discount_amount || 0)}`;
-    document.getElementById('modDetailTotal').textContent = fmtINR(o.total);
+      const existing = cart.find(i => i.id === productId);
+      if (existing) {
+        if (existing.qty < p.stock_quantity) {
+          existing.qty += 1;
+        } else {
+          ui.toast('Stock limit reached for this item', 'warning');
+        }
+      } else {
+        cart.push({ id: p.id, name: p.name, price: Number(p.price), qty: 1, maxStock: p.stock_quantity });
+      }
+      updateCartDrawer();
+      ui.toast(`Added ${p.name} to cart`, 'info');
+    }
 
-    new bootstrap.Modal(document.getElementById('memberOrderDetailModal')).show();
-  } catch (err) {
-    showAlert('Unable to load order details.', 'danger');
-  }
-}
-</script>
+    function updateCartQty(productId, delta) {
+      const item = cart.find(i => i.id === productId);
+      if (!item) return;
+
+      item.qty += delta;
+      if (item.qty <= 0) {
+        cart = cart.filter(i => i.id !== productId);
+      } else if (item.qty > item.maxStock) {
+        item.qty = item.maxStock;
+        ui.toast('Stock limit reached', 'warning');
+      }
+      updateCartDrawer();
+    }
+
+    function updateCartDrawer() {
+      const container = document.getElementById('cartDrawerItems');
+      const badge = document.getElementById('cartBadge');
+      const totalCount = cart.reduce((sum, i) => sum + i.qty, 0);
+
+      if (totalCount > 0) {
+        badge.textContent = totalCount;
+        badge.style.display = 'inline-block';
+      } else {
+        badge.style.display = 'none';
+      }
+
+      if (!cart.length) {
+        container.innerHTML = `
+          <div class="text-center py-5 text-muted">
+            <i class="bi bi-cart-x fs-1 d-block mb-2 text-dim"></i>
+            Your shopping cart is empty
+          </div>
+        `;
+        document.getElementById('checkoutBtn').disabled = true;
+        updateTotals();
+        return;
+      }
+
+      container.innerHTML = cart.map(i => `
+        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+          <div style="max-width:160px;">
+            <div class="fw-semibold small text-truncate">${utils.escapeHtml(i.name)}</div>
+            <small class="text-muted font-monospace">${utils.formatINR(i.price)}</small>
+          </div>
+          <div class="d-flex align-items-center gap-1">
+            <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="updateCartQty(${i.id}, -1)">-</button>
+            <span class="font-monospace small px-1">${i.qty}</span>
+            <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="updateCartQty(${i.id}, 1)">+</button>
+          </div>
+          <div class="font-monospace fw-semibold small">${utils.formatINR(i.price * i.qty)}</div>
+        </div>
+      `).join('');
+
+      document.getElementById('checkoutBtn').disabled = false;
+      updateTotals();
+    }
+
+    function updateTotals() {
+      const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+      const discountAmount = (subtotal * memberPerkDiscount) / 100;
+      const total = Math.max(0, subtotal - discountAmount);
+
+      document.getElementById('drawerSubtotal').textContent = utils.formatINR(subtotal);
+      document.getElementById('drawerDiscount').textContent = `-${utils.formatINR(discountAmount)} (${memberPerkDiscount}%)`;
+      document.getElementById('drawerTotal').textContent = utils.formatINR(total);
+    }
+
+    function toggleDeliveryAddress() {
+      const isDelivery = document.getElementById('fulfilmentDelivery').checked;
+      const wrap = document.getElementById('deliveryAddressWrap');
+      if (isDelivery) {
+        wrap.classList.remove('d-none');
+      } else {
+        wrap.classList.add('d-none');
+      }
+    }
+
+    async function checkoutOnlineOrder() {
+      if (!cart.length) return;
+
+      const isDelivery = document.getElementById('fulfilmentDelivery').checked;
+      const address = document.getElementById('deliveryAddress').value.trim();
+
+      if (isDelivery && (!address || address.length < 10)) {
+        ui.toast('Please provide a complete delivery address (min 10 chars)', 'warning');
+        return;
+      }
+
+      const payload = {
+        department: 'shop',
+        channel: 'online',
+        payment_method: 'online',
+        delivery_address: isDelivery ? address : undefined,
+        items: cart.map(i => ({ product_id: i.id, quantity: i.qty }))
+      };
+
+      try {
+        const res = await api.post('/api/orders', payload);
+        ui.toast(`Order placed successfully! Order Code: ${res.data.order_code}`, 'success');
+        cart = [];
+        updateCartDrawer();
+        bootstrap.Offcanvas.getInstance(document.getElementById('cartDrawer')).hide();
+      } catch (err) {
+        ui.toast(err.message || 'Checkout failed', 'error');
+      }
+    }
+  </script>
 </body>
 </html>

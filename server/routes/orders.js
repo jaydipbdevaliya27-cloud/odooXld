@@ -1,279 +1,476 @@
 /**
  * @file server/routes/orders.js
- * @description Orders routes using cc_orders / cc_order_items tables with real-time stock deduction and member discounts.
+ * @description Order management routes for Shop POS, Bar POS, online orders,
+ * kitchen display board, bar tabs, and daily closings.
  */
-const express = require('express');
-const db      = require('../db');
-const { requireLogin } = require('../middleware/auth');
-const router  = express.Router();
 
-// ── GET /api/orders ───────────────────────────────────────────────────────────
+const express = require('express');
+const db = require('../db');
+const { requireLogin, requireRole } = require('../middleware/auth');
+const { validate } = require('../middleware/validate');
+const orderService = require('../services/orderService');
+const { todayIST } = require('../utils/time');
+
+const router = express.Router();
+
+// ── GET /api/orders ─────────────────────────────────────────────────────────
 router.get('/', requireLogin, async (req, res, next) => {
   try {
-    const u = req.session.user;
-    const { dept, status, date, from, to, member_id, payment_method } = req.query;
+    const user = req.session.user;
+    const {
+      q,
+      department,
+      channel,
+      status,
+      fulfilment_status,
+      from,
+      to,
+      page = 1,
+      limit = 20
+    } = req.query;
 
-    let sql = `
-      SELECT o.*,
-             COALESCE(u.full_name, u.name) AS member_name, u.email AS member_email, u.phone AS member_phone,
-             p.name AS plan_name
-        FROM cc_orders o
-        LEFT JOIN users u ON o.user_id = u.id
-        LEFT JOIN cc_members m ON (o.member_id = m.id OR o.user_id = m.user_id)
-        LEFT JOIN cc_plans p ON m.plan_id = p.id
-       WHERE 1=1`;
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+    const offset = (pageNum - 1) * limitNum;
+
+    let where = '1=1';
     const params = [];
 
-    // If logged in as member, only show their own orders
-    if (u.role === 'member') {
-      sql += ' AND o.user_id = ?';
-      params.push(u.id);
-    } else {
-      if (member_id) { sql += ' AND (o.member_id = ? OR o.user_id = ?)'; params.push(member_id, member_id); }
+    // Role restriction: members only see their own orders
+    if (user.role === 'member') {
+      where += ' AND (o.user_id = ? OR o.member_id = ?)';
+      params.push(user.id, user.member_id || 0);
     }
 
-    if (dept)           { sql += ' AND o.department = ?';         params.push(dept); }
-    if (status)         { sql += ' AND o.status = ?';             params.push(status); }
-    if (date)           { sql += ' AND DATE(o.created_at) = ?';   params.push(date); }
-    if (from)           { sql += ' AND DATE(o.created_at) >= ?';  params.push(from); }
-    if (to)             { sql += ' AND DATE(o.created_at) <= ?';  params.push(to); }
-    if (payment_method) { sql += ' AND o.payment_method = ?';     params.push(payment_method); }
-
-    sql += ' ORDER BY o.created_at DESC LIMIT 200';
-    const [rows] = await db.query(sql, params);
-    res.json(rows);
-  } catch (err) { next(err); }
-});
-
-// ── GET /api/orders/:id ───────────────────────────────────────────────────────
-router.get('/:id', requireLogin, async (req, res, next) => {
-  try {
-    const [orders] = await db.query(
-      `SELECT o.*, COALESCE(u.full_name,u.name) AS member_name, u.email AS member_email, u.phone AS member_phone,
-              p.name AS plan_name
-         FROM cc_orders o
-         LEFT JOIN users u ON o.user_id = u.id
-         LEFT JOIN cc_members m ON (o.member_id = m.id OR o.user_id = m.user_id)
-         LEFT JOIN cc_plans p ON m.plan_id = p.id
-        WHERE o.id = ?`,
-      [req.params.id]
-    );
-    if (!orders.length) return res.status(404).json({ error: 'Order not found' });
-    const order = orders[0];
-
-    // Check permissions for member
-    if (req.session.user.role === 'member' && order.user_id !== req.session.user.id) {
-      return res.status(403).json({ error: 'Access denied' });
+    if (q && q.trim().length >= 2) {
+      const s = `%${q.trim().replace(/[%_]/g, '\\$&')}%`;
+      where += ' AND (o.order_code LIKE ? OR u.full_name LIKE ? OR o.guest_name LIKE ? OR o.table_no LIKE ?)';
+      params.push(s, s, s, s);
+    }
+    if (department) {
+      where += ' AND o.department = ?';
+      params.push(department);
+    }
+    if (channel) {
+      where += ' AND o.channel = ?';
+      params.push(channel);
+    }
+    if (status) {
+      where += ' AND o.status = ?';
+      params.push(status);
+    }
+    if (fulfilment_status) {
+      where += ' AND o.fulfilment_status = ?';
+      params.push(fulfilment_status);
+    }
+    if (from) {
+      where += ' AND o.created_at >= ?';
+      params.push(`${from} 00:00:00`);
+    }
+    if (to) {
+      where += ' AND o.created_at <= ?';
+      params.push(`${to} 23:59:59`);
     }
 
-    const [items] = await db.query(
-      `SELECT oi.*, p.name AS product_name, p.sku, p.department, p.category, p.image_url,
-              pv.variant_name
-         FROM cc_order_items oi
-         JOIN cc_products p ON oi.product_id = p.id
-         LEFT JOIN cc_product_variants pv ON oi.variant_id = pv.id
-        WHERE oi.order_id = ?`,
-      [req.params.id]
-    );
-    res.json({ ...order, items });
-  } catch (err) { next(err); }
-});
-
-// ── POST /api/orders (Create Order & Deduct Inventory) ─────────────────────────
-router.post('/', requireLogin, async (req, res, next) => {
-  try {
-    const sessionUser = req.session.user;
-    let { department, channel, table_no, user_id, member_id, guest_name, guest_phone,
-          delivery_address, items, payment_method } = req.body;
-
-    if (!department) department = 'shop';
-    if (!items || !Array.isArray(items) || !items.length)
-      return res.status(400).json({ error: 'Order items are required' });
-
-    // Set user ID if placing from member portal
-    const targetUserId = user_id || (sessionUser.role === 'member' ? sessionUser.id : null);
-
-    // If member_id not passed, look up from cc_members by user ID
-    let resolvedMemberId = member_id || null;
-    let discount_pct = 0;
-
-    if (targetUserId) {
-      const [mRows] = await db.query(
-        `SELECT m.id AS member_id, p.${department === 'shop' ? 'shop' : 'bar'}_discount_pct AS disc_pct
-           FROM cc_members m
-           JOIN cc_plans p ON m.plan_id = p.id
-          WHERE m.user_id = ? AND m.status = 'active'`,
-        [targetUserId]
-      );
-      if (mRows.length) {
-        resolvedMemberId = mRows[0].member_id;
-        discount_pct = Number(mRows[0].disc_pct) || 0;
-      }
-    } else if (resolvedMemberId) {
-      const [mRows] = await db.query(
-        `SELECT p.${department === 'shop' ? 'shop' : 'bar'}_discount_pct AS disc_pct
-           FROM cc_members m
-           JOIN cc_plans p ON m.plan_id = p.id
-          WHERE m.id = ? AND m.status = 'active'`,
-        [resolvedMemberId]
-      );
-      if (mRows.length) {
-        discount_pct = Number(mRows[0].disc_pct) || 0;
-      }
-    }
-
-    // Verify stock and compute subtotal
-    let subtotal = 0;
-    const validatedItems = [];
-
-    for (const item of items) {
-      const prodId = item.product_id || item.productId;
-      const [products] = await db.query('SELECT * FROM cc_products WHERE id=?', [prodId]);
-      if (!products.length) return res.status(400).json({ error: `Product not found (ID: ${prodId})` });
-      const prod = products[0];
-
-      let price = Number(prod.price);
-      let variantName = null;
-      const varId = item.variant_id || item.variantId || null;
-
-      if (varId) {
-        const [vr] = await db.query('SELECT * FROM cc_product_variants WHERE id=? AND product_id=?', [varId, prod.id]);
-        if (vr.length) {
-          price += Number(vr[0].price_offset || 0);
-          variantName = vr[0].variant_name;
-          if (vr[0].stock_qty < item.quantity) {
-            return res.status(400).json({ error: `Insufficient stock for ${prod.name} (${variantName}). Only ${vr[0].stock_qty} available.` });
-          }
-        }
-      } else if (prod.track_stock && prod.stock_qty < item.quantity) {
-        return res.status(400).json({ error: `Insufficient stock for ${prod.name}. Only ${prod.stock_qty} available.` });
-      }
-
-      const qty = parseInt(item.quantity) || 1;
-      const lineTotal = parseFloat((price * qty).toFixed(2));
-      subtotal += lineTotal;
-
-      validatedItems.push({
-        product_id: prod.id,
-        variant_id: varId,
-        variant_name: variantName,
-        quantity: qty,
-        unit_price: price,
-        line_total: lineTotal,
-        notes: item.notes || null
-      });
-    }
-
-    const discount_amount = parseFloat((subtotal * discount_pct / 100).toFixed(2));
-    const total = parseFloat(Math.max(0, subtotal - discount_amount).toFixed(2));
-    const orderCode = `ORD-${department.toUpperCase().slice(0, 1)}${Date.now().toString().slice(-6)}`;
-
-    // Create Order Record
-    const [result] = await db.query(
-      `INSERT INTO cc_orders (order_code, department, channel, table_no, user_id, member_id, guest_name, guest_phone,
-              delivery_address, subtotal, discount_pct, discount_amount, total, status, payment_method, created_by_user_id)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      [orderCode, department, channel || (sessionUser.role === 'member' ? 'online' : 'counter'),
-       table_no || null, targetUserId, resolvedMemberId,
-       guest_name || null, guest_phone || null, delivery_address || null,
-       subtotal, discount_pct, discount_amount, total,
-       payment_method ? 'completed' : 'open', payment_method || null,
-       sessionUser.id]
-    );
-    const orderId = result.insertId;
-
-    // Insert Item Lines & Deduct Real-Time Stock
-    for (const vItem of validatedItems) {
-      await db.query(
-        `INSERT INTO cc_order_items (order_id, product_id, variant_id, quantity, unit_price, line_total, notes)
-         VALUES (?,?,?,?,?,?,?)`,
-        [orderId, vItem.product_id, vItem.variant_id, vItem.quantity, vItem.unit_price, vItem.line_total, vItem.notes]
-      );
-
-      // Deduct from variant if selected
-      if (vItem.variant_id) {
-        await db.query('UPDATE cc_product_variants SET stock_qty = GREATEST(stock_qty - ?, 0) WHERE id = ?', [vItem.quantity, vItem.variant_id]);
-      }
-      // Deduct from parent product total stock
-      await db.query('UPDATE cc_products SET stock_qty = GREATEST(stock_qty - ?, 0) WHERE id = ?', [vItem.quantity, vItem.product_id]);
-    }
-
-    // Record Payment transaction if method provided
-    if (payment_method && total > 0) {
-      const payCode = `PAY-${department.toUpperCase()}-${Date.now().toString().slice(-8)}`;
-      await db.query(
-        `INSERT INTO cc_payments (payment_code, source, reference_id, user_id, amount, method, status, paid_at)
-         VALUES (?,?,?,?,?,?,'paid',NOW())`,
-        [payCode, department, orderId, targetUserId || sessionUser.id, total, payment_method]
-      );
-      await db.query(`UPDATE cc_orders SET closed_at = NOW() WHERE id = ?`, [orderId]);
-    }
-
-    const [createdOrders] = await db.query(
-      `SELECT o.*, COALESCE(u.full_name, u.name) AS member_name, u.email AS member_email
-         FROM cc_orders o LEFT JOIN users u ON o.user_id = u.id WHERE o.id = ?`,
-      [orderId]
+    const [[{ total }]] = await db.query(
+      `SELECT COUNT(*) AS total
+       FROM orders o
+       LEFT JOIN users u ON o.user_id = u.id
+       WHERE ${where}`,
+      params
     );
 
-    res.status(201).json({
-      ...createdOrders[0],
-      items: validatedItems,
-      message: 'Order created successfully and inventory adjusted.'
+    const [rows] = await db.query(
+      `SELECT o.*,
+              COALESCE(u.full_name, o.guest_name) AS customer_name,
+              u.email AS customer_email,
+              COALESCE(u.phone, o.guest_phone) AS customer_phone,
+              m.member_code,
+              t.tab_name
+       FROM orders o
+       LEFT JOIN users u ON o.user_id = u.id
+       LEFT JOIN members m ON o.member_id = m.id
+       LEFT JOIN tabs t ON o.tab_id = t.id
+       WHERE ${where}
+       ORDER BY o.created_at DESC
+       LIMIT ? OFFSET ?`,
+      [...params, limitNum, offset]
+    );
+
+    res.json({
+      data: rows,
+      meta: { page: pageNum, limit: limitNum, total, totalPages: Math.ceil(total / limitNum) || 1 }
     });
   } catch (err) {
-    if (!err.status) err.status = 400;
     next(err);
   }
 });
 
-// ── POST /api/orders/:id/complete ─────────────────────────────────────────────
-router.post('/:id/complete', requireLogin, async (req, res, next) => {
+// ── GET /api/orders/:id ─────────────────────────────────────────────────────
+router.get('/:id', requireLogin, async (req, res, next) => {
   try {
-    const { payment_method } = req.body;
-    if (!payment_method) return res.status(400).json({ error: 'payment_method is required' });
-
-    const [orders] = await db.query('SELECT * FROM cc_orders WHERE id = ?', [req.params.id]);
-    if (!orders.length) return res.status(404).json({ error: 'Order not found' });
-    const o = orders[0];
-    if (o.status !== 'open') return res.status(400).json({ error: 'Order is already completed or cancelled' });
-
-    await db.query(
-      `UPDATE cc_orders SET status = 'completed', payment_method = ?, closed_at = NOW() WHERE id = ?`,
-      [payment_method, o.id]
+    const [rows] = await db.query(
+      `SELECT o.*,
+              COALESCE(u.full_name, o.guest_name) AS customer_name,
+              u.email AS customer_email,
+              COALESCE(u.phone, o.guest_phone) AS customer_phone,
+              m.member_code
+       FROM orders o
+       LEFT JOIN users u ON o.user_id = u.id
+       LEFT JOIN members m ON o.member_id = m.id
+       WHERE o.id = ?`,
+      [req.params.id]
     );
 
-    const payCode = `PAY-${o.department.toUpperCase()}-${Date.now().toString().slice(-8)}`;
-    await db.query(
-      `INSERT INTO cc_payments (payment_code, source, reference_id, user_id, amount, method, status, paid_at)
-       VALUES (?,?,?,?,?,?,'paid',NOW())`,
-      [payCode, o.department, o.id, o.user_id, o.total, payment_method]
-    );
+    if (!rows.length) return res.status(404).json({ error: 'Order not found' });
+    const order = rows[0];
 
-    res.json({ message: 'Order marked as completed and payment recorded', payment_method });
-  } catch (err) { next(err); }
-});
-
-// ── POST /api/orders/:id/cancel ───────────────────────────────────────────────
-router.post('/:id/cancel', requireLogin, async (req, res, next) => {
-  try {
-    const [orders] = await db.query('SELECT * FROM cc_orders WHERE id = ?', [req.params.id]);
-    if (!orders.length) return res.status(404).json({ error: 'Order not found' });
-    const o = orders[0];
-    if (o.status !== 'open') return res.status(400).json({ error: 'Only open orders can be cancelled' });
-
-    await db.query(`UPDATE cc_orders SET status = 'cancelled' WHERE id = ?`, [req.params.id]);
-
-    // Restore stock in inventory
-    const [items] = await db.query('SELECT * FROM cc_order_items WHERE order_id = ?', [req.params.id]);
-    for (const item of items) {
-      if (item.variant_id) {
-        await db.query('UPDATE cc_product_variants SET stock_qty = stock_qty + ? WHERE id = ?', [item.quantity, item.variant_id]);
-      }
-      await db.query('UPDATE cc_products SET stock_qty = stock_qty + ? WHERE id = ?', [item.quantity, item.product_id]);
+    if (req.session.user.role === 'member' && order.user_id !== req.session.user.id) {
+      return res.status(403).json({ error: 'Forbidden' });
     }
 
-    res.json({ message: 'Order cancelled and stock restored to inventory' });
-  } catch (err) { next(err); }
+    const [items] = await db.query(
+      `SELECT oi.*, p.name AS product_name, p.sku, p.image_url
+       FROM order_items oi
+       JOIN products p ON oi.product_id = p.id
+       WHERE oi.order_id = ?`,
+      [order.id]
+    );
+    order.items = items;
+
+    res.json(order);
+  } catch (err) {
+    next(err);
+  }
 });
+
+// ── POST /api/orders ────────────────────────────────────────────────────────
+router.post(
+  '/',
+  requireLogin,
+  validate({
+    department: { required: true, enum: ['shop', 'bar'], label: 'Department' },
+    items: { required: true, label: 'Order items' }
+  }),
+  async (req, res, next) => {
+    try {
+      const user = req.session.user;
+      const {
+        department,
+        channel = 'counter',
+        table_no,
+        tab_id,
+        member_id,
+        user_id,
+        guest_name,
+        guest_phone,
+        delivery_address,
+        delivery_fee = 0,
+        courier_notes,
+        items,
+        payment_method = 'cash'
+      } = req.body;
+
+      let effectiveUserId = null;
+      let effectiveMemberId = null;
+
+      if (user.role === 'member') {
+        effectiveUserId = user.id;
+        effectiveMemberId = user.member_id;
+      } else {
+        effectiveUserId = user_id || null;
+        effectiveMemberId = member_id || null;
+      }
+
+      const result = await orderService.createOrder({
+        department,
+        channel,
+        tableNo: table_no,
+        tabId: tab_id ? parseInt(tab_id, 10) : null,
+        userId: effectiveUserId,
+        memberId: effectiveMemberId,
+        guestName: guest_name,
+        guestPhone: guest_phone,
+        deliveryAddress: delivery_address,
+        deliveryFee: Number(delivery_fee) || 0,
+        courierNotes: courier_notes,
+        items,
+        paymentMethod: payment_method,
+        createdByUserId: user.id
+      });
+
+      res.status(201).json(result);
+    } catch (err) {
+      if (err.status) return res.status(err.status).json({ error: err.message, code: err.code });
+      next(err);
+    }
+  }
+);
+
+// ── PUT /api/orders/:id/fulfilment ──────────────────────────────────────────
+router.put('/:id/fulfilment', requireLogin, requireRole('staff', 'owner'), async (req, res, next) => {
+  try {
+    const { fulfilment_status } = req.body;
+    const orderId = req.params.id;
+
+    const allowed = ['placed', 'packed', 'ready_for_pickup', 'out_for_delivery', 'collected', 'delivered', 'cancelled'];
+    if (!allowed.includes(fulfilment_status)) {
+      return res.status(400).json({ error: `Invalid fulfilment status: ${fulfilment_status}` });
+    }
+
+    let extraUpdate = '';
+    if (fulfilment_status === 'collected' || fulfilment_status === 'delivered') {
+      extraUpdate = ", status = 'completed', closed_at = NOW()";
+    }
+
+    await db.query(
+      `UPDATE orders SET fulfilment_status = ? ${extraUpdate} WHERE id = ?`,
+      [fulfilment_status, orderId]
+    );
+
+    res.json({ ok: true, fulfilment_status });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── PUT /api/orders/:id/status ──────────────────────────────────────────────
+router.put('/:id/status', requireLogin, requireRole('staff', 'owner'), async (req, res, next) => {
+  try {
+    const { status } = req.body;
+    const orderId = parseInt(req.params.id, 10);
+
+    const allowed = ['open', 'completed', 'cancelled'];
+    if (!allowed.includes(status)) {
+      return res.status(400).json({ error: `Invalid order status: ${status}` });
+    }
+
+    const result = await orderService.updateOrderStatus(orderId, status, req.session.user.id);
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
+    next(err);
+  }
+});
+
+// ── Kitchen Display Board API ───────────────────────────────────────────────
+router.get('/kitchen/live', requireLogin, async (req, res, next) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT oi.*, p.name AS product_name, o.order_code, o.table_no, o.created_at AS order_time,
+              TIMESTAMPDIFF(MINUTE, oi.created_at, NOW()) AS elapsed_minutes
+       FROM order_items oi
+       JOIN orders o ON oi.order_id = o.id
+       JOIN products p ON oi.product_id = p.id
+       WHERE o.department = 'bar' AND oi.kitchen_status IN ('new', 'preparing', 'ready')
+       ORDER BY oi.created_at ASC`
+    );
+    res.json(rows);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.put('/kitchen/:itemId/status', requireLogin, requireRole('staff', 'owner'), async (req, res, next) => {
+  try {
+    const { status } = req.body;
+    const itemId = req.params.itemId;
+
+    if (!['new', 'preparing', 'ready', 'served', 'cancelled'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid kitchen item status.' });
+    }
+
+    await db.query('UPDATE order_items SET kitchen_status = ? WHERE id = ?', [status, itemId]);
+    res.json({ ok: true, status });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── Bar Tabs API ────────────────────────────────────────────────────────────
+router.get('/tabs/active', requireLogin, requireRole('staff', 'owner'), async (req, res, next) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT t.*, COALESCE(u.full_name, t.guest_name) AS customer_name,
+              COALESCE(SUM(o.total), 0) AS tab_total,
+              COUNT(o.id) AS order_count
+       FROM tabs t
+       LEFT JOIN users u ON t.user_id = u.id
+       LEFT JOIN orders o ON t.id = o.tab_id AND o.status != 'cancelled'
+       WHERE t.status = 'open'
+       GROUP BY t.id
+       ORDER BY t.opened_at DESC`
+    );
+    res.json(rows);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post(
+  '/tabs/open',
+  requireLogin,
+  requireRole('staff', 'owner'),
+  validate({ tab_name: { required: true, minLength: 2, label: 'Tab name' } }),
+  async (req, res, next) => {
+    try {
+      const { tab_name, user_id, member_id, guest_name, guest_phone, notes } = req.body;
+      const [r] = await db.query(
+        `INSERT INTO tabs (tab_name, user_id, member_id, guest_name, guest_phone, status, opened_by, notes)
+         VALUES (?, ?, ?, ?, ?, 'open', ?, ?)`,
+        [tab_name.trim(), user_id || null, member_id || null, guest_name || null, guest_phone || null, req.session.user.id, notes || null]
+      );
+      res.status(201).json({ id: r.insertId, tab_name, status: 'open' });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+router.post('/tabs/:tabId/settle', requireLogin, requireRole('staff', 'owner'), async (req, res, next) => {
+  try {
+    const tabId = parseInt(req.params.tabId, 10);
+    const { payment_method = 'upi' } = req.body;
+
+    const result = await db.transaction(async (conn) => {
+      const [tabs] = await conn.query('SELECT * FROM tabs WHERE id = ? FOR UPDATE', [tabId]);
+      if (!tabs.length || tabs[0].status !== 'open') throw new Error('Tab not found or already settled');
+      const tab = tabs[0];
+
+      const [orders] = await conn.query(
+        'SELECT id, total FROM orders WHERE tab_id = ? AND status = "open"',
+        [tabId]
+      );
+
+      const tabTotal = orders.reduce((acc, o) => acc + Number(o.total), 0);
+
+      // Mark orders completed
+      await conn.query('UPDATE orders SET status = "completed", closed_at = NOW() WHERE tab_id = ?', [tabId]);
+
+      // Record payment
+      if (tabTotal > 0) {
+        const payCode = `PAY-TAB-${Date.now()}`;
+        await conn.query(
+          `INSERT INTO payments (payment_code, source, reference_id, user_id, amount, method, status, paid_at)
+           VALUES (?, 'bar', ?, ?, ?, ?, 'paid', NOW())`,
+          [payCode, tabId, tab.user_id, tabTotal, payment_method]
+        );
+      }
+
+      // Close tab
+      await conn.query('UPDATE tabs SET status = "settled", closed_by = ?, closed_at = NOW() WHERE id = ?', [
+        req.session.user.id,
+        tabId
+      ]);
+
+      return { tabId, tabTotal, payment_method };
+    });
+
+    res.json({ ok: true, message: 'Tab settled and closed successfully', ...result });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── Daily Closing Z-Report ──────────────────────────────────────────────────
+router.get('/daily-closing/today', requireLogin, requireRole('staff', 'owner'), async (req, res, next) => {
+  try {
+    const today = todayIST();
+    const dept = req.query.department || 'bar';
+
+    const [payments] = await db.query(
+      `SELECT method, SUM(amount) AS total
+       FROM payments
+       WHERE source = ? AND DATE(paid_at) = ? AND status = 'paid'
+       GROUP BY method`,
+      [dept, today]
+    );
+
+    const breakdown = { cash: 0, card: 0, upi: 0, online: 0, total: 0 };
+    payments.forEach(p => {
+      breakdown[p.method] = Number(p.total) || 0;
+      breakdown.total += Number(p.total) || 0;
+    });
+
+    const [existing] = await db.query(
+      'SELECT * FROM daily_closings WHERE closing_date = ? AND department = ?',
+      [today, dept]
+    );
+
+    res.json({
+      date: today,
+      department: dept,
+      breakdown,
+      isClosed: existing.length > 0,
+      closingRecord: existing[0] || null
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post(
+  '/daily-closing',
+  requireLogin,
+  requireRole('staff', 'owner'),
+  validate({
+    opening_float: { required: true, type: 'number', min: 0, label: 'Opening float' },
+    counted_cash: { required: true, type: 'number', min: 0, label: 'Counted cash' }
+  }),
+  async (req, res, next) => {
+    try {
+      const today = todayIST();
+      const { opening_float, counted_cash, department = 'bar', notes } = req.body;
+
+      const [payments] = await db.query(
+        `SELECT method, SUM(amount) AS total
+         FROM payments
+         WHERE source = ? AND DATE(paid_at) = ? AND status = 'paid'
+         GROUP BY method`,
+        [department, today]
+      );
+
+      const breakdown = { cash: 0, card: 0, upi: 0, online: 0, total: 0 };
+      payments.forEach(p => {
+        breakdown[p.method] = Number(p.total) || 0;
+        breakdown.total += Number(p.total) || 0;
+      });
+
+      const cashVariance = Number(counted_cash) - (Number(opening_float) + breakdown.cash);
+
+      const [r] = await db.query(
+        `INSERT INTO daily_closings (
+          closing_date, department, opening_float, cash_collected, counted_cash,
+          cash_variance, total_revenue, card_revenue, upi_revenue, online_revenue,
+          closed_by, notes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+          opening_float = VALUES(opening_float),
+          cash_collected = VALUES(cash_collected),
+          counted_cash = VALUES(counted_cash),
+          cash_variance = VALUES(cash_variance),
+          total_revenue = VALUES(total_revenue),
+          closed_by = VALUES(closed_by),
+          notes = VALUES(notes),
+          closed_at = NOW()`,
+        [
+          today, department, opening_float, breakdown.cash, counted_cash,
+          cashVariance, breakdown.total, breakdown.card, breakdown.upi, breakdown.online,
+          req.session.user.id, notes || null
+        ]
+      );
+
+      res.status(201).json({
+        ok: true,
+        message: 'Daily closing Z-report submitted successfully.',
+        closingDate: today,
+        breakdown,
+        cashVariance
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 module.exports = router;

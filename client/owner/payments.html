@@ -1,414 +1,271 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Payment Earnings & Revenue – Champions Club</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payments &amp; Ledger – The Champions Club</title>
+  <meta name="description" content="View financial transactions, process refunds, and export payments ledger.">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="/css/main.css">
-  <style>
-    .source-kpi-card {
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      padding: 16px;
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
-    }
-    .source-kpi-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 14px rgba(0,0,0,0.06);
-    }
-    .source-icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.25rem;
-    }
-  </style>
 </head>
 <body>
-<div class="cc-wrapper">
-  <nav class="cc-sidebar d-flex flex-column">
-    <div class="brand"><i class="bi bi-trophy-fill me-2 text-warning"></i>Champions Club</div>
-    <ul class="nav flex-column mt-2 flex-grow-1">
-      <li><a href="/owner/dashboard.html" class="nav-link"><i class="bi bi-speedometer2"></i>Dashboard</a></li>
-      <li><a href="/owner/members.html"   class="nav-link"><i class="bi bi-people"></i>Members</a></li>
-      <li><a href="/owner/bookings.html"  class="nav-link"><i class="bi bi-calendar-check"></i>Bookings</a></li>
-      <li><a href="/owner/orders.html"    class="nav-link"><i class="bi bi-bag"></i>Orders</a></li>
-      <li><a href="/owner/products.html"  class="nav-link"><i class="bi bi-box-seam"></i>Products</a></li>
-      <li><a href="/owner/payments.html"  class="nav-link active"><i class="bi bi-credit-card"></i>Payments</a></li>
-      <li><a href="/owner/staff.html"     class="nav-link"><i class="bi bi-person-badge"></i>Staff Management</a></li>
-      <li><a href="/owner/plans.html"     class="nav-link"><i class="bi bi-stars"></i>Plans</a></li>
-      <li><a href="/owner/courts.html"    class="nav-link"><i class="bi bi-geo-alt"></i>Courts</a></li>
-    </ul>
-    <div class="p-3 border-top border-secondary border-opacity-25">
-      <div class="d-flex align-items-center gap-2 mb-2 p-2 rounded" style="background:rgba(255,255,255,0.08);">
-        <div class="rounded-circle bg-warning text-dark fw-bold d-flex align-items-center justify-content-center" style="width:32px; height:32px; font-size:0.85rem;" id="userInitial">
-          O
-        </div>
-        <div class="overflow-hidden">
-          <span id="userNameSidebar" class="fw-semibold text-white d-block text-truncate small" style="max-width:140px;">Club Owner</span>
-          <span id="userRoleBadge" class="badge bg-warning text-dark py-0 px-1" style="font-size:0.68rem;">Club Owner</span>
-        </div>
-      </div>
-      <button id="logoutBtn" class="btn btn-sm btn-outline-light w-100"><i class="bi bi-box-arrow-right me-1"></i>Logout</button>
-    </div>
-  </nav>
+  <div class="app-layout">
+    <div id="app-shell"></div>
 
-  <div class="d-flex flex-column flex-grow-1">
-    <div class="cc-topbar">
-      <h5 class="page-title"><i class="bi bi-credit-card me-2 text-cc"></i>Financial Revenue & Earnings by Source</h5>
-      <div class="d-flex gap-2">
-        <button class="btn btn-sm btn-outline-secondary" onclick="setPeriod('today')">Today</button>
-        <button class="btn btn-sm btn-outline-secondary" onclick="setPeriod('week')">Last 7 Days</button>
-        <button class="btn btn-sm btn-outline-secondary" onclick="setPeriod('month')">This Month</button>
-        <button class="btn btn-sm btn-outline-secondary" onclick="setPeriod('all')">All Time</button>
-      </div>
-    </div>
-
-    <main class="cc-main">
-      <!-- Breakdown by Source KPI Cards -->
-      <div class="row g-3 mb-4">
-        <!-- Total Revenue -->
-        <div class="col-md-4 col-lg-2">
-          <div class="source-kpi-card">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-              <span class="small fw-bold text-muted text-uppercase">Total Revenue</span>
-              <div class="source-icon bg-success bg-opacity-10 text-success"><i class="bi bi-cash-stack"></i></div>
-            </div>
-            <h4 class="fw-bold mb-0 text-success" id="grandTotal">₹0</h4>
-            <div class="small text-muted mt-1"><span id="txCount">0</span> Transactions</div>
+    <main class="app-main">
+      <div class="table-card">
+        <div class="table-card-header">
+          <div>
+            <h5 class="table-card-title"><i class="bi bi-credit-card"></i> Central Payments Ledger</h5>
+            <p class="table-card-subtitle">All club revenue across Memberships, Court Bookings, Shop POS &amp; Cafeteria</p>
           </div>
+          <button class="btn btn-outline-custom text-white border-light border-opacity-50 btn-sm" id="exportCsvBtn">
+            <i class="bi bi-download me-1"></i> Export Ledger CSV
+          </button>
         </div>
 
-        <!-- Bar & Cafeteria -->
-        <div class="col-md-4 col-lg-2">
-          <div class="source-kpi-card">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-              <span class="small fw-bold text-muted text-uppercase">Bar & Cafe</span>
-              <div class="source-icon bg-warning bg-opacity-15 text-warning"><i class="bi bi-cup-hot-fill"></i></div>
-            </div>
-            <h4 class="fw-bold mb-0 text-dark" id="barTotal">₹0</h4>
-            <div class="small text-muted mt-1"><span id="barCount">0</span> orders</div>
+        <div class="table-card-toolbar">
+          <div class="search-input-group">
+            <i class="bi bi-search search-leading-icon"></i>
+            <input type="text" id="searchInput" placeholder="Search payment code, payer name, notes..." aria-label="Search payments">
+            <button type="button" class="search-clear-btn d-none" id="searchClearBtn"><i class="bi bi-x"></i></button>
           </div>
-        </div>
 
-        <!-- Shop Revenue -->
-        <div class="col-md-4 col-lg-2">
-          <div class="source-kpi-card">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-              <span class="small fw-bold text-muted text-uppercase">Pro Shop</span>
-              <div class="source-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-shop"></i></div>
-            </div>
-            <h4 class="fw-bold mb-0 text-dark" id="shopTotal">₹0</h4>
-            <div class="small text-muted mt-1"><span id="shopCount">0</span> sales</div>
-          </div>
-        </div>
-
-        <!-- Court Bookings -->
-        <div class="col-md-4 col-lg-2">
-          <div class="source-kpi-card">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-              <span class="small fw-bold text-muted text-uppercase">Court Bookings</span>
-              <div class="source-icon bg-info bg-opacity-10 text-info"><i class="bi bi-calendar2-week"></i></div>
-            </div>
-            <h4 class="fw-bold mb-0 text-dark" id="courtTotal">₹0</h4>
-            <div class="small text-muted mt-1"><span id="courtCount">0</span> bookings</div>
-          </div>
-        </div>
-
-        <!-- Memberships -->
-        <div class="col-md-4 col-lg-2">
-          <div class="source-kpi-card">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-              <span class="small fw-bold text-muted text-uppercase">Memberships</span>
-              <div class="source-icon bg-purple bg-opacity-10 text-primary"><i class="bi bi-card-checklist"></i></div>
-            </div>
-            <h4 class="fw-bold mb-0 text-dark" id="membershipTotal">₹0</h4>
-            <div class="small text-muted mt-1"><span id="membershipCount">0</span> subs</div>
-          </div>
-        </div>
-
-        <!-- Refunded -->
-        <div class="col-md-4 col-lg-2">
-          <div class="source-kpi-card">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-              <span class="small fw-bold text-muted text-uppercase">Refunded</span>
-              <div class="source-icon bg-danger bg-opacity-10 text-danger"><i class="bi bi-arrow-counterclockwise"></i></div>
-            </div>
-            <h4 class="fw-bold mb-0 text-danger" id="refundTotal">₹0</h4>
-            <div class="small text-muted mt-1">Reversed payments</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Filters -->
-      <div class="cc-card mb-3">
-        <div class="row g-2 align-items-end">
-          <div class="col-md-2">
-            <label class="form-label small fw-semibold text-muted">From Date</label>
-            <input type="date" id="fromDate" class="form-control form-control-sm">
-          </div>
-          <div class="col-md-2">
-            <label class="form-label small fw-semibold text-muted">To Date</label>
-            <input type="date" id="toDate" class="form-control form-control-sm">
-          </div>
-          <div class="col-md-2">
-            <label class="form-label small fw-semibold text-muted">Earnings Source</label>
-            <select id="sourceFilter" class="form-select form-select-sm">
-              <option value="">All Sources</option>
-              <option value="bar">Bar & Cafeteria</option>
-              <option value="shop">Pro Shop</option>
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <select id="sourceFilter" class="form-select form-select-sm" style="width: auto;">
+              <option value="">All Revenue Streams</option>
+              <option value="membership">Membership Fees</option>
               <option value="court">Court Bookings</option>
-              <option value="membership">Memberships</option>
+              <option value="shop">Pro Shop</option>
+              <option value="bar">Bar &amp; Cafeteria</option>
             </select>
-          </div>
-          <div class="col-md-2">
-            <label class="form-label small fw-semibold text-muted">Payment Method</label>
-            <select id="methodFilter" class="form-select form-select-sm">
-              <option value="">All Methods</option>
+            <select id="methodFilter" class="form-select form-select-sm" style="width: auto;">
+              <option value="">All Payment Methods</option>
+              <option value="upi">UPI / QR Code</option>
+              <option value="card">Credit/Debit Card</option>
               <option value="cash">Cash</option>
-              <option value="card">Card</option>
-              <option value="upi">UPI / QR</option>
-              <option value="online">Online / Gateway</option>
+              <option value="online">Online</option>
             </select>
-          </div>
-          <div class="col-md-2">
-            <label class="form-label small fw-semibold text-muted">Status</label>
-            <select id="statusFilter" class="form-select form-select-sm">
+            <select id="statusFilter" class="form-select form-select-sm" style="width: auto;">
               <option value="">All Statuses</option>
               <option value="paid">Paid</option>
               <option value="refunded">Refunded</option>
             </select>
           </div>
-          <div class="col-md-2">
-            <button id="filterBtn" class="btn btn-cc btn-sm w-100"><i class="bi bi-funnel me-1"></i>Apply Filter</button>
-          </div>
         </div>
-      </div>
 
-      <!-- Transaction Ledger Table -->
-      <div class="cc-card">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h6 class="fw-bold mb-0"><i class="bi bi-receipt-cutoff me-2 text-cc"></i>Payment Transactions</h6>
-          <div class="text-muted small" id="recordCountText">Showing records</div>
-        </div>
         <div class="table-responsive">
-          <table class="table table-hover align-middle mb-0" id="payTable">
+          <table class="cc-table" id="paymentsTable">
             <thead>
-              <tr class="table-light">
-                <th>Ref Code</th>
-                <th>Source</th>
+              <tr>
+                <th>Payment Code</th>
+                <th>Revenue Stream</th>
+                <th>Payer / Customer</th>
+                <th>Amount (INR)</th>
                 <th>Method</th>
-                <th>Payer Name</th>
-                <th class="text-end">Amount</th>
                 <th>Status</th>
-                <th>Date & Time</th>
-                <th class="text-center">Action</th>
+                <th>Date &amp; Time</th>
+                <th class="text-end">Actions</th>
               </tr>
             </thead>
-            <tbody><tr><td colspan="8" class="text-center py-4 text-muted">Loading payments…</td></tr></tbody>
+            <tbody>
+              <tr><td colspan="8" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading payments…</td></tr>
+            </tbody>
           </table>
         </div>
+
+        <div class="table-footer" id="pagination"></div>
       </div>
     </main>
   </div>
-</div>
 
-<div id="alert-bar"></div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="/js/api.js"></script>
-<script src="/js/utils.js"></script>
-<script>
-function getSourceBadge(source) {
-  switch((source || '').toLowerCase()) {
-    case 'bar':
-    case 'cafeteria':
-      return `<span class="badge bg-warning text-dark"><i class="bi bi-cup-hot me-1"></i>Bar/Cafe</span>`;
-    case 'shop':
-      return `<span class="badge bg-primary"><i class="bi bi-shop me-1"></i>Pro Shop</span>`;
-    case 'court':
-      return `<span class="badge bg-info text-dark"><i class="bi bi-calendar2-check me-1"></i>Court</span>`;
-    case 'membership':
-      return `<span class="badge bg-success"><i class="bi bi-stars me-1"></i>Membership</span>`;
-    default:
-      return `<span class="badge bg-secondary">${escHtml(source || 'General')}</span>`;
-  }
-}
+  <!-- ── Refund Modal ──────────────────────────────────────────────────────── -->
+  <div class="modal fade" id="refundModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title d-flex align-items-center gap-2">
+            <i class="bi bi-arrow-counterclockwise text-danger"></i> Process Transaction Refund
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="ref_payId">
+          <p class="fw-bold mb-3 text-dark" id="ref_summary"></p>
+          <div class="mb-3">
+            <label class="form-label" for="ref_amount">Refund Amount (₹) *</label>
+            <input type="number" id="ref_amount" class="form-control" min="0.01" step="0.01" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="ref_reason">Reason for Refund *</label>
+            <textarea id="ref_reason" class="form-control" rows="2" placeholder="e.g. Booking cancellation per club policy" required></textarea>
+          </div>
+          <div id="refundErr" class="alert alert-danger d-none small py-2"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-custom" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-danger" id="refundSaveBtn">
+            <span id="refundSpinner" class="spinner-border spinner-border-sm d-none me-1"></span>
+            Process Refund
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-function getMethodBadge(method) {
-  switch((method || '').toLowerCase()) {
-    case 'cash':
-      return `<span class="badge bg-light text-dark border"><i class="bi bi-cash me-1"></i>Cash</span>`;
-    case 'upi':
-      return `<span class="badge bg-light text-primary border"><i class="bi bi-qr-code me-1"></i>UPI</span>`;
-    case 'card':
-      return `<span class="badge bg-light text-success border"><i class="bi bi-credit-card me-1"></i>Card</span>`;
-    case 'online':
-      return `<span class="badge bg-light text-info border"><i class="bi bi-globe me-1"></i>Online</span>`;
-    default:
-      return `<span class="badge bg-light text-dark border">${escHtml(method || 'Other')}</span>`;
-  }
-}
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/utils.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/shell.js"></script>
+  <script>
+    let searchAbort = null;
 
-function setPeriod(type) {
-  const today = new Date();
-  const to = today.toISOString().slice(0, 10);
-  let from = '';
+    async function loadPayments(page = 1) {
+      const q = document.getElementById('searchInput').value.trim();
+      const source = document.getElementById('sourceFilter').value;
+      const method = document.getElementById('methodFilter').value;
+      const status = document.getElementById('statusFilter').value;
 
-  if (type === 'today') {
-    from = to;
-  } else if (type === 'week') {
-    const d = new Date(today);
-    d.setDate(today.getDate() - 7);
-    from = d.toISOString().slice(0, 10);
-  } else if (type === 'month') {
-    const d = new Date(today);
-    d.setDate(1);
-    from = d.toISOString().slice(0, 10);
-  } else if (type === 'all') {
-    from = '';
-  }
+      if (searchAbort) searchAbort.abort();
+      searchAbort = new AbortController();
 
-  document.getElementById('fromDate').value = from;
-  document.getElementById('toDate').value = to;
-  loadPayments();
-}
+      const tbody = document.querySelector('#paymentsTable tbody');
+      tbody.innerHTML = ui.skeleton(5, 8);
 
-async function loadPayments() {
-  const from   = document.getElementById('fromDate').value;
-  const to     = document.getElementById('toDate').value;
-  const source = document.getElementById('sourceFilter').value;
-  const method = document.getElementById('methodFilter').value;
-  const status = document.getElementById('statusFilter').value;
-
-  let query = [];
-  if (from)   query.push('from=' + encodeURIComponent(from));
-  if (to)     query.push('to=' + encodeURIComponent(to));
-  if (source) query.push('source=' + encodeURIComponent(source));
-  if (method) query.push('method=' + encodeURIComponent(method));
-  if (status) query.push('status=' + encodeURIComponent(status));
-  const queryString = query.length ? '?' + query.join('&') : '';
-
-  const res = await api.get('/api/payments' + queryString).catch(() => ({ payments: [] }));
-  const rows = Array.isArray(res) ? res : (res.payments || []);
-
-  // Compute breakdown
-  let grandTotal = 0;
-  let refundTotal = 0;
-  let barTotal = 0, barCount = 0;
-  let shopTotal = 0, shopCount = 0;
-  let courtTotal = 0, courtCount = 0;
-  let memberTotal = 0, memberCount = 0;
-
-  rows.forEach(p => {
-    const amt = Number(p.amount) || 0;
-    if (p.status === 'paid') {
-      grandTotal += amt;
-      const s = (p.source || '').toLowerCase();
-      if (s === 'bar' || s === 'cafeteria') {
-        barTotal += amt;
-        barCount++;
-      } else if (s === 'shop') {
-        shopTotal += amt;
-        shopCount++;
-      } else if (s === 'court') {
-        courtTotal += amt;
-        courtCount++;
-      } else if (s === 'membership') {
-        memberTotal += amt;
-        memberCount++;
-      }
-    } else if (p.status === 'refunded') {
-      refundTotal += amt;
-    }
-  });
-
-  document.getElementById('grandTotal').textContent = fmtINR(grandTotal);
-  document.getElementById('refundTotal').textContent = fmtINR(refundTotal);
-  document.getElementById('txCount').textContent = rows.length;
-
-  document.getElementById('barTotal').textContent = fmtINR(barTotal);
-  document.getElementById('barCount').textContent = barCount;
-
-  document.getElementById('shopTotal').textContent = fmtINR(shopTotal);
-  document.getElementById('shopCount').textContent = shopCount;
-
-  document.getElementById('courtTotal').textContent = fmtINR(courtTotal);
-  document.getElementById('courtCount').textContent = courtCount;
-
-  document.getElementById('membershipTotal').textContent = fmtINR(memberTotal);
-  document.getElementById('membershipCount').textContent = memberCount;
-
-  document.getElementById('recordCountText').textContent = `${rows.length} transactions found`;
-
-  const tbody = document.querySelector('#payTable tbody');
-  if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">No payments found for the selected criteria.</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = rows.map(p => `
-    <tr>
-      <td><code class="fw-bold text-dark">${escHtml(p.payment_code || ('PAY-' + p.id))}</code></td>
-      <td>${getSourceBadge(p.source)}</td>
-      <td>${getMethodBadge(p.method)}</td>
-      <td>
-        <div class="fw-semibold">${escHtml(p.payer_name || 'Guest / Walk-in')}</div>
-        ${p.payer_email ? `<div class="small text-muted">${escHtml(p.payer_email)}</div>` : ''}
-      </td>
-      <td class="text-end fw-bold ${p.status === 'paid' ? 'text-success' : 'text-danger'}">
-        ${p.status === 'paid' ? '+' : '-'}${fmtINR(p.amount)}
-      </td>
-      <td>${statusBadge(p.status)}</td>
-      <td class="small text-muted">${fmtDate(p.paid_at || p.created_at)}</td>
-      <td class="text-center">
-        ${p.status === 'paid'
-          ? `<button class="btn btn-sm btn-outline-danger btn-refund px-2 py-1" data-id="${p.id}" title="Refund Payment">
-               <i class="bi bi-arrow-counterclockwise me-1"></i>Refund
-             </button>`
-          : `<span class="badge bg-light text-muted">No Action</span>`}
-      </td>
-    </tr>
-  `).join('');
-
-  document.querySelectorAll('.btn-refund').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      if (!confirm('Are you sure you want to mark this payment as refunded?')) return;
       try {
-        await api.post(`/api/payments/refund/${btn.dataset.id}`);
-        showAlert('Payment successfully marked as refunded');
-        loadPayments();
-      } catch(e) {
-        showAlert(e.message || 'Failed to refund payment', 'danger');
+        const res = await api.get('/api/payments', { q, source, method, status, page, limit: 15 }, { signal: searchAbort.signal });
+        const payments = res.data || [];
+        const meta = res.meta || { page, total: 0, totalPages: 1, limit: 15 };
+
+        if (!payments.length) {
+          tbody.innerHTML = `<tr><td colspan="8">${ui.emptyState({ headline: 'No payments found', message: 'No financial records match your search filters.' })}</td></tr>`;
+          document.getElementById('pagination').innerHTML = '';
+          return;
+        }
+
+        tbody.innerHTML = payments.map(p => {
+          const isRefund = Number(p.amount) < 0 || p.status === 'refunded';
+          return `
+            <tr>
+              <td>
+                <span class="mono fw-bold text-dark">${utils.escapeHtml(p.payment_code)}</span>
+                ${p.refund_of_id ? `<span class="badge bg-secondary ms-1">Refund</span>` : ''}
+              </td>
+              <td>
+                <span class="badge bg-light text-dark text-uppercase">${utils.escapeHtml(p.source)}</span>
+              </td>
+              <td>
+                <div><strong>${utils.escapeHtml(p.payer_name || 'Guest')}</strong></div>
+                <div class="small text-muted">${utils.escapeHtml(p.payer_email || '—')}</div>
+              </td>
+              <td class="mono fw-bold ${isRefund ? 'text-danger' : 'text-success'}">
+                ${utils.formatINR(p.amount)}
+              </td>
+              <td>
+                <span class="badge bg-light text-muted text-uppercase">${utils.escapeHtml(p.method)}</span>
+              </td>
+              <td>${utils.statusChip(p.status)}</td>
+              <td class="mono small text-muted">${utils.formatDateTime(p.paid_at)}</td>
+              <td class="text-end">
+                ${!isRefund && Number(p.amount) > 0 ? `
+                  <button class="btn btn-sm btn-outline-danger" onclick="openRefundModal(${p.id}, '${utils.escapeHtml(p.payment_code)}', ${p.amount})" title="Refund Transaction">
+                    <i class="bi bi-arrow-counterclockwise"></i> Refund
+                  </button>
+                ` : `<span class="text-muted small">—</span>`}
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        document.getElementById('pagination').innerHTML = ui.renderPagination({
+          page: meta.page,
+          totalPages: meta.totalPages,
+          total: meta.total,
+          limit: meta.limit,
+          onPageChange: 'loadPayments'
+        });
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger">${utils.escapeHtml(err.message)}</td></tr>`;
+        }
+      }
+    }
+
+    function openRefundModal(id, code, maxAmount) {
+      document.getElementById('ref_payId').value = id;
+      document.getElementById('ref_summary').textContent = `Transaction: ${code} (Original Amount: ${utils.formatINR(maxAmount)})`;
+      document.getElementById('ref_amount').value = maxAmount;
+      document.getElementById('ref_amount').setAttribute('max', maxAmount);
+      document.getElementById('ref_reason').value = '';
+      document.getElementById('refundErr').classList.add('d-none');
+      ui.openModal('refundModal');
+    }
+
+    document.getElementById('refundSaveBtn').addEventListener('click', async () => {
+      const id = document.getElementById('ref_payId').value;
+      const amount = document.getElementById('ref_amount').value;
+      const reason = document.getElementById('ref_reason').value.trim();
+      const errBox = document.getElementById('refundErr');
+      const btn = document.getElementById('refundSaveBtn');
+      const sp = document.getElementById('refundSpinner');
+
+      if (!amount || parseFloat(amount) <= 0) {
+        errBox.textContent = 'Please enter a valid refund amount.';
+        errBox.classList.remove('d-none');
+        return;
+      }
+      if (!reason) {
+        errBox.textContent = 'Please provide a refund reason.';
+        errBox.classList.remove('d-none');
+        return;
+      }
+
+      errBox.classList.add('d-none');
+      btn.disabled = true;
+      sp.classList.remove('d-none');
+
+      try {
+        await api.post(`/api/payments/${id}/refund`, {
+          amount: parseFloat(amount),
+          reason
+        });
+        ui.closeModal('refundModal');
+        ui.toast('Refund processed and ledger updated successfully!', 'success');
+        loadPayments(1);
+      } catch (err) {
+        errBox.textContent = err.message;
+        errBox.classList.remove('d-none');
+      } finally {
+        btn.disabled = false;
+        sp.classList.add('d-none');
       }
     });
-  });
-}
 
-(async () => {
-  const user = await loadSession();
-  if (!user) return;
-  document.getElementById('userNameSidebar').textContent = user.full_name || user.name || 'Club Owner';
-  if (document.getElementById('userInitial')) document.getElementById('userInitial').textContent = (user.full_name || 'O').charAt(0).toUpperCase();
+    document.getElementById('exportCsvBtn').addEventListener('click', () => {
+      window.location.href = '/api/payments/export/csv';
+    });
 
-  // Default: last 30 days
-  const today = new Date();
-  const from  = new Date(today); 
-  from.setDate(today.getDate() - 30);
-  document.getElementById('fromDate').value = from.toISOString().slice(0, 10);
-  document.getElementById('toDate').value   = today.toISOString().slice(0, 10);
+    const searchInput = document.getElementById('searchInput');
+    const searchClearBtn = document.getElementById('searchClearBtn');
 
-  await loadPayments();
-  document.getElementById('filterBtn').addEventListener('click', loadPayments);
-  document.getElementById('logoutBtn').addEventListener('click', async () => {
-    await api.post('/api/auth/logout');
-    window.location.href = '/shared/login.html';
-  });
-})();
-</script>
+    searchInput.addEventListener('input', utils.debounce((e) => {
+      searchClearBtn.classList.toggle('d-none', !e.target.value);
+      loadPayments(1);
+    }, 300));
+
+    searchClearBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      searchClearBtn.classList.add('d-none');
+      loadPayments(1);
+    });
+
+    document.getElementById('sourceFilter').addEventListener('change', () => loadPayments(1));
+    document.getElementById('methodFilter').addEventListener('change', () => loadPayments(1));
+    document.getElementById('statusFilter').addEventListener('change', () => loadPayments(1));
+
+    document.addEventListener('DOMContentLoaded', () => loadPayments(1));
+  </script>
 </body>
 </html>
