@@ -47,6 +47,11 @@
       padding: 1.5rem 2rem;
       box-shadow: var(--shadow-md);
     }
+    @media (max-width: 575.98px) {
+      .checkin-card { padding: 1rem; }
+      #quickCheckinForm { flex-direction: column; }
+      #quickCheckinForm .btn { width: 100%; min-height: 42px; }
+    }
     .price-quote-box {
       background: var(--surface-alt);
       border: 1px solid var(--border);
@@ -246,10 +251,11 @@
                 </div>
               </div>
               <div class="col-md-6" id="memberSelectWrap">
-                <label class="form-label">Select Member</label>
-                <select class="form-select" id="bookingMemberSelect" name="member_id" required>
-                  <option value="">Loading members...</option>
-                </select>
+                <label class="form-label" for="bookingMemberSearch">Find Member</label>
+                <input class="form-control" id="bookingMemberSearch" type="search" list="bookingMemberOptions" placeholder="Name, member code, or phone" autocomplete="off" required oninput="selectBookingMember()">
+                <datalist id="bookingMemberOptions"></datalist>
+                <input type="hidden" id="bookingMemberId" name="member_id">
+                <small class="text-muted" id="bookingMemberHint">Choose a matching member from the suggestions.</small>
               </div>
             </div>
 
@@ -431,14 +437,23 @@
       try {
         const res = await api.get('/api/members', { limit: 200, status: 'active' });
         membersList = res.data || res || [];
-        const select = document.getElementById('bookingMemberSelect');
-        select.innerHTML = '<option value="">Select Member...</option>' +
-          membersList.map(m =>
-            `<option value="${m.id}">${utils.escapeHtml(m.name || m.full_name)} (${utils.escapeHtml(m.member_code)}) — ${utils.escapeHtml(m.plan_name || 'Standard')}</option>`
-          ).join('');
+        document.getElementById('bookingMemberOptions').innerHTML = membersList.map(m => {
+          const displayName = m.full_name || m.name || 'Member';
+          const value = `${displayName} (${m.member_code}) · ${m.phone || ''}`;
+          return `<option value="${utils.escapeHtml(value)}">${utils.escapeHtml(m.plan_name || 'Standard')}</option>`;
+        }).join('');
       } catch (err) {
         console.error('Failed to load members', err);
       }
+    }
+
+    function selectBookingMember() {
+      const input = document.getElementById('bookingMemberSearch');
+      const member = membersList.find(m => `${m.full_name || m.name || 'Member'} (${m.member_code}) · ${m.phone || ''}` === input.value);
+      document.getElementById('bookingMemberId').value = member ? member.id : '';
+      document.getElementById('bookingMemberHint').textContent = member
+        ? `${member.plan_name || 'Member'} selected`
+        : 'Choose a matching member from the suggestions.';
     }
 
     async function loadBookings(searchQuery = '', signal = null) {
@@ -549,7 +564,11 @@
       const isMember = document.getElementById('typeMember').checked;
       document.getElementById('memberSelectWrap').classList.toggle('d-none', !isMember);
       document.getElementById('guestFieldsWrap').classList.toggle('d-none', isMember);
-      document.getElementById('bookingMemberSelect').toggleAttribute('required', isMember);
+      document.getElementById('bookingMemberSearch').toggleAttribute('required', isMember);
+      if (!isMember) {
+        document.getElementById('bookingMemberSearch').value = '';
+        document.getElementById('bookingMemberId').value = '';
+      }
     }
 
     function openNewBookingModal() {
@@ -634,7 +653,7 @@
       };
 
       if (isMember) {
-        if (!form.member_id.value) { ui.toast('Please select a member', 'warning'); return; }
+        if (!form.member_id.value) { ui.toast('Choose a member from the suggestions', 'warning'); return; }
         payload.member_id = Number(form.member_id.value);
       } else {
         payload.guest_name = form.guest_name.value.trim();
@@ -709,9 +728,22 @@
       if (!val) return;
 
       try {
-        const res = await api.post('/api/members/checkin', { identifier: val });
-        const name = res.data ? (res.data.name || res.data.full_name) : 'Member';
-        ui.toast(`Checked in: ${name}`, 'success');
+        const result = await api.get('/api/members', { q: val, status: 'active', limit: 100 });
+        const matches = result.data || [];
+        const digits = val.replace(/\D/g, '').slice(-10);
+        const member = matches.find(m =>
+          String(m.member_code || '').toLowerCase() === val.toLowerCase() ||
+          (digits.length === 10 && String(m.phone || '').replace(/\D/g, '').slice(-10) === digits) ||
+          String(m.full_name || '').toLowerCase() === val.toLowerCase()
+        ) || (matches.length === 1 ? matches[0] : null);
+
+        if (!member) {
+          ui.toast(matches.length > 1 ? 'More than one member matched. Use their member code or phone.' : 'No active member found. Check the code or phone number.', 'warning');
+          return;
+        }
+
+        await api.post(`/api/members/${member.id}/checkin`, { method: digits.length === 10 ? 'phone' : 'code' });
+        ui.toast(`Checked in: ${member.full_name}`, 'success');
         input.value = '';
         input.focus();
         const cur = parseInt(document.getElementById('statCheckinsToday').textContent) || 0;

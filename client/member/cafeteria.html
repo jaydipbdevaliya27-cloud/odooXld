@@ -13,23 +13,47 @@
   <style>
     .menu-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 1.25rem;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+      gap: 1rem;
     }
     .menu-card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: var(--radius-md);
-      padding: 1.25rem;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      transition: all 0.2s ease;
+      min-width: 0;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
     }
     .menu-card:hover {
       border-color: var(--accent);
-      transform: translateY(-2px);
+      transform: translateY(-3px);
       box-shadow: var(--shadow-md);
+    }
+    .menu-card-art {
+      height: 142px;
+      display: grid;
+      place-items: center;
+      position: relative;
+      background: linear-gradient(135deg, var(--accent-soft), var(--surface-alt));
+      color: var(--accent);
+      font-size: 2rem;
+    }
+    .menu-card-art img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .menu-card-body { padding: 1rem; min-width: 0; }
+    .menu-card-title { min-height: 2.6em; overflow-wrap: anywhere; }
+    @media (max-width: 575.98px) {
+      .menu-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.65rem; }
+      .menu-card-art { height: 112px; }
+      .menu-card-body { padding: 0.75rem; }
     }
   </style>
 </head>
@@ -174,15 +198,19 @@
 
       grid.innerHTML = menuItems.map(item => `
         <div class="menu-card">
-          <div>
-            <span class="badge bg-light text-dark border mb-2">${utils.escapeHtml(item.category || 'Cafe')}</span>
-            <h6 class="fw-bold mb-1">${utils.escapeHtml(item.name)}</h6>
+          <div class="menu-card-art" aria-hidden="true">
+            <i class="bi bi-cup-hot"></i>
+            ${item.image_url ? `<img src="${utils.escapeHtml(item.image_url)}" alt="" loading="lazy" onerror="this.remove()">` : ''}
           </div>
-          <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
-            <span class="fw-bold font-monospace text-primary fs-5">${utils.formatINR(item.price)}</span>
-            <button class="btn btn-sm btn-primary" onclick="addToCafeOrder(${item.id})">
-              <i class="bi bi-plus-lg"></i> Add
-            </button>
+          <div class="menu-card-body">
+            <span class="badge bg-light text-dark border mb-2">${utils.escapeHtml(item.category || 'Cafe')}</span>
+            <h6 class="menu-card-title fw-bold mb-3">${utils.escapeHtml(item.name)}</h6>
+            <div class="d-flex justify-content-between align-items-center gap-2 pt-2 border-top">
+              <span class="fw-bold font-monospace text-primary">${utils.formatINR(item.price)}</span>
+              <button class="btn btn-sm btn-primary" onclick="addToCafeOrder(${item.id})">
+                <i class="bi bi-plus-lg"></i><span class="d-none d-sm-inline"> Add</span>
+              </button>
+            </div>
           </div>
         </div>
       `).join('');

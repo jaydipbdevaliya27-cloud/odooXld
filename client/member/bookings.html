@@ -156,9 +156,18 @@
   <script src="../js/shell.js"></script>
   <script>
     let currentPage = 1;
+    let cancellationCutoffHours = 2;
 
-    document.addEventListener('DOMContentLoaded', () => {
-      loadMyBookings();
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const profile = await api.get('/api/members/me/profile');
+        const member = profile.data || profile;
+        cancellationCutoffHours = Number(member.cancellation_cutoff_hours) || 2;
+      } catch (err) {
+        console.error('Failed to load cancellation policy', err);
+      }
+
+      await loadMyBookings();
 
       document.getElementById('myBookingStatusFilter').addEventListener('change', () => { currentPage = 1; loadMyBookings(); });
       document.getElementById('myBookingDateFrom').addEventListener('change', () => { currentPage = 1; loadMyBookings(); });
@@ -177,6 +186,22 @@
         loadMyBookings();
       });
     });
+
+    function canCancelBooking(booking) {
+      const date = String(booking.booking_date).slice(0, 10);
+      const time = String(booking.start_time).slice(0, 5);
+      if (utils.isPastSlot(date, time)) return false;
+      const startsAt = new Date(`${date}T${time}:00+05:30`).getTime();
+      return (startsAt - Date.now()) / (60 * 60 * 1000) >= cancellationCutoffHours;
+    }
+
+    function cancellationDisabledReason(booking) {
+      const date = String(booking.booking_date).slice(0, 10);
+      const time = String(booking.start_time).slice(0, 5);
+      return utils.isPastSlot(date, time)
+        ? 'This session has started or passed.'
+        : `Cancellation closes ${cancellationCutoffHours} hours before the session.`;
+    }
 
     async function loadMyBookings() {
       const q = document.getElementById('myBookingSearchInput').value.trim();
@@ -215,7 +240,16 @@
           return;
         }
 
-        tbody.innerHTML = bookings.map(b => `
+        tbody.innerHTML = bookings.map(b => {
+          const cancelAllowed = b.status === 'confirmed' && canCancelBooking(b);
+          const cancelAction = b.status === 'confirmed'
+            ? `<button class="btn btn-sm btn-outline-custom" style="color:var(--danger);border-color:var(--danger);"
+                onclick="cancelBooking(${b.id})" title="${cancelAllowed ? 'Cancel reservation' : utils.escapeHtml(cancellationDisabledReason(b))}"
+                ${cancelAllowed ? '' : 'disabled'}>
+                <i class="bi bi-calendar-x me-1"></i>Cancel
+              </button>${cancelAllowed ? '' : `<small class="d-block text-muted mt-1">${utils.escapeHtml(cancellationDisabledReason(b))}</small>`}`
+            : '<span class="text-muted small">—</span>';
+          return `
           <tr>
             <td><code class="mono fw-bold">${utils.escapeHtml(b.booking_code || '')}</code></td>
             <td>
@@ -229,15 +263,11 @@
             <td class="mono">${utils.formatINR(b.price || b.price_charged || 0)}</td>
             <td>${utils.statusChip(b.status)}</td>
             <td class="text-end">
-              ${b.status === 'confirmed' ? `
-                <button class="btn btn-sm btn-outline-custom" style="color:var(--danger);border-color:var(--danger);"
-                  onclick="cancelBooking(${b.id})" title="Cancel Reservation">
-                  <i class="bi bi-calendar-x me-1"></i>Cancel
-                </button>
-              ` : '<span class="text-muted small">—</span>'}
+              ${cancelAction}
             </td>
           </tr>
-        `).join('');
+        `;
+        }).join('');
 
         // Pagination footer
         const from_ = (meta.page - 1) * meta.limit + 1;

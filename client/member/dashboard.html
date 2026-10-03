@@ -287,7 +287,7 @@
         document.getElementById('memberCode').textContent = m.member_code || '—';
         document.getElementById('memberPlanTier').textContent = m.plan_name || 'Standard';
         document.getElementById('memberExpiryDate').textContent = utils.formatDate(m.expiry_date);
-        document.getElementById('memberMaxBookings').textContent = `${m.max_bookings_per_day || 2} / day`;
+        document.getElementById('memberMaxBookings').textContent = `${m.effective_max_bookings_per_day || 2} / day`;
 
         // Status badge
         const isExpired = m.status === 'expired' || (m.expiry_date && new Date(m.expiry_date) < new Date());

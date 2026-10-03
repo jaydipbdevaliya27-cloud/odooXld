@@ -139,6 +139,28 @@ router.get('/', requireLogin, requireRole('staff', 'owner'), async (req, res, ne
 });
 
 // ── GET /api/leads/:id ──────────────────────────────────────────────────────
+router.get('/stats', requireLogin, requireRole('staff', 'owner'), async (req, res, next) => {
+  try {
+    const [[stats]] = await db.query(
+      `SELECT COUNT(*) AS total_leads,
+              SUM(CASE WHEN status IN ('new', 'contacted')
+                    AND (follow_up_date IS NULL OR follow_up_date <= CURDATE())
+                  THEN 1 ELSE 0 END) AS followups_due,
+              SUM(CASE WHEN status = 'quoted' THEN 1 ELSE 0 END) AS active_quotes,
+              SUM(CASE WHEN status = 'converted' THEN 1 ELSE 0 END) AS converted
+       FROM leads`
+    );
+    res.json({
+      total_leads: Number(stats.total_leads) || 0,
+      followups_due: Number(stats.followups_due) || 0,
+      active_quotes: Number(stats.active_quotes) || 0,
+      converted: Number(stats.converted) || 0
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get('/:id', requireLogin, requireRole('staff', 'owner'), async (req, res, next) => {
   try {
     const [rows] = await db.query(

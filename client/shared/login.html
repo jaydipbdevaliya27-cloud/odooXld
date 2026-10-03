@@ -11,13 +11,15 @@
   <style>
     .login-wrapper {
       min-height: 100vh;
+      min-height: 100svh;
       display: flex;
     }
     .login-brand-panel {
       flex: 1;
+      min-width: 0;
       background: linear-gradient(135deg, #161D24 0%, #2B3641 100%);
       color: #FFFFFF;
-      padding: 60px 48px;
+      padding: clamp(32px, 5vw, 72px);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -32,20 +34,38 @@
     }
     .login-form-panel {
       width: 100%;
-      max-width: 520px;
+      max-width: 560px;
+      flex-shrink: 0;
       background: var(--surface);
-      padding: 60px 48px;
+      padding: clamp(28px, 5vw, 64px);
       display: flex;
       flex-direction: column;
       justify-content: center;
     }
-    @media (max-width: 991.98px) {
+    .login-form-panel > * {
+      width: 100%;
+      max-width: 440px;
+      margin-inline: auto;
+    }
+    @media (max-width: 760px) {
+      .login-wrapper {
+        flex-direction: column;
+      }
       .login-brand-panel {
-        display: none;
+        flex: 0 0 auto;
+        min-height: auto;
+        padding: 18px 24px;
+      }
+      .login-brand-panel h2,
+      .login-brand-panel p,
+      .login-brand-panel .d-flex.flex-column,
+      .login-brand-panel > div:last-child {
+        display: none !important;
       }
       .login-form-panel {
         max-width: 100%;
-        padding: 32px 24px;
+        padding: 30px 20px 40px;
+        flex: 1;
       }
     }
   </style>
@@ -150,26 +170,33 @@
         </button>
       </form>
 
-      <!-- Demo Accounts Accordion (Development reference) -->
-      <div class="accordion accordion-flush mt-2 border rounded-3" id="demoAccordion">
-        <div class="accordion-item">
-          <h2 class="accordion-header">
-            <button class="accordion-button collapsed py-2 px-3 small text-muted" type="button" data-bs-toggle="collapse" data-bs-target="#demoCollapse">
-              <i class="bi bi-key-fill text-warning me-2"></i> Demo System Accounts
-            </button>
-          </h2>
-          <div id="demoCollapse" class="accordion-collapse collapse" data-bs-parent="#demoAccordion">
-            <div class="accordion-body py-2 px-3 small">
-              <table class="table table-sm table-borderless mb-0 small text-muted">
-                <tr><th>Role</th><th>Email</th><th>Password</th></tr>
-                <tr><td>Owner</td><td><code>owner@championsclub.com</code></td><td><code>password123</code></td></tr>
-                <tr><td>Booking Staff</td><td><code>staff.booking@championsclub.com</code></td><td><code>password123</code></td></tr>
-                <tr><td>Shop Staff</td><td><code>staff.shop@championsclub.com</code></td><td><code>password123</code></td></tr>
-                <tr><td>Bar Staff</td><td><code>staff.bar@championsclub.com</code></td><td><code>password123</code></td></tr>
-                <tr><td>Platinum Member</td><td><code>member@championsclub.com</code></td><td><code>password123</code></td></tr>
-              </table>
-            </div>
-          </div>
+      <!-- 1-Click Demo Login Panel -->
+      <div class="card border-0 bg-light rounded-3 p-3 mt-3 shadow-sm">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="fw-bold small text-dark"><i class="bi bi-lightning-charge-fill text-warning me-1"></i> Quick 1-Click Demo Access</span>
+          <span class="badge bg-secondary opacity-75">Click to log in</span>
+        </div>
+        <div class="d-grid gap-2">
+          <button type="button" class="btn btn-sm btn-outline-dark text-start d-flex justify-content-between align-items-center py-2 px-3" onclick="quickDemoLogin('owner@championsclub.com')">
+            <span><i class="bi bi-shield-lock-fill text-danger me-2"></i><strong>Club Owner / Admin</strong></span>
+            <small class="text-muted">Full Control &rarr;</small>
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-dark text-start d-flex justify-content-between align-items-center py-2 px-3" onclick="quickDemoLogin('staff.booking@championsclub.com')">
+            <span><i class="bi bi-calendar-check-fill text-primary me-2"></i><strong>Court Booking Staff</strong></span>
+            <small class="text-muted">Desk POS &rarr;</small>
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-dark text-start d-flex justify-content-between align-items-center py-2 px-3" onclick="quickDemoLogin('staff.shop@championsclub.com')">
+            <span><i class="bi bi-bag-check-fill text-success me-2"></i><strong>Pro Shop Staff</strong></span>
+            <small class="text-muted">Inventory &rarr;</small>
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-dark text-start d-flex justify-content-between align-items-center py-2 px-3" onclick="quickDemoLogin('staff.bar@championsclub.com')">
+            <span><i class="bi bi-cup-hot-fill text-warning me-2"></i><strong>Bar &amp; Cafeteria Staff</strong></span>
+            <small class="text-muted">Kitchen &amp; Tabs &rarr;</small>
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-dark text-start d-flex justify-content-between align-items-center py-2 px-3" onclick="quickDemoLogin('member@championsclub.com')">
+            <span><i class="bi bi-person-badge-fill text-info me-2"></i><strong>Club Member</strong></span>
+            <small class="text-muted">Member Portal &rarr;</small>
+          </button>
         </div>
       </div>
 
@@ -185,6 +212,18 @@
   <script src="/js/ui.js"></script>
   <script src="/js/validators.js"></script>
   <script>
+    // Quick Demo Login helper
+    function quickDemoLogin(email) {
+      document.getElementById('loginEmail').value = email;
+      document.getElementById('loginPassword').value = 'password123';
+      const form = document.getElementById('loginForm');
+      if (typeof form.requestSubmit === 'function') {
+        form.requestSubmit();
+      } else {
+        form.dispatchEvent(new Event('submit', { cancelable: true }));
+      }
+    }
+
     // Password toggle
     const toggleBtn = document.getElementById('togglePasswordBtn');
     const pwdInput = document.getElementById('loginPassword');

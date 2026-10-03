@@ -85,6 +85,7 @@ router.get('/', requireLogin, async (req, res, next) => {
               COALESCE(u.full_name, o.guest_name) AS customer_name,
               u.email AS customer_email,
               COALESCE(u.phone, o.guest_phone) AS customer_phone,
+              (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) AS item_count,
               m.member_code,
               t.tab_name
        FROM orders o
@@ -199,7 +200,7 @@ router.post(
         createdByUserId: user.id
       });
 
-      res.status(201).json(result);
+      res.status(201).json({ data: result, ...result });
     } catch (err) {
       if (err.status) return res.status(err.status).json({ error: err.message, code: err.code });
       next(err);
@@ -257,11 +258,13 @@ router.put('/:id/status', requireLogin, requireRole('staff', 'owner'), async (re
 router.get('/kitchen/live', requireLogin, async (req, res, next) => {
   try {
     const [rows] = await db.query(
-      `SELECT oi.*, p.name AS product_name, o.order_code, o.table_no, o.created_at AS order_time,
+            `SELECT oi.*, p.name AS product_name, o.order_code, o.table_no, o.created_at AS order_time,
+              COALESCE(u.full_name, o.guest_name) AS customer_name,
               TIMESTAMPDIFF(MINUTE, oi.created_at, NOW()) AS elapsed_minutes
        FROM order_items oi
        JOIN orders o ON oi.order_id = o.id
        JOIN products p ON oi.product_id = p.id
+             LEFT JOIN users u ON o.user_id = u.id
        WHERE o.department = 'bar' AND oi.kitchen_status IN ('new', 'preparing', 'ready')
        ORDER BY oi.created_at ASC`
     );
@@ -291,11 +294,13 @@ router.put('/kitchen/:itemId/status', requireLogin, requireRole('staff', 'owner'
 router.get('/tabs/active', requireLogin, requireRole('staff', 'owner'), async (req, res, next) => {
   try {
     const [rows] = await db.query(
-      `SELECT t.*, COALESCE(u.full_name, t.guest_name) AS customer_name,
+      `SELECT t.*, COALESCE(u.full_name, tabUser.full_name, t.guest_name) AS customer_name,
               COALESCE(SUM(o.total), 0) AS tab_total,
               COUNT(o.id) AS order_count
        FROM tabs t
        LEFT JOIN users u ON t.user_id = u.id
+        LEFT JOIN members tabMember ON t.member_id = tabMember.id
+        LEFT JOIN users tabUser ON tabMember.user_id = tabUser.id
        LEFT JOIN orders o ON t.id = o.tab_id AND o.status != 'cancelled'
        WHERE t.status = 'open'
        GROUP BY t.id
@@ -315,10 +320,16 @@ router.post(
   async (req, res, next) => {
     try {
       const { tab_name, user_id, member_id, guest_name, guest_phone, notes } = req.body;
+      let resolvedUserId = user_id || null;
+      if (!resolvedUserId && member_id) {
+        const [memberRows] = await db.query('SELECT user_id FROM members WHERE id = ?', [member_id]);
+        if (!memberRows.length) return res.status(404).json({ error: 'Member not found.' });
+        resolvedUserId = memberRows[0].user_id;
+      }
       const [r] = await db.query(
         `INSERT INTO tabs (tab_name, user_id, member_id, guest_name, guest_phone, status, opened_by, notes)
          VALUES (?, ?, ?, ?, ?, 'open', ?, ?)`,
-        [tab_name.trim(), user_id || null, member_id || null, guest_name || null, guest_phone || null, req.session.user.id, notes || null]
+        [tab_name.trim(), resolvedUserId, member_id || null, guest_name || null, guest_phone || null, req.session.user.id, notes || null]
       );
       res.status(201).json({ id: r.insertId, tab_name, status: 'open' });
     } catch (err) {

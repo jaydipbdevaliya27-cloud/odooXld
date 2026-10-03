@@ -11,33 +11,61 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="../css/main.css">
   <style>
-    .slot-pill {
-      padding: 0.6rem 0.85rem;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--border);
-      background: var(--surface);
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.85rem;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      text-align: center;
+    .slot-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+      gap: 10px;
     }
-    .slot-pill:hover:not(:disabled) {
+    .slot-card {
+      min-width: 0;
+      min-height: 88px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 6px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      color: var(--text);
+      text-align: left;
+      transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+    }
+    .slot-card:hover:not(:disabled) {
       border-color: var(--accent);
       background: var(--accent-soft);
       color: var(--accent);
+      transform: translateY(-1px);
     }
-    .slot-pill.selected {
+    .slot-card.selected {
       background: var(--accent);
-      color: white;
+      color: #fff;
       border-color: var(--accent);
     }
-    .slot-pill:disabled {
+    .slot-card:disabled {
       background: var(--surface-alt);
-      color: var(--text-dim);
+      color: var(--text-muted);
       border-color: var(--border);
       cursor: not-allowed;
-      opacity: 0.55;
+      opacity: 0.7;
+    }
+    .slot-time { font: 700 1rem/1.2 var(--font-mono); }
+    .slot-duration { font-size: 0.7rem; color: var(--text-muted); }
+    .slot-card.selected .slot-duration { color: rgba(255, 255, 255, 0.8); }
+    .slot-state {
+      max-width: 100%;
+      font-size: 0.68rem;
+      font-weight: 600;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
+    }
+    .slot-card:not(:disabled) .slot-state { color: var(--success); }
+    .slot-card.selected .slot-state { color: #fff; }
+    .slot-message { grid-column: 1 / -1; }
+    @media (max-width: 575.98px) {
+      .slot-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+      .slot-card { min-height: 82px; padding: 9px; }
     }
     .court-card-select {
       border: 2px solid var(--border);
@@ -91,6 +119,7 @@
             <div class="col-md-6">
               <label class="form-label required">Date (Up to 14 Days Ahead)</label>
               <input type="date" class="form-control" id="bookingDateInput" onchange="handleDateChange()">
+              <div class="small mt-2" id="dailyBookingQuota" role="status">Checking daily booking limit...</div>
             </div>
           </div>
         </div>
@@ -106,8 +135,12 @@
         <!-- Step 3: Select 30-min Start Slot -->
         <div class="card border-0 shadow-sm p-4">
           <h5 class="fw-bold mb-3"><i class="bi bi-3-circle text-primary me-2"></i>Choose Start Time (60-Min Duration)</h5>
-          <div id="slotsContainer" class="d-flex flex-wrap gap-2 p-3 bg-light rounded-3 border">
-            <div class="text-muted small py-3">Please select a court and date to view available time slots.</div>
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+            <span class="small text-muted" id="slotAvailabilitySummary" aria-live="polite">Choose a court to see available times.</span>
+            <span class="small text-muted">Each card is a 60-minute session</span>
+          </div>
+          <div id="slotsContainer" class="slot-grid p-3 bg-light rounded-3 border" aria-live="polite">
+            <div class="slot-message text-muted small py-3">Please select a court and date to view available time slots.</div>
           </div>
         </div>
       </div>
@@ -165,6 +198,9 @@
     let allCourts = [];
     let selectedCourt = null;
     let selectedStartTime = null;
+    let dailyBookingLimit = 2;
+    let dailyBookingsUsed = 0;
+    let dailyQuotaRequestId = 0;
 
     document.addEventListener('DOMContentLoaded', async () => {
       const today = utils.todayIST();
@@ -179,13 +215,54 @@
 
       document.getElementById('summaryDate').textContent = utils.formatDate(today);
 
+      await loadBookingPolicy();
+      await refreshDailyBookingUsage(today);
       await loadCourts();
     });
 
+    async function loadBookingPolicy() {
+      try {
+        const res = await api.get('/api/members/me/profile');
+        const member = res.data || res;
+        dailyBookingLimit = Number(member.effective_max_bookings_per_day || member.max_bookings_per_day || 2);
+      } catch (err) {
+        console.error('Failed to load member booking policy', err);
+      }
+    }
+
+    async function refreshDailyBookingUsage(date) {
+      const requestId = ++dailyQuotaRequestId;
+      const quota = document.getElementById('dailyBookingQuota');
+      quota.textContent = 'Checking daily booking limit...';
+      quota.className = 'small mt-2 text-muted';
+
+      try {
+        const res = await api.get('/api/bookings/my', {
+          from: date,
+          to: date,
+          status: 'confirmed',
+          limit: 100
+        });
+        if (requestId !== dailyQuotaRequestId) return;
+
+        dailyBookingsUsed = Number(res.meta?.total ?? res.data?.length ?? 0);
+        const remaining = Math.max(0, dailyBookingLimit - dailyBookingsUsed);
+        quota.textContent = remaining > 0
+          ? `${dailyBookingsUsed} of ${dailyBookingLimit} bookings used today. ${remaining} remaining.`
+          : `Daily limit reached: ${dailyBookingLimit} bookings for this date.`;
+        quota.className = `small mt-2 ${remaining > 0 ? 'text-muted' : 'text-danger fw-semibold'}`;
+      } catch (err) {
+        if (requestId === dailyQuotaRequestId) {
+          quota.textContent = 'Daily limit is enforced when you confirm a booking.';
+          quota.className = 'small mt-2 text-muted';
+        }
+      }
+    }
+
     async function loadCourts() {
       try {
-        const res = await api.get('/api/courts');
-        allCourts = res.data || [];
+        const res = await api.get('/api/courts', { is_active: 1 });
+        allCourts = Array.isArray(res) ? res : (res.data || []);
         filterCourts();
       } catch (err) {
         console.error(err);
@@ -229,10 +306,15 @@
       loadSlots();
     }
 
-    function handleDateChange() {
+    async function handleDateChange() {
       const date = document.getElementById('bookingDateInput').value;
       document.getElementById('summaryDate').textContent = utils.formatDate(date);
+      selectedStartTime = null;
+      document.getElementById('summaryTime').textContent = '-';
+      document.getElementById('confirmBookingBtn').disabled = true;
+      const usageRequest = refreshDailyBookingUsage(date);
       if (selectedCourt) {
+        await usageRequest;
         loadSlots();
       }
     }
@@ -241,45 +323,78 @@
       if (!selectedCourt) return;
       const date = document.getElementById('bookingDateInput').value;
       const container = document.getElementById('slotsContainer');
-      container.innerHTML = '<div class="text-muted small py-3"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading available slots...</div>';
+      document.getElementById('slotAvailabilitySummary').textContent = 'Loading available times...';
+      container.innerHTML = '<div class="slot-message text-muted small py-3"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading available slots...</div>';
 
       try {
         const res = await api.get(`/api/courts/${selectedCourt.id}/slots`, { date });
-        const slots = res.data || [];
+        const slots = res.slots || res.data || [];
 
         if (!slots.length) {
-          container.innerHTML = '<div class="text-danger small py-3">No start slots available for this court on the selected date.</div>';
+          document.getElementById('slotAvailabilitySummary').textContent = 'No times available.';
+          container.innerHTML = '<div class="slot-message text-danger small py-3">No start slots available for this court on the selected date.</div>';
           return;
         }
 
-        container.innerHTML = slots.map(s => {
+        const dailyLimitReached = dailyBookingsUsed >= dailyBookingLimit;
+        const availableCount = slots.filter(slot => {
+          const available = slot.is_available !== undefined ? slot.is_available : slot.available;
+          return !dailyLimitReached && available && !utils.isPastSlot(date, slot.start_time) && !slot.isBlocked;
+        }).length;
+        document.getElementById('slotAvailabilitySummary').textContent = dailyLimitReached
+          ? `Daily limit reached · ${dailyBookingLimit} of ${dailyBookingLimit} bookings used`
+          : `${availableCount} start times available`;
+        const limitNotice = dailyLimitReached
+          ? `<div class="slot-message small text-danger fw-semibold">You have reached the ${dailyBookingLimit}-booking daily limit for this date.</div>`
+          : '';
+        container.innerHTML = limitNotice + slots.map(s => {
           const isPast = utils.isPastSlot(date, s.start_time);
-          const isDisabled = !s.is_available || isPast;
+          const isAvail = (s.is_available !== undefined) ? s.is_available : (s.available !== undefined ? s.available : !s.isBooked);
+          const isDisabled = dailyLimitReached || !isAvail || isPast || s.isBooked || s.isBlocked;
+          const disabledReason = dailyLimitReached ? 'Daily limit reached' : (isPast ? 'Time passed' : (s.isBlocked ? 'Court blocked' : (s.isBooked ? 'Already booked' : 'Unavailable')));
+          const stateLabel = isDisabled ? disabledReason : 'Available';
           return `
             <button type="button" 
-              class="slot-pill ${selectedStartTime === s.start_time ? 'selected' : ''}" 
+              class="slot-card ${selectedStartTime === s.start_time ? 'selected' : ''}"
               ${isDisabled ? 'disabled' : ''} 
               onclick="selectSlot('${s.start_time}', this)"
-              title="${isDisabled ? (isPast ? 'Slot has passed' : 'Already booked') : 'Available'}">
-              ${utils.formatTime(s.start_time)}
+              aria-pressed="${selectedStartTime === s.start_time}"
+              aria-label="${utils.formatTime(s.start_time)}, 60 minute session, ${stateLabel}"
+              title="${stateLabel}">
+              <span class="slot-time">${utils.formatTime(s.start_time)}</span>
+              <span class="slot-duration">60-minute session</span>
+              <span class="slot-state">${stateLabel}</span>
             </button>
           `;
         }).join('');
       } catch (err) {
-        container.innerHTML = `<div class="text-danger small py-3">${err.message || 'Failed to load slots'}</div>`;
+        document.getElementById('slotAvailabilitySummary').textContent = 'Could not load times.';
+        container.innerHTML = `<div class="slot-message text-danger small py-3">${err.message || 'Failed to load slots'}</div>`;
       }
     }
 
     function selectSlot(startTime, btnEl) {
+      if (dailyBookingsUsed >= dailyBookingLimit) {
+        ui.toast(`Daily limit reached: ${dailyBookingLimit} bookings for this date.`, 'warning');
+        return;
+      }
       selectedStartTime = startTime;
-      document.querySelectorAll('.slot-pill').forEach(b => b.classList.remove('selected'));
+      document.querySelectorAll('.slot-card').forEach(b => {
+        b.classList.remove('selected');
+        b.setAttribute('aria-pressed', 'false');
+      });
       btnEl.classList.add('selected');
+      btnEl.setAttribute('aria-pressed', 'true');
 
       document.getElementById('summaryTime').textContent = `${utils.formatTime(startTime)} (60 min)`;
       document.getElementById('confirmBookingBtn').disabled = false;
     }
 
     async function submitBooking() {
+      if (dailyBookingsUsed >= dailyBookingLimit) {
+        ui.toast(`Daily limit reached: ${dailyBookingLimit} bookings for this date.`, 'warning');
+        return;
+      }
       if (!selectedCourt || !selectedStartTime) {
         ui.toast('Please select a court and slot first', 'warning');
         return;
@@ -301,6 +416,10 @@
           window.location.href = 'bookings.html';
         }, 1200);
       } catch (err) {
+        if (err.code === 'DAILY_LIMIT_REACHED') {
+          await refreshDailyBookingUsage(date);
+          if (selectedCourt) loadSlots();
+        }
         ui.toast(err.message || 'Failed to complete booking', 'error');
       }
     }

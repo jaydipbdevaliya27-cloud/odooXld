@@ -42,7 +42,7 @@ router.get('/', async (req, res, next) => {
 
       const [[{ total }]] = await db.query(`SELECT COUNT(*) AS total FROM courts WHERE ${where}`, params);
       const [rows] = await db.query(
-        `SELECT * FROM courts WHERE ${where} ORDER BY sport, name LIMIT ? OFFSET ?`,
+        `SELECT *, base_price_per_hour AS hourly_rate, surface_type AS surface FROM courts WHERE ${where} ORDER BY sport, name LIMIT ? OFFSET ?`,
         [...params, limitNum, offset]
       );
 
@@ -52,7 +52,7 @@ router.get('/', async (req, res, next) => {
       });
     }
 
-    const [rows] = await db.query(`SELECT * FROM courts WHERE ${where} ORDER BY sport, name`, params);
+    const [rows] = await db.query(`SELECT *, base_price_per_hour AS hourly_rate, surface_type AS surface FROM courts WHERE ${where} ORDER BY sport, name`, params);
     res.json(rows);
   } catch (err) {
     next(err);
@@ -65,7 +65,7 @@ router.get('/:id/slots', async (req, res, next) => {
     const courtId = parseInt(req.params.id, 10);
     const date = req.query.date || todayIST();
 
-    const [courts] = await db.query('SELECT * FROM courts WHERE id = ?', [courtId]);
+    const [courts] = await db.query('SELECT *, base_price_per_hour AS hourly_rate, surface_type AS surface FROM courts WHERE id = ?', [courtId]);
     if (!courts.length) return res.status(404).json({ error: 'Court not found' });
 
     // Fetch booked slots
@@ -112,10 +112,13 @@ router.get('/:id/slots', async (req, res, next) => {
           return (startTime >= bStart && startTime < bEnd) || (secondHalf >= bStart && secondHalf < bEnd);
         });
 
+        const slotAvailable = !slotPast && !isBooked && !isBlocked;
+
         slots.push({
           start_time: startTime,
           end_time: endTime,
-          available: !slotPast && !isBooked && !isBlocked,
+          available: slotAvailable,
+          is_available: slotAvailable,
           isPast: slotPast,
           isBooked,
           isBlocked
@@ -123,7 +126,7 @@ router.get('/:id/slots', async (req, res, next) => {
       }
     }
 
-    res.json({ court: courts[0], date, slots });
+    res.json({ court: courts[0], date, slots, data: slots });
   } catch (err) {
     next(err);
   }

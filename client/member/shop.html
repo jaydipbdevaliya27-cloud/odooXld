@@ -13,14 +13,15 @@
   <style>
     .product-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 1.25rem;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 235px), 1fr));
+      gap: 1rem;
     }
     .product-card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: var(--radius-md);
+      border-radius: var(--radius-sm);
       overflow: hidden;
+      min-width: 0;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -32,17 +33,31 @@
       box-shadow: var(--shadow-md);
     }
     .product-card-img {
-      height: 160px;
+      height: auto;
+      aspect-ratio: 4 / 3;
       object-fit: cover;
       background: var(--surface-alt);
       width: 100%;
     }
     .product-card-body {
-      padding: 1rem;
+      padding: 0.9rem;
       flex: 1;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
+    }
+    .product-image-fallback {
+      aspect-ratio: 4 / 3;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--accent-soft), var(--surface-alt));
+      color: var(--accent);
+      font-size: 2rem;
+    }
+    @media (max-width: 575.98px) {
+      .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.65rem; }
+      .product-card-body { padding: 0.7rem; }
+      .product-card-body .fs-5 { font-size: 1rem !important; }
     }
   </style>
 </head>
@@ -206,7 +221,8 @@
         return `
           <div class="product-card ${isOut ? 'opacity-50' : ''}">
             <div class="position-relative">
-              <img src="${p.image_url || 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=400&q=80'}" alt="${utils.escapeHtml(p.name)}" class="product-card-img" onerror="this.src='https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=400&q=80'">
+              <div class="product-image-fallback" aria-hidden="true"><i class="bi bi-bag"></i></div>
+              ${p.image_url ? `<img src="${utils.escapeHtml(p.image_url)}" alt="${utils.escapeHtml(p.name)}" class="product-card-img position-absolute top-0 start-0" loading="lazy" onerror="this.remove()">` : ''}
               <span class="position-absolute top-0 end-0 m-2 badge ${isOut ? 'bg-danger' : 'bg-light text-dark border'}">
                 ${isOut ? 'Out of Stock' : `${p.stock_quantity} available`}
               </span>

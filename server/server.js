@@ -104,16 +104,16 @@ app.use('/api/leads', leadRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/search', searchRoutes);
 
+// ── Serve Public Landing Page ───────────────────────────────────────────────
+app.get(['/', '/index.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'client', 'index.html'));
+});
+
 // ── Protected Static Pages ──────────────────────────────────────────────────
 app.use(protectStaticPages);
 
 // ── Serve Static Client Assets ──────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, '..', 'client')));
-
-// Public root fallback to landing page index.html
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'client', 'index.html'));
-});
 
 // Fallback catch-all for unknown client paths
 app.get('*', (req, res) => {

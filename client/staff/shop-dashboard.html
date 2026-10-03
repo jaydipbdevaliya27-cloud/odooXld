@@ -492,7 +492,7 @@
       const memberId = document.getElementById('posMemberSelect').value || null;
       const payload = {
         department: 'shop',
-        channel: 'pos',
+        channel: 'counter',
         member_id: memberId,
         payment_method: paymentMethod,
         items: cart.map(i => ({ product_id: i.id, quantity: i.qty }))
@@ -522,17 +522,20 @@
         tbody.innerHTML = orders.map(o => `
           <tr>
             <td><div class="fw-bold font-monospace">${o.order_code}</div></td>
-            <td>${utils.escapeHtml(o.member_name || 'Walk-in')}</td>
+            <td>${utils.escapeHtml(o.customer_name || o.guest_name || 'Walk-in')}</td>
             <td><span class="badge bg-light text-dark border text-uppercase">${o.channel || 'POS'}</span></td>
             <td>${o.item_count || 1} items</td>
-            <td class="font-monospace fw-semibold">${utils.formatINR(o.total_amount)}</td>
-            <td>${utils.statusChip(o.status)}</td>
+            <td class="font-monospace fw-semibold">${utils.formatINR(o.total)}</td>
+            <td>${utils.statusChip(o.fulfilment_status || o.status)}</td>
             <td class="text-end">
-              <select class="form-select form-select-sm d-inline-block" style="width:auto;" onchange="updateOrderStatus(${o.id}, this.value)">
-                <option value="pending" ${o.status === 'pending' ? 'selected' : ''}>Pending</option>
-                <option value="packed" ${o.status === 'packed' ? 'selected' : ''}>Packed</option>
-                <option value="ready_for_pickup" ${o.status === 'ready_for_pickup' ? 'selected' : ''}>Ready for Pickup</option>
-                <option value="delivered" ${o.status === 'delivered' ? 'selected' : ''}>Delivered / Collected</option>
+              <select class="form-select form-select-sm d-inline-block" style="width:auto;" onchange="updateOrderStatus(${o.id}, this.value)" ${['completed', 'cancelled'].includes(o.status) ? 'disabled' : ''}>
+                <option value="placed" ${o.fulfilment_status === 'placed' ? 'selected' : ''}>Placed</option>
+                <option value="packed" ${o.fulfilment_status === 'packed' ? 'selected' : ''}>Packed</option>
+                <option value="ready_for_pickup" ${o.fulfilment_status === 'ready_for_pickup' ? 'selected' : ''}>Ready for Pickup</option>
+                <option value="out_for_delivery" ${o.fulfilment_status === 'out_for_delivery' ? 'selected' : ''}>Out for Delivery</option>
+                <option value="collected" ${o.fulfilment_status === 'collected' ? 'selected' : ''}>Collected</option>
+                <option value="delivered" ${o.fulfilment_status === 'delivered' ? 'selected' : ''}>Delivered</option>
+                <option value="cancelled" ${o.fulfilment_status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
               </select>
             </td>
           </tr>
@@ -544,7 +547,7 @@
 
     async function updateOrderStatus(orderId, newStatus) {
       try {
-        await api.put(`/api/orders/${orderId}/status`, { status: newStatus });
+        await api.put(`/api/orders/${orderId}/fulfilment`, { fulfilment_status: newStatus });
         ui.toast('Order status updated', 'success');
         loadShopOrders();
       } catch (err) {
@@ -568,7 +571,7 @@
             <td class="fw-bold font-monospace">${j.job_code || 'JOB-' + j.id}</td>
             <td>${utils.escapeHtml(j.member_name || 'Member')}</td>
             <td>${utils.escapeHtml(j.racket_model)}</td>
-            <td>${utils.escapeHtml(j.string_type)} @ ${j.tension_lbs} lbs</td>
+            <td>${j.string_type ? `${utils.escapeHtml(j.string_type)}${j.tension_lbs ? ` @ ${utils.escapeHtml(j.tension_lbs)} lbs` : ''}` : 'Grip / Repair'}</td>
             <td class="font-monospace">${utils.formatINR(j.fee)}</td>
             <td>${utils.statusChip(j.status)}</td>
             <td class="text-end">

@@ -139,6 +139,64 @@ router.get('/', requireLogin, async (req, res, next) => {
   }
 });
 
+// ── GET /api/bookings/my ─────────────────────────────────────────────────────
+router.get('/my', requireLogin, async (req, res, next) => {
+  try {
+    const user = req.session.user;
+    const { q, status, from, to, page = 1, limit = 20 } = req.query;
+
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+    const offset = (pageNum - 1) * limitNum;
+
+    let where = '(b.user_id = ? OR b.booked_by_user_id = ?)';
+    const params = [user.id, user.id];
+
+    if (q && q.trim().length >= 2) {
+      const s = `%${q.trim().replace(/[%_]/g, '\\$&')}%`;
+      where += ' AND (b.booking_code LIKE ? OR c.name LIKE ? OR c.sport LIKE ?)';
+      params.push(s, s, s);
+    }
+    if (status) {
+      where += ' AND b.status = ?';
+      params.push(status);
+    }
+    if (from) {
+      where += ' AND b.booking_date >= ?';
+      params.push(from);
+    }
+    if (to) {
+      where += ' AND b.booking_date <= ?';
+      params.push(to);
+    }
+
+    await bookingService.autoCompleteBookings();
+
+    const [[{ total }]] = await db.query(
+      `SELECT COUNT(*) AS total FROM bookings b JOIN courts c ON b.court_id = c.id WHERE ${where}`,
+      params
+    );
+
+    const [rows] = await db.query(
+      `SELECT b.*, c.name AS court_name, c.sport, c.surface_type, c.base_price_per_hour,
+              b.price_charged AS price
+       FROM bookings b
+       JOIN courts c ON b.court_id = c.id
+       WHERE ${where}
+       ORDER BY b.booking_date DESC, b.start_time DESC
+       LIMIT ? OFFSET ?`,
+      [...params, limitNum, offset]
+    );
+
+    res.json({
+      data: rows,
+      meta: { page: pageNum, limit: limitNum, total, totalPages: Math.ceil(total / limitNum) || 1 }
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ── GET /api/bookings/availability ──────────────────────────────────────────
 router.get('/availability', requireLogin, async (req, res, next) => {
   try {

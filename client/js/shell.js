@@ -9,6 +9,11 @@ async function initShell() {
   const shellContainer = document.getElementById('app-shell');
   if (!shellContainer) return;
 
+  if (!window._shellPageStyleTrackingStarted) {
+    document.head.querySelectorAll('style').forEach(style => style.setAttribute('data-spa-page-style', 'true'));
+    window._shellPageStyleTrackingStarted = true;
+  }
+
   // 1. Fetch current session user
   let user = null;
   try {
@@ -124,9 +129,8 @@ async function initShell() {
   const pageTitle = document.title.split('–')[0].split('-')[0].trim() || 'Dashboard';
   const roleName = user.role === 'owner' ? 'Club Owner' : (user.role === 'staff' ? `Staff (${user.assigned_area || 'General'})` : 'Club Member');
 
-  // Inject Shell HTML
+  // 1. Inject Floating Sidebar into #app-shell
   shellContainer.innerHTML = `
-    <!-- Floating Sidebar -->
     <aside class="app-sidebar" id="app-sidebar">
       <div class="sidebar-brand">
         <div class="brand-icon"><i class="bi bi-trophy-fill"></i></div>
@@ -134,6 +138,9 @@ async function initShell() {
           <h1 class="brand-title">Champions Club</h1>
           <span class="brand-role-badge">${roleName}</span>
         </div>
+        <button class="sidebar-close-btn d-lg-none" id="sidebar-close-btn" type="button" aria-label="Close Navigation">
+          <i class="bi bi-x-lg"></i>
+        </button>
       </div>
 
       <nav class="sidebar-nav">
@@ -148,14 +155,21 @@ async function initShell() {
             <div class="user-role">${utils.escapeHtml(user.email)}</div>
           </div>
         </div>
-        <button class="btn btn-sm btn-outline-custom w-100 text-white border-secondary border-opacity-25" id="shell-logout-btn">
+        <button class="btn btn-sm btn-outline-light-custom w-100" id="shell-logout-btn">
           <i class="bi bi-box-arrow-right me-1"></i> Sign Out
         </button>
       </div>
     </aside>
+  `;
 
-    <!-- Top Bar -->
-    <header class="app-topbar">
+  // 2. Inject Top Bar into main content container if not already existing
+  const mainContent = document.querySelector('.app-main') || document.querySelector('.content-container') || document.querySelector('main');
+  let existingTopbar = document.querySelector('.app-topbar');
+
+  if (mainContent && !existingTopbar) {
+    const topbarHeader = document.createElement('header');
+    topbarHeader.className = 'app-topbar';
+    topbarHeader.innerHTML = `
       <div class="d-flex align-items-center gap-3">
         <button class="icon-btn d-lg-none" id="sidebar-toggle-btn" aria-label="Toggle Navigation">
           <i class="bi bi-list fs-5"></i>
@@ -189,8 +203,13 @@ async function initShell() {
           <span class="notification-badge d-none" id="notif-badge">0</span>
         </button>
       </div>
-    </header>
-  `;
+    `;
+    mainContent.insertBefore(topbarHeader, mainContent.firstChild);
+    window._shellDefaultTopbarTemplate = topbarHeader.cloneNode(true);
+  }
+
+  ensureMobileSidebarToggle(document.querySelector('.app-topbar'));
+  attachShellControlHandlers();
 
   // Attach Event Handlers
   // 1. Logout
@@ -204,24 +223,6 @@ async function initShell() {
     if (confirmed) {
       await api.post('/api/auth/logout');
       window.location.href = '/shared/login.html';
-    }
-  });
-
-  // 2. Mobile Sidebar Toggle
-  document.getElementById('sidebar-toggle-btn')?.addEventListener('click', () => {
-    document.getElementById('app-sidebar')?.classList.toggle('show');
-  });
-
-  // 3. Theme Toggle
-  document.getElementById('theme-toggle-btn')?.addEventListener('click', () => {
-    const current = document.documentElement.getAttribute('data-theme') || 'light';
-    const nextTheme = current === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', nextTheme);
-    localStorage.setItem('cc_theme', nextTheme);
-
-    const icon = document.querySelector('#theme-toggle-btn i');
-    if (icon) {
-      icon.className = `bi ${nextTheme === 'dark' ? 'bi-sun-fill text-warning' : 'bi-moon-stars-fill'}`;
     }
   });
 
@@ -299,6 +300,193 @@ async function initShell() {
       badge.classList.remove('d-none');
     }
   } catch (e) {}
+
+  // 7. Attach SPA Smooth Router
+  attachSPARouter();
+}
+
+function ensureMobileSidebarToggle(topbar) {
+  if (!topbar || topbar.querySelector('#sidebar-toggle-btn')) return;
+  const button = document.createElement('button');
+  button.className = 'icon-btn d-lg-none';
+  button.id = 'sidebar-toggle-btn';
+  button.type = 'button';
+  button.setAttribute('aria-label', 'Toggle Navigation');
+  button.innerHTML = '<i class="bi bi-list fs-5"></i>';
+  const titleGroup = topbar.querySelector('.breadcrumb-block')?.parentElement || topbar.firstElementChild;
+  if (titleGroup) titleGroup.insertBefore(button, titleGroup.firstChild);
+  else topbar.insertBefore(button, topbar.firstChild);
+}
+
+function attachShellControlHandlers() {
+  if (window._shellControlsAttached) return;
+  window._shellControlsAttached = true;
+  document.addEventListener('click', event => {
+    if (event.target.closest('#sidebar-toggle-btn')) {
+      document.getElementById('app-sidebar')?.classList.toggle('show');
+    }
+    if (event.target.closest('#sidebar-close-btn')) {
+      document.getElementById('app-sidebar')?.classList.remove('show');
+    }
+    if (event.target.closest('#theme-toggle-btn')) {
+      const current = document.documentElement.getAttribute('data-theme') || 'light';
+      const nextTheme = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', nextTheme);
+      localStorage.setItem('cc_theme', nextTheme);
+      const icon = document.querySelector('#theme-toggle-btn i');
+      if (icon) icon.className = `bi ${nextTheme === 'dark' ? 'bi-sun-fill text-warning' : 'bi-moon-stars-fill'}`;
+    }
+  });
+}
+
+async function navigateShellPage(targetPath, addHistory = true) {
+  const mainContent = document.querySelector('.app-main') || document.querySelector('.content-container') || document.querySelector('main');
+  if (!mainContent) {
+    window.location.href = targetPath;
+    return;
+  }
+
+  mainContent.style.opacity = '0.45';
+  try {
+    const res = await fetch(targetPath, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+    if (!res.ok) throw new Error(`Page request failed: ${res.status}`);
+    const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+    const newMain = doc.querySelector('.app-main') || doc.querySelector('.content-container') || doc.querySelector('main');
+    if (!newMain) throw new Error('Page content was not found');
+
+    if (typeof window._shellPageCleanup === 'function') {
+      window._shellPageCleanup();
+      window._shellPageCleanup = null;
+    }
+
+    syncShellPageStyles(doc, targetPath);
+    document.title = doc.title;
+    if (addHistory) history.pushState({}, '', targetPath);
+
+    const incomingTopbar = newMain.querySelector('.app-topbar')?.cloneNode(true);
+    mainContent.innerHTML = newMain.innerHTML;
+    mainContent.className = newMain.className;
+    if (!mainContent.querySelector('.app-topbar')) {
+      const fallbackTopbar = window._shellDefaultTopbarTemplate?.cloneNode(true) || createFallbackTopbar();
+      mainContent.insertBefore(fallbackTopbar, mainContent.firstChild);
+    }
+    ensureMobileSidebarToggle(mainContent.querySelector('.app-topbar'));
+
+    document.querySelectorAll('[data-spa-modal="true"]').forEach(modal => modal.remove());
+    doc.querySelectorAll('.modal').forEach(modal => {
+      if (newMain.contains(modal)) return;
+      const modalClone = modal.cloneNode(true);
+      modalClone.setAttribute('data-spa-modal', 'true');
+      document.body.appendChild(modalClone);
+    });
+
+    const pageTitle = doc.title.split(/[–-]/)[0].trim();
+    const titleElement = mainContent.querySelector('.page-title');
+    const crumbElement = mainContent.querySelector('.breadcrumb-crumbs span:last-child');
+    if (titleElement) titleElement.textContent = pageTitle;
+    if (crumbElement) crumbElement.textContent = pageTitle;
+
+    document.querySelectorAll('.sidebar-link').forEach(link => {
+      link.classList.toggle('active', new URL(link.href, window.location.origin).pathname === targetPath);
+    });
+
+    for (const source of doc.querySelectorAll('script')) {
+      if (source.src) {
+        const src = source.src;
+        if (Array.from(document.scripts).some(script => script.src === src)) continue;
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = src;
+          script.onload = resolve;
+          script.onerror = reject;
+          document.body.appendChild(script);
+        });
+        continue;
+      }
+
+      const code = source.textContent.trim();
+      if (!code) continue;
+
+      const functionNames = [...code.matchAll(/\bfunction\s+([\w$]+)\s*\(/g)].map(match => match[1]);
+      const exports = [...new Set(functionNames)].map(name =>
+        `if (typeof ${name} === 'function') window[${JSON.stringify(name)}] = ${name};`
+      ).join('\n');
+      const originalAddEventListener = document.addEventListener;
+      document.addEventListener = function (type, listener, options) {
+        if (type === 'DOMContentLoaded') {
+          Promise.resolve().then(() => listener.call(document, new Event(type)));
+          return;
+        }
+        return originalAddEventListener.call(document, type, listener, options);
+      };
+      try {
+        new Function(`${code}\n${exports}`)();
+      } finally {
+        document.addEventListener = originalAddEventListener;
+      }
+    }
+
+    mainContent.style.opacity = '1';
+    document.getElementById('app-sidebar')?.classList.remove('show');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } catch (err) {
+    window.location.href = targetPath;
+  }
+}
+
+function syncShellPageStyles(pageDocument, targetPath) {
+  document.head.querySelectorAll('[data-spa-page-style="true"]').forEach(node => node.remove());
+  const targetUrl = new URL(targetPath, window.location.origin);
+
+  pageDocument.head.querySelectorAll('style, link[rel~="stylesheet"]').forEach(source => {
+    const clone = source.cloneNode(true);
+    if (source.tagName === 'LINK') {
+      const href = new URL(source.getAttribute('href'), targetUrl).href;
+      const existing = Array.from(document.head.querySelectorAll('link[rel~="stylesheet"]'))
+        .some(link => link.href === href);
+      if (existing) return;
+      clone.href = href;
+    }
+    clone.setAttribute('data-spa-page-style', 'true');
+    document.head.appendChild(clone);
+  });
+}
+
+function createFallbackTopbar() {
+  const topbar = document.createElement('header');
+  topbar.className = 'app-topbar';
+  topbar.innerHTML = `
+    <div class="d-flex align-items-center gap-3">
+      <div class="breadcrumb-block">
+        <div class="breadcrumb-crumbs"><a href="#">Champions Club</a><span>/</span><span></span></div>
+        <h2 class="page-title"></h2>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="theme-toggle-btn" title="Toggle Light/Dark Theme" aria-label="Toggle Theme"><i class="bi bi-moon-stars-fill"></i></button>
+    </div>`;
+  return topbar;
+}
+
+function attachSPARouter() {
+  if (window._spaRouterAttached) return;
+  window._spaRouterAttached = true;
+
+  document.addEventListener('click', event => {
+    const link = event.target.closest('a.sidebar-link');
+    if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+    const targetPath = new URL(link.href, window.location.origin).pathname;
+    if (targetPath === window.location.pathname) {
+      event.preventDefault();
+      return;
+    }
+
+    event.preventDefault();
+    navigateShellPage(targetPath);
+  });
+
+  window.addEventListener('popstate', () => navigateShellPage(window.location.pathname, false));
 }
 
 document.addEventListener('DOMContentLoaded', initShell);

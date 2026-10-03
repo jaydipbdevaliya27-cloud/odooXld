@@ -9,11 +9,56 @@ const express = require('express');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const db = require('../db');
+const config = require('../config');
 const { requireLogin, requireRole } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
 const { todayIST } = require('../utils/time');
 
 const router = express.Router();
+
+// ── GET /api/members/me & /me/profile ──────────────────────────────────────
+router.get(['/me', '/me/profile'], requireLogin, async (req, res, next) => {
+  try {
+    const userId = req.session.user.id;
+    const [rows] = await db.query(
+      `SELECT m.*, u.full_name, u.email, u.phone,
+              p.name AS plan_name, p.code AS plan_code, p.court_discount_pct, p.shop_discount_pct, p.bar_discount_pct,
+              p.court_discount_pct AS discount_court, p.shop_discount_pct AS discount_pro_shop, p.bar_discount_pct AS discount_cafe,
+              p.max_bookings_per_day,
+              LEAST(COALESCE(p.max_bookings_per_day, ?), ?) AS effective_max_bookings_per_day,
+              (SELECT CAST(setting_value AS UNSIGNED) FROM settings WHERE setting_key = 'cancellation_cutoff_hours') AS cancellation_cutoff_hours,
+              DATEDIFF(m.expiry_date, CURDATE()) AS days_remaining
+       FROM members m
+       JOIN users u ON m.user_id = u.id
+       LEFT JOIN plans p ON m.plan_id = p.id
+       WHERE m.user_id = ?`,
+      [config.DEFAULT_MAX_BOOKINGS_PER_DAY, config.DEFAULT_MAX_BOOKINGS_PER_DAY, userId]
+    );
+
+    if (!rows.length) {
+      return res.json({
+        data: {
+          user_id: userId,
+          full_name: req.session.user.full_name,
+          email: req.session.user.email,
+          status: 'non_member',
+          days_remaining: 0,
+          discount_pro_shop: 0,
+          discount_cafe: 0,
+          discount_court: 0,
+          max_bookings_per_day: config.DEFAULT_MAX_BOOKINGS_PER_DAY,
+          effective_max_bookings_per_day: config.DEFAULT_MAX_BOOKINGS_PER_DAY,
+          cancellation_cutoff_hours: 2
+        }
+      });
+    }
+
+    const member = rows[0];
+    res.json({ data: member, ...member });
+  } catch (err) {
+    next(err);
+  }
+});
 
 // ── GET /api/members ─────────────────────────────────────────────────────────
 router.get('/', requireLogin, requireRole('staff', 'owner'), async (req, res, next) => {

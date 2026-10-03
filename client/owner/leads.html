@@ -12,29 +12,46 @@
   <link rel="stylesheet" href="../css/main.css">
   <style>
     .kanban-board {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 1rem;
+      display: flex;
+      align-items: stretch;
+      gap: 0.85rem;
       margin-top: 1rem;
+      padding: 0 0 0.5rem;
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      scroll-snap-type: x proximity;
     }
     .kanban-col {
+      flex: 0 0 270px;
       background: var(--surface-alt);
       border-radius: var(--radius-md);
-      padding: 1rem;
-      min-height: 400px;
+      padding: 0.75rem;
+      min-height: 390px;
       border: 1px solid var(--border);
+      scroll-snap-align: start;
+      transition: background-color 0.15s ease, border-color 0.15s ease;
     }
     .kanban-col-header {
       font-size: 0.8rem;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0;
       color: var(--text-muted);
-      margin-bottom: 0.75rem;
+      margin: 0 0 0.75rem;
+      padding: 0.45rem 0.4rem 0.7rem;
+      border-bottom: 1px solid var(--border);
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
+    .kanban-count { min-width: 26px; text-align: center; border-radius: 999px; padding: 2px 7px; font-size: 0.72rem; }
+    .kanban-count-new { background: var(--info-soft); color: var(--info); }
+    .kanban-count-contacted { background: var(--warning-soft); color: #9a6700; }
+    .kanban-count-quoted { background: var(--accent-soft); color: var(--accent); }
+    .kanban-count-trial_booked { background: #e8f1fd; color: #2f65b0; }
+    .kanban-count-converted { background: var(--success-soft); color: var(--success); }
+    .kanban-count-lost { background: var(--danger-soft); color: var(--danger); }
+    .kanban-cards { min-height: 300px; }
     .kanban-card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -44,11 +61,40 @@
       box-shadow: var(--shadow-sm);
       cursor: pointer;
       transition: all 0.2s ease;
+      overflow-wrap: anywhere;
+    }
+    @media (max-width: 575.98px) {
+      .kanban-col { flex-basis: min(82vw, 310px); min-height: 330px; }
+      .kanban-board { margin-right: -0.25rem; }
     }
     .kanban-card:hover {
       box-shadow: var(--shadow-md);
       border-color: var(--accent);
       transform: translateY(-2px);
+    }
+    .crm-stat-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-height: 110px;
+      padding: 20px;
+    }
+    .crm-stat-icon {
+      width: 48px;
+      height: 48px;
+      flex: 0 0 48px;
+      display: grid;
+      place-items: center;
+      border-radius: var(--radius-sm);
+      font-size: 1.2rem;
+    }
+    .crm-stat-info { min-width: 0; flex: 1; }
+    .crm-stat-info .stat-label { color: var(--text-muted); font-size: 0.72rem; font-weight: 700; }
+    .crm-stat-info .stat-value { color: var(--text); font-size: 1.65rem; line-height: 1.2; }
+    @media (max-width: 575.98px) {
+      .crm-stat-card { min-height: 92px; padding: 14px; gap: 10px; }
+      .crm-stat-icon { width: 42px; height: 42px; flex-basis: 42px; }
+      .crm-stat-info .stat-value { font-size: 1.4rem; }
     }
   </style>
 </head>
@@ -79,36 +125,36 @@
     <!-- Stats Bar -->
     <div class="row g-3 mb-4">
       <div class="col-sm-6 col-xl-3">
-        <div class="stat-card">
-          <div class="stat-icon bg-info text-white"><i class="bi bi-megaphone"></i></div>
-          <div class="stat-info">
+        <div class="stat-card crm-stat-card">
+          <div class="crm-stat-icon bg-info text-white"><i class="bi bi-megaphone"></i></div>
+          <div class="crm-stat-info">
             <div class="stat-label">Total Leads</div>
             <div class="stat-value" id="statTotalLeads">0</div>
           </div>
         </div>
       </div>
       <div class="col-sm-6 col-xl-3">
-        <div class="stat-card">
-          <div class="stat-icon bg-warning text-white"><i class="bi bi-clock-history"></i></div>
-          <div class="stat-info">
+        <div class="stat-card crm-stat-card">
+          <div class="crm-stat-icon bg-warning text-white"><i class="bi bi-clock-history"></i></div>
+          <div class="crm-stat-info">
             <div class="stat-label">Follow-ups Due</div>
             <div class="stat-value" id="statFollowups">0</div>
           </div>
         </div>
       </div>
       <div class="col-sm-6 col-xl-3">
-        <div class="stat-card">
-          <div class="stat-icon bg-primary text-white"><i class="bi bi-file-earmark-text"></i></div>
-          <div class="stat-info">
+        <div class="stat-card crm-stat-card">
+          <div class="crm-stat-icon bg-primary text-white"><i class="bi bi-file-earmark-text"></i></div>
+          <div class="crm-stat-info">
             <div class="stat-label">Active Quotes</div>
             <div class="stat-value" id="statQuotes">0</div>
           </div>
         </div>
       </div>
       <div class="col-sm-6 col-xl-3">
-        <div class="stat-card">
-          <div class="stat-icon bg-success text-white"><i class="bi bi-check-circle"></i></div>
-          <div class="stat-info">
+        <div class="stat-card crm-stat-card">
+          <div class="crm-stat-icon bg-success text-white"><i class="bi bi-check-circle"></i></div>
+          <div class="crm-stat-info">
             <div class="stat-label">Converted</div>
             <div class="stat-value" id="statConverted">0</div>
           </div>
@@ -267,6 +313,7 @@
     document.addEventListener('DOMContentLoaded', () => {
       initSearch();
       loadLeads();
+      loadLeadStats();
 
       document.getElementById('leadStatusFilter').addEventListener('change', () => { leadPage = 1; loadLeads(); });
       document.getElementById('leadInterestFilter').addEventListener('change', () => { leadPage = 1; loadLeads(); });
@@ -324,7 +371,6 @@
       try {
         const res = await api.get('/api/leads', { q, status, interest, page: leadPage, limit: 100 }, { signal });
         currentLeads = res.data || [];
-        updateStats();
         renderLeads();
       } catch (err) {
         if (err.name !== 'AbortError') {
@@ -333,11 +379,16 @@
       }
     }
 
-    function updateStats() {
-      document.getElementById('statTotalLeads').textContent = currentLeads.length;
-      document.getElementById('statFollowups').textContent = currentLeads.filter(l => l.status === 'contacted' || l.status === 'new').length;
-      document.getElementById('statQuotes').textContent = currentLeads.filter(l => l.status === 'quoted').length;
-      document.getElementById('statConverted').textContent = currentLeads.filter(l => l.status === 'converted').length;
+    async function loadLeadStats() {
+      try {
+        const stats = await api.get('/api/leads/stats');
+        document.getElementById('statTotalLeads').textContent = stats.total_leads;
+        document.getElementById('statFollowups').textContent = stats.followups_due;
+        document.getElementById('statQuotes').textContent = stats.active_quotes;
+        document.getElementById('statConverted').textContent = stats.converted;
+      } catch (err) {
+        console.error('Failed to load CRM summary', err);
+      }
     }
 
     function renderLeads() {
@@ -365,17 +416,22 @@
           <div class="kanban-col">
             <div class="kanban-col-header">
               <span>${col.label}</span>
-              <span class="badge bg-${col.color}">${colLeads.length}</span>
+              <span class="kanban-count kanban-count-${col.id}">${colLeads.length}</span>
             </div>
             <div class="kanban-cards">
               ${colLeads.map(lead => `
-                <div class="kanban-card" onclick="openLeadDrawer(${lead.id})">
+                <div class="kanban-card" onclick="openLeadDrawer(${lead.id})" aria-label="${utils.escapeHtml(lead.name)}, ${col.label}">
                   <div class="fw-bold mb-1 text-truncate">${utils.escapeHtml(lead.name)}</div>
-                  <div class="small text-muted mb-2"><i class="bi bi-telephone me-1"></i>${lead.phone}</div>
+                  <div class="small text-muted mb-2"><i class="bi bi-telephone me-1"></i>${utils.escapeHtml(lead.phone || 'No phone')}</div>
                   <div class="d-flex justify-content-between align-items-center">
                     <span class="badge bg-light text-dark border">${utils.escapeHtml(lead.interest || 'General')}</span>
                     <small class="text-muted">${utils.formatDate(lead.created_at)}</small>
                   </div>
+                  <label class="small text-muted d-block mt-3" onclick="event.stopPropagation()">Pipeline stage
+                    <select class="form-select form-select-sm mt-1" aria-label="Move ${utils.escapeHtml(lead.name)} to another stage" onclick="event.stopPropagation()" onchange="updateLeadStatus(${lead.id}, this.value)">
+                      ${columns.map(option => `<option value="${option.id}" ${option.id === lead.status ? 'selected' : ''}>${option.label}</option>`).join('')}
+                    </select>
+                  </label>
                 </div>
               `).join('') || '<div class="text-muted small text-center py-4">No leads</div>'}
             </div>
@@ -441,6 +497,7 @@
         ui.closeModal('newLeadModal');
         ui.toast('Lead captured successfully', 'success');
         loadLeads();
+        loadLeadStats();
       } catch (err) {
         ui.toast(err.message || 'Failed to create lead', 'error');
       }
@@ -525,6 +582,7 @@
         await api.put(`/api/leads/${id}`, { status: newStatus });
         ui.toast('Status updated', 'success');
         loadLeads();
+        loadLeadStats();
       } catch (err) {
         ui.toast(err.message || 'Failed to update status', 'error');
       }
@@ -558,6 +616,7 @@
         ui.toast('Lead converted to Member successfully!', 'success');
         bootstrap.Offcanvas.getInstance(document.getElementById('leadDrawer')).hide();
         loadLeads();
+        loadLeadStats();
       } catch (err) {
         ui.toast(err.message || 'Failed to convert lead', 'error');
       }

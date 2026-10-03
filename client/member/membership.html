@@ -178,7 +178,7 @@
         document.getElementById('memberCode').textContent = m.member_code;
         document.getElementById('joinDate').textContent = utils.formatDate(m.join_date);
         document.getElementById('expiryDate').textContent = utils.formatDate(m.expiry_date);
-        document.getElementById('bookingLimit').textContent = `${m.max_bookings_per_day || 2} / day`;
+        document.getElementById('bookingLimit').textContent = `${m.effective_max_bookings_per_day || 2} / day`;
         document.getElementById('shopDiscountPerk').textContent = `${m.discount_pro_shop || 0}% OFF`;
         document.getElementById('barDiscountPerk').textContent = `${m.discount_bar || 0}% OFF`;
 

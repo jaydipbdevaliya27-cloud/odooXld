@@ -18,10 +18,16 @@
       margin-bottom: 1.5rem;
     }
     .table-tile {
+      appearance: none;
+      width: 100%;
+      min-width: 0;
+      min-height: 74px;
       background: var(--surface);
       border: 2px solid var(--border);
       border-radius: var(--radius-md);
       padding: 0.85rem 0.5rem;
+      color: var(--text);
+      font: inherit;
       text-align: center;
       cursor: pointer;
       transition: all 0.2s ease;
@@ -54,6 +60,10 @@
     .menu-item-tile:hover {
       border-color: var(--accent);
       box-shadow: var(--shadow-sm);
+    }
+    .table-tile.occupied-table {
+      border-color: var(--danger);
+      background: var(--danger-soft);
     }
   </style>
 </head>
@@ -213,16 +223,44 @@
     let cafeCart = [];
     let selectedTable = 'Takeaway';
     let membersList = [];
+    let activeCafeTabs = [];
+    let cafeTabPoll = null;
 
     document.addEventListener('DOMContentLoaded', async () => {
-      renderTableMap();
       await loadMembers();
+      await loadOpenCafeTabs();
+      renderTableMap();
       loadMenu();
 
       document.getElementById('cafeCategoryFilter').addEventListener('change', () => loadMenu());
       document.getElementById('cafeSearchInput').addEventListener('input', utils.debounce(() => loadMenu(), 300));
       document.getElementById('dailyClosingForm').addEventListener('submit', handleDailyClosing);
+      cafeTabPoll = setInterval(async () => {
+        if (document.hidden) return;
+        await loadOpenCafeTabs();
+        renderTableMap();
+      }, 15000);
+      const refreshCafeTabsWhenVisible = async () => {
+        if (document.hidden) return;
+        await loadOpenCafeTabs();
+        renderTableMap();
+      };
+      document.addEventListener('visibilitychange', refreshCafeTabsWhenVisible);
+      window._shellPageCleanup = () => {
+        clearInterval(cafeTabPoll);
+        document.removeEventListener('visibilitychange', refreshCafeTabsWhenVisible);
+      };
     });
+
+    async function loadOpenCafeTabs() {
+      try {
+        const res = await api.get('/api/orders/tabs/active');
+        activeCafeTabs = Array.isArray(res) ? res : (res.data || []);
+      } catch (err) {
+        activeCafeTabs = [];
+        console.error('Failed to load open cafe tabs', err);
+      }
+    }
 
     function renderTableMap() {
       const grid = document.getElementById('tableMapGrid');
@@ -233,11 +271,13 @@
 
       for (let i = 1; i <= 12; i++) {
         const tName = `Table ${i}`;
+        const activeTab = activeCafeTabs.find(tab => tab.tab_name === tName);
+        const customerName = activeTab?.customer_name || activeTab?.guest_name || '';
         html += `
-          <div class="table-tile ${selectedTable === tName ? 'active-table' : ''}" onclick="selectTable('${tName}')" id="tableTile_${i}">
+          <button type="button" class="table-tile ${selectedTable === tName ? 'active-table' : ''} ${activeTab ? 'occupied-table' : ''}" onclick="selectTable('${tName}')" id="tableTile_${i}" aria-label="${utils.escapeHtml(tName)}${activeTab ? ` occupied by ${utils.escapeHtml(customerName)}` : ', free'}">
             <div class="fw-bold font-monospace">T-${i}</div>
-            <small class="text-muted">Free</small>
-          </div>
+            <small class="${activeTab ? 'text-danger fw-semibold' : 'text-muted'}">${activeTab ? utils.escapeHtml(customerName || 'Open tab') : 'Free'}</small>
+          </button>
         `;
       }
       grid.innerHTML = html;
@@ -245,7 +285,13 @@
 
     function selectTable(tableName) {
       selectedTable = tableName;
-      document.getElementById('currentTableLabel').textContent = tableName;
+      const activeTab = activeCafeTabs.find(tab => tab.tab_name === tableName);
+      const customerName = activeTab?.customer_name || activeTab?.guest_name;
+      document.getElementById('currentTableLabel').textContent = customerName ? `${tableName} · ${customerName}` : tableName;
+      if (activeTab?.member_id) {
+        document.getElementById('cafeMemberSelect').value = activeTab.member_id;
+        updateCafeTotals();
+      }
       renderTableMap();
     }
 
@@ -371,13 +417,33 @@
         return;
       }
 
-      const memberId = document.getElementById('cafeMemberSelect').value || null;
+      const selectedMemberId = document.getElementById('cafeMemberSelect').value || null;
+      let activeTab = activeCafeTabs.find(tab => tab.tab_name === selectedTable);
+      let memberId = selectedMemberId || activeTab?.member_id || null;
+      let tabId = null;
+
+      if (paymentMode === 'tab') {
+        if (!activeTab) {
+          const tab = await api.post('/api/orders/tabs/open', {
+            tab_name: selectedTable,
+            member_id: memberId,
+            guest_name: memberId ? undefined : `Walk-in at ${selectedTable}`
+          });
+          tabId = tab.id;
+        } else {
+          tabId = activeTab.id;
+        }
+      }
+
       const payload = {
         department: 'bar',
-        channel: 'pos',
-        table_number: selectedTable,
+        channel: selectedTable === 'Takeaway' ? 'counter' : 'table',
+        table_no: selectedTable === 'Takeaway' ? undefined : selectedTable,
+        tab_id: tabId,
         member_id: memberId,
-        payment_method: paymentMode === 'tab' ? 'tab' : 'cash',
+        guest_name: memberId ? undefined : `Walk-in at ${selectedTable}`,
+        guest_phone: memberId ? undefined : '9876500000',
+        payment_method: 'cash',
         items: cafeCart.map(i => ({ product_id: i.id, quantity: i.qty }))
       };
 
@@ -385,6 +451,10 @@
         const res = await api.post('/api/orders', payload);
         ui.toast(`Order #${res.data.order_code} sent to kitchen display!`, 'success');
         clearCafeCart();
+        if (tabId) {
+          await loadOpenCafeTabs();
+          renderTableMap();
+        }
       } catch (err) {
         ui.toast(err.message || 'Order dispatch failed', 'error');
       }

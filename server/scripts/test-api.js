@@ -210,8 +210,8 @@ async function runTests() {
 
     // ── Scenario 1, 2, 3, 5, 6: Booking Engine & Slot Transactions ────────────
     console.log('\n--- Test Suite 3: Court Booking Engine & Slot Rules ---');
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrow = new Date(`${todayIST()}T00:00:00.000Z`);
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
     const bookingDate = tomorrow.toISOString().slice(0, 10);
 
     // 1.1 Past slot booking rejected

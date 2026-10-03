@@ -40,7 +40,8 @@ const api = {
       const response = await fetch(url, config);
 
       if (response.status === 401) {
-        if (!window.location.pathname.includes('/shared/login.html')) {
+        const publicPaths = ['/', '/index.html', '/shared/login.html', '/shared/contact.html'];
+        if (!publicPaths.includes(window.location.pathname)) {
           window.location.href = '/shared/login.html';
         }
         const err = new Error('Authentication required.');

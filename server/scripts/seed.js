@@ -9,7 +9,13 @@ const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcryptjs');
 const { pool } = require('../db');
-const { todayIST } = require('../utils/time');
+const { todayIST, timeIST, addMinutes } = require('../utils/time');
+
+function shiftDate(dateString, offsetDays) {
+  const date = new Date(`${dateString}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + offsetDays);
+  return date.toISOString().slice(0, 10);
+}
 
 async function initAndSeed() {
   console.log('[INFO] Initializing The Champions Club Database...');
@@ -180,6 +186,61 @@ async function initAndSeed() {
     }
     console.log('[OK] Courts seeded.');
 
+    // Member booking history for completed, cutoff, cancellation, and quota checks.
+    const [currentHour, currentMinute] = timeIST().slice(0, 5).split(':').map(Number);
+    const nextSlotMinute = Math.ceil((currentHour * 60 + currentMinute + 1) / 30) * 30;
+    const currentMinuteOfDay = currentHour * 60 + currentMinute;
+    const hasNearCutoffSlot = currentMinuteOfDay >= 6 * 60 && nextSlotMinute <= 21 * 60;
+    const nearCutoffDate = hasNearCutoffSlot ? today : shiftDate(today, 2);
+    const nearCutoffStart = hasNearCutoffSlot
+      ? `${String(Math.floor(nextSlotMinute / 60)).padStart(2, '0')}:${String(nextSlotMinute % 60).padStart(2, '0')}`
+      : '06:00';
+    const demoBookings = [
+      { code: 'BK-DEMO-COMPLETED', date: shiftDate(today, -1), start: '08:00', status: 'completed' },
+      { code: 'BK-DEMO-CUTOFF', date: nearCutoffDate, start: nearCutoffStart, status: 'confirmed' },
+      { code: 'BK-DEMO-UPCOMING', date: shiftDate(today, 3), start: '09:00', status: 'confirmed' },
+      { code: 'BK-DEMO-CANCELLED', date: shiftDate(today, -2), start: '11:00', status: 'cancelled' }
+    ];
+    for (const booking of demoBookings) {
+      const [result] = await conn.query(
+        `INSERT INTO bookings (
+          booking_code, court_id, user_id, member_id, booking_date, start_time, end_time,
+          base_price, discount_pct, price_charged, source, status, booked_by_user_id,
+          cancelled_at, cancellation_reason
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'member_portal', ?, ?, ?, ?)`,
+        [
+          booking.code, courtMap['Court 1 - Tennis Championship'], userMap['member@championsclub.com'],
+          memberMap['CC-2026-001'], booking.date, booking.start, addMinutes(booking.start, 60),
+          600, 50, 300, booking.status, userMap['member@championsclub.com'],
+          booking.status === 'cancelled' ? new Date() : null,
+          booking.status === 'cancelled' ? 'Seeded cancellation history' : null
+        ]
+      );
+
+      if (booking.status !== 'cancelled') {
+        const secondStart = addMinutes(booking.start, 30);
+        await conn.query(
+          `INSERT INTO booking_slots (booking_id, court_id, slot_date, slot_start, slot_end)
+           VALUES (?, ?, ?, ?, ?), (?, ?, ?, ?, ?)`,
+          [
+            result.insertId, courtMap['Court 1 - Tennis Championship'], booking.date,
+            `${booking.date} ${booking.start}:00`, `${booking.date} ${secondStart}:00`,
+            result.insertId, courtMap['Court 1 - Tennis Championship'], booking.date,
+            `${booking.date} ${secondStart}:00`, `${booking.date} ${addMinutes(booking.start, 60)}:00`
+          ]
+        );
+      }
+
+      if (booking.status === 'completed' || booking.status === 'confirmed') {
+        await conn.query(
+          `INSERT INTO payments (payment_code, source, reference_id, user_id, amount, method, status, paid_at)
+           VALUES (?, 'court', ?, ?, 300, 'upi', 'paid', NOW())`,
+          [`PAY-${booking.code}`, result.insertId, userMap['member@championsclub.com']]
+        );
+      }
+    }
+    console.log('[OK] Member booking history seeded.');
+
     // 8. Seed Products (Shop & Bar)
     const productsData = [
       // Shop
@@ -210,6 +271,128 @@ async function initAndSeed() {
       );
     }
     console.log('[OK] Products & initial stock movement records seeded.');
+
+    const [demoTabResult] = await conn.query(
+      `INSERT INTO tabs (tab_name, user_id, member_id, status, opened_by, notes)
+       VALUES ('Table 1', ?, ?, 'open', ?, 'Seeded cafe demo tab')`,
+      [
+        userMap['member@championsclub.com'], memberMap['CC-2026-001'],
+        userMap['staff.bar@championsclub.com']
+      ]
+    );
+
+    const seedDemoOrder = async (order) => {
+      const preparedItems = [];
+      for (const item of order.items) {
+        const [rows] = await conn.query(
+          'SELECT id, price, track_stock, stock_qty FROM products WHERE sku = ?',
+          [item.sku]
+        );
+        if (!rows.length) throw new Error(`Missing demo product: ${item.sku}`);
+        const product = rows[0];
+        const quantity = item.quantity;
+        const lineTotal = Math.round(Number(product.price) * quantity * 100) / 100;
+        preparedItems.push({ ...item, product, quantity, lineTotal });
+      }
+
+      const subtotal = preparedItems.reduce((sum, item) => sum + item.lineTotal, 0);
+      const discountAmount = Math.round(subtotal * (order.discountPct / 100) * 100) / 100;
+      const total = Math.round((subtotal - discountAmount + (order.deliveryFee || 0)) * 100) / 100;
+      const [result] = await conn.query(
+        `INSERT INTO orders (
+          order_code, department, channel, table_no, tab_id, user_id, member_id,
+          guest_name, guest_phone, delivery_address, delivery_fee, courier_notes,
+          fulfilment_status, subtotal, discount_pct, discount_amount, total,
+          status, created_by_user_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          order.code, order.department, order.channel, order.tableNo || null, order.tabId || null,
+          order.userId || null, order.memberId || null, order.guestName || null,
+          order.guestPhone || null, order.deliveryAddress || null, order.deliveryFee || 0,
+          order.courierNotes || null, order.fulfilmentStatus, subtotal, order.discountPct,
+          discountAmount, total, order.status, order.createdBy
+        ]
+      );
+
+      for (const item of preparedItems) {
+        await conn.query(
+          `INSERT INTO order_items (order_id, product_id, quantity, unit_price, line_total, kitchen_status, notes)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [result.insertId, item.product.id, item.quantity, item.product.price, item.lineTotal, item.kitchenStatus, item.notes || null]
+        );
+
+        if (item.product.track_stock) {
+          const nextStock = item.product.stock_qty - item.quantity;
+          await conn.query('UPDATE products SET stock_qty = ? WHERE id = ?', [nextStock, item.product.id]);
+          await conn.query(
+            `INSERT INTO stock_movements (
+              product_id, movement_type, quantity, previous_stock, new_stock,
+              reference_type, reference_id, notes, created_by
+            ) VALUES (?, 'sale', ?, ?, ?, 'order', ?, 'Seeded demo order', ?)`,
+            [item.product.id, -item.quantity, item.product.stock_qty, nextStock, result.insertId, order.createdBy]
+          );
+        }
+      }
+
+      if (order.status === 'completed' && total > 0) {
+        await conn.query(
+          `INSERT INTO payments (payment_code, source, reference_id, user_id, amount, method, status, paid_at)
+           VALUES (?, ?, ?, ?, ?, ?, 'paid', NOW())`,
+          [`PAY-${order.code}`, order.department, result.insertId, order.userId || null, total, order.paymentMethod || 'cash']
+        );
+      }
+    };
+
+    await seedDemoOrder({
+      code: 'ORD-BAR-DEMO-001', department: 'bar', channel: 'table', tableNo: 'Table 1',
+      tabId: demoTabResult.insertId, userId: userMap['member@championsclub.com'],
+      memberId: memberMap['CC-2026-001'], discountPct: 15, status: 'open',
+      fulfilmentStatus: 'ready_for_pickup', createdBy: userMap['staff.bar@championsclub.com'],
+      items: [
+        { sku: 'BAR-SHK-01', quantity: 2, kitchenStatus: 'preparing' },
+        { sku: 'BAR-SND-01', quantity: 1, kitchenStatus: 'new' }
+      ]
+    });
+    await seedDemoOrder({
+      code: 'ORD-BAR-DEMO-002', department: 'bar', channel: 'counter',
+      guestName: 'Walk-in Guest', guestPhone: '9876500100', discountPct: 0,
+      status: 'completed', fulfilmentStatus: 'ready_for_pickup',
+      createdBy: userMap['staff.bar@championsclub.com'], paymentMethod: 'cash',
+      items: [{ sku: 'BAR-JUC-01', quantity: 1, kitchenStatus: 'served' }]
+    });
+    await seedDemoOrder({
+      code: 'ORD-SHOP-DEMO-001', department: 'shop', channel: 'online',
+      userId: userMap['member@championsclub.com'], memberId: memberMap['CC-2026-001'],
+      deliveryAddress: '12 Riverfront Road, Ahmedabad', courierNotes: 'Demo online order',
+      discountPct: 20, status: 'open', fulfilmentStatus: 'placed',
+      createdBy: userMap['member@championsclub.com'],
+      items: [{ sku: 'PRO-BAD-01', quantity: 1, kitchenStatus: 'served' }]
+    });
+    await seedDemoOrder({
+      code: 'ORD-SHOP-DEMO-002', department: 'shop', channel: 'counter',
+      guestName: 'Walk-in Guest', guestPhone: '9876500101', discountPct: 0,
+      status: 'completed', fulfilmentStatus: 'collected',
+      createdBy: userMap['staff.shop@championsclub.com'], paymentMethod: 'cash',
+      items: [{ sku: 'ACC-GRP-01', quantity: 2, kitchenStatus: 'served' }]
+    });
+
+    const serviceJobsData = [
+      ['JOB-DEMO-001', memberMap['CC-2026-001'], 'Rahul Sharma', '9876543220', 'Yonex Astrox 88D', 'stringing', 'Yonex BG65', '24', 550, 'in_progress', 'Demo stringing job in progress'],
+      ['JOB-DEMO-002', memberMap['CC-2026-002'], 'Priya Patel', '9876543221', 'Wilson Pro Staff v14', 'grip_replacement', null, null, 250, 'ready', 'Demo grip replacement ready for pickup']
+    ];
+    for (const [code, memberId, name, phone, racket, service, stringType, tension, price, status, notes] of serviceJobsData) {
+      await conn.query(
+        `INSERT INTO service_jobs (
+          job_code, member_id, customer_name, customer_phone, racket_model, service_type,
+          string_type, tension, price, status, notes, ready_at, created_by
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          code, memberId, name, phone, racket, service, stringType, tension, price, status,
+          notes, status === 'ready' ? new Date() : null, userMap['staff.shop@championsclub.com']
+        ]
+      );
+    }
+    console.log('[OK] Demo shop, bar, cafe tab, kitchen, and service data seeded.');
 
     // 9. Seed Suppliers
     const suppliersData = [

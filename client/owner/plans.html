@@ -144,9 +144,9 @@
             </td>
             <td class="mono fw-bold">${utils.formatINR(p.annual_fee)}</td>
             <td class="mono small">${p.duration_months} months</td>
-            <td><span class="badge bg-success bg-opacity-15 text-success">${p.court_discount_pct}%</span></td>
-            <td><span class="badge bg-success bg-opacity-15 text-success">${p.shop_discount_pct}%</span></td>
-            <td><span class="badge bg-success bg-opacity-15 text-success">${p.bar_discount_pct}%</span></td>
+            <td><span class="discount-rate discount-court"><i class="bi bi-calendar-check"></i>${p.court_discount_pct}%</span></td>
+            <td><span class="discount-rate discount-shop"><i class="bi bi-bag"></i>${p.shop_discount_pct}%</span></td>
+            <td><span class="discount-rate discount-bar"><i class="bi bi-cup-hot"></i>${p.bar_discount_pct}%</span></td>
             <td class="mono">${p.max_bookings_per_day} / day</td>
             <td>${p.is_active ? utils.statusChip('active') : utils.statusChip('suspended')}</td>
             <td class="text-end">

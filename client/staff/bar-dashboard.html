@@ -192,6 +192,7 @@
           loadKDS(true);
         }
       }, 10000);
+      window._shellPageCleanup = () => clearInterval(pollInterval);
 
       document.getElementById('settleTabForm').addEventListener('submit', handleSettleTab);
     });
@@ -199,7 +200,28 @@
     async function loadKDS(isPoll = false) {
       try {
         const res = await api.get('/api/orders/kitchen/live');
-        liveOrders = res.data || [];
+        const rows = Array.isArray(res) ? res : (res.data || []);
+        const orders = new Map();
+        rows.forEach(item => {
+          if (!orders.has(item.order_id)) {
+            orders.set(item.order_id, {
+              id: item.order_id,
+              order_code: item.order_code,
+              table_number: item.table_no || 'Takeaway',
+              created_at: item.order_time,
+              member_name: item.customer_name || 'Walk-in',
+              items: []
+            });
+          }
+          orders.get(item.order_id).items.push({
+            id: item.id,
+            quantity: item.quantity,
+            product_name: item.product_name,
+            status: item.kitchen_status,
+            notes: item.notes
+          });
+        });
+        liveOrders = Array.from(orders.values());
         document.getElementById('kotCount').textContent = liveOrders.length;
         renderKDS();
       } catch (err) {
@@ -220,45 +242,35 @@
       }
 
       board.innerHTML = liveOrders.map(o => {
-        const isNew = o.status === 'pending' || o.status === 'new';
+        const hasNewItems = o.items.some(item => item.status === 'new');
+        const status = hasNewItems ? 'new' : (o.items.some(item => item.status === 'preparing') ? 'preparing' : 'ready');
         return `
           <div class="kot-card">
-            <div class="kot-header ${isNew ? 'new-kot' : ''}">
+            <div class="kot-header ${hasNewItems ? 'new-kot' : ''}">
               <div>
                 <span class="fw-bold font-monospace">#${o.order_code}</span>
-                <small class="text-muted ms-2">${o.table_number || 'Takeaway'}</small>
+                <small class="text-muted ms-2">${utils.escapeHtml(o.table_number)}</small>
               </div>
-              <span class="badge ${isNew ? 'bg-warning text-dark' : 'bg-primary'}">${o.status}</span>
+              <span class="badge ${hasNewItems ? 'bg-warning text-dark' : 'bg-primary'}">${status}</span>
             </div>
             <div class="kot-body">
               <div class="small text-muted mb-2">
                 <i class="bi bi-clock me-1"></i>${utils.formatTime(o.created_at)} 
-                (${utils.escapeHtml(o.member_name || 'Walk-in')})
+                (${utils.escapeHtml(o.member_name)})
               </div>
               <div class="kot-items">
                 ${(o.items || []).map(item => `
                   <div class="kot-item-line">
-                    <span class="fw-semibold">${item.quantity}x ${utils.escapeHtml(item.product_name)}</span>
+                    <div>
+                      <span class="fw-semibold">${item.quantity}x ${utils.escapeHtml(item.product_name)}</span>
+                      <small class="d-block text-muted">${utils.escapeHtml(item.status)}${item.notes ? ` · ${utils.escapeHtml(item.notes)}` : ''}</small>
+                    </div>
+                    ${item.status === 'new' ? `<button class="btn btn-sm btn-outline-primary" onclick="updateKDSStatus(${item.id}, 'preparing')">Start</button>` : ''}
+                    ${item.status === 'preparing' ? `<button class="btn btn-sm btn-success" onclick="updateKDSStatus(${item.id}, 'ready')">Ready</button>` : ''}
+                    ${item.status === 'ready' ? `<button class="btn btn-sm btn-dark" onclick="updateKDSStatus(${item.id}, 'served')">Served</button>` : ''}
                   </div>
                 `).join('')}
               </div>
-            </div>
-            <div class="kot-footer d-flex gap-2">
-              ${o.status === 'pending' || o.status === 'new' ? `
-                <button class="btn btn-sm btn-outline-primary w-100" onclick="updateKDSStatus(${o.id}, 'preparing')">
-                  Start Preparing
-                </button>
-              ` : ''}
-              ${o.status === 'preparing' ? `
-                <button class="btn btn-sm btn-success w-100" onclick="updateKDSStatus(${o.id}, 'ready')">
-                  Mark Ready
-                </button>
-              ` : ''}
-              ${o.status === 'ready' ? `
-                <button class="btn btn-sm btn-dark w-100" onclick="updateKDSStatus(${o.id}, 'delivered')">
-                  Served
-                </button>
-              ` : ''}
             </div>
           </div>
         `;
@@ -267,7 +279,7 @@
 
     async function updateKDSStatus(orderId, newStatus) {
       try {
-        await api.put(`/api/orders/${orderId}/status`, { status: newStatus });
+        await api.put(`/api/orders/kitchen/${orderId}/status`, { status: newStatus });
         ui.toast('KOT updated', 'success');
         loadKDS();
       } catch (err) {
@@ -279,7 +291,7 @@
       const tbody = document.getElementById('openTabsTableBody');
       try {
         const res = await api.get('/api/orders/tabs/active');
-        activeTabs = res.data || [];
+        activeTabs = Array.isArray(res) ? res : (res.data || []);
         document.getElementById('tabCount').textContent = activeTabs.length;
 
         if (!activeTabs.length) {
@@ -290,13 +302,13 @@
         tbody.innerHTML = activeTabs.map(t => `
           <tr>
             <td class="font-monospace fw-bold">TAB-${t.id}</td>
-            <td>${utils.escapeHtml(t.member_name || t.guest_name || 'Customer')}</td>
-            <td><span class="badge bg-light text-dark border">${t.table_number || 'Bar'}</span></td>
-            <td><small class="text-muted">${utils.formatDate(t.created_at)}</small></td>
-            <td class="font-monospace fw-bold text-primary">${utils.formatINR(t.total_amount || 0)}</td>
+            <td>${utils.escapeHtml(t.customer_name || t.guest_name || t.tab_name || 'Customer')}</td>
+            <td><span class="badge bg-light text-dark border">${utils.escapeHtml(t.tab_name || 'Bar')}</span></td>
+            <td><small class="text-muted">${utils.formatDate(t.opened_at)}</small></td>
+            <td class="font-monospace fw-bold text-primary">${utils.formatINR(t.tab_total || 0)}</td>
             <td><span class="badge bg-warning text-dark">Open</span></td>
             <td class="text-end">
-              <button class="btn btn-sm btn-success" onclick="openSettleModal(${t.id}, '${utils.escapeHtml(t.member_name || t.guest_name)}', '${t.table_number || 'Bar'}', ${t.total_amount || 0})">
+              <button class="btn btn-sm btn-success" onclick="openSettleModal(${t.id}, '${utils.escapeHtml(t.customer_name || t.guest_name || t.tab_name)}', '${utils.escapeHtml(t.tab_name || 'Bar')}', ${t.tab_total || 0})">
                 <i class="bi bi-cash me-1"></i> Settle Tab
               </button>
             </td>
