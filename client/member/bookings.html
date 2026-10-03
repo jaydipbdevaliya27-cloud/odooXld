@@ -1,114 +1,115 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>My Bookings – Champions Club</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="/css/main.css">
 </head>
+
 <body>
-<div class="cc-wrapper">
-  <nav class="cc-sidebar d-flex flex-column">
-    <div class="brand"><i class="bi bi-trophy-fill me-2 text-warning"></i>Champions Club</div>
-    <ul class="nav flex-column mt-2 flex-grow-1">
-      <li><a href="/member/dashboard.html"  class="nav-link"><i class="bi bi-house"></i>My Dashboard</a></li>
-      <li><a href="/member/membership.html" class="nav-link"><i class="bi bi-stars"></i>Membership Plans</a></li>
-      <li><a href="/member/book.html"       class="nav-link"><i class="bi bi-calendar-plus"></i>Book a Court</a></li>
-      <li><a href="/member/bookings.html"   class="nav-link active"><i class="bi bi-calendar-check"></i>My Bookings</a></li>
-      <li><a href="#" class="nav-link" id="navCafeteria"><i class="bi bi-cup-hot"></i>Cafeteria</a></li>
-      <li><a href="#" class="nav-link" id="navMerch"><i class="bi bi-bag"></i>Merch</a></li>
-    </ul>
-    <div class="p-3"><span id="userNameSidebar" class="small text-muted d-block mb-2"></span>
-      <button id="logoutBtn" class="btn btn-sm btn-outline-light w-100"><i class="bi bi-box-arrow-right me-1"></i>Logout</button>
-    </div>
-  </nav>
+  <div class="cc-wrapper">
+    <nav class="cc-sidebar d-flex flex-column">
+      <div class="brand"><i class="bi bi-trophy-fill me-2 text-warning"></i>Champions Club</div>
+      <ul class="nav flex-column mt-2 flex-grow-1">
+        <li><a href="/member/dashboard.html" class="nav-link"><i class="bi bi-house"></i>My Dashboard</a></li>
+        <li><a href="/member/cafeteria.html" class="nav-link"><i class="bi bi-cup-hot"></i>Cafeteria & Bar</a></li>
+        <li><a href="/member/book.html" class="nav-link"><i class="bi bi-calendar-plus"></i>Book a Court</a></li>
+        <li><a href="/member/bookings.html" class="nav-link active"><i class="bi bi-calendar-check"></i>My Bookings</a>
+        </li>
+      </ul>
+      <div class="p-3"><span id="userNameSidebar" class="small text-muted d-block mb-2"></span>
+        <button id="logoutBtn" class="btn btn-sm btn-outline-light w-100"><i
+            class="bi bi-box-arrow-right me-1"></i>Logout</button>
+      </div>
+    </nav>
 
-  <div class="d-flex flex-column flex-grow-1">
-    <div class="cc-topbar">
-      <div class="d-flex align-items-center">
-        <button id="sidebarToggle" class="btn btn-sm btn-outline-secondary me-2 py-0 px-2" aria-label="Toggle Navigation">
-          <i class="bi bi-list fs-5"></i>
-        </button>
+    <div class="d-flex flex-column flex-grow-1">
+      <div class="cc-topbar">
         <h5 class="page-title"><i class="bi bi-calendar-check me-2 text-cc"></i>My Bookings</h5>
+        <a href="/member/book.html" class="btn btn-cc btn-sm"><i class="bi bi-plus-circle-fill me-1"></i>New Booking</a>
       </div>
-      <a href="/member/book.html" class="btn btn-cc btn-sm"><i class="bi bi-plus-circle-fill me-1"></i>New Booking</a>
-    </div>
 
-    <main class="cc-main">
-      <div class="cc-card">
-        <div class="table-responsive">
-          <table class="table table-hover mb-0" id="bookTable">
-            <thead><tr>
-              <th>Booking Code</th><th>Court</th><th>Sport</th>
-              <th>Date</th><th>Time</th><th>Amount</th><th>Status</th><th>Action</th>
-            </tr></thead>
-            <tbody><tr><td colspan="8" class="text-center py-4 text-muted">Loading…</td></tr></tbody>
-          </table>
+      <main class="cc-main">
+        <div class="cc-card">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0" id="bookTable">
+              <thead>
+                <tr>
+                  <th>Booking Code</th>
+                  <th>Court</th>
+                  <th>Sport</th>
+                  <th>Date</th>
+                  <th>Time</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colspan="8" class="text-center py-4 text-muted">Loading…</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
   </div>
-</div>
 
-<div id="alert-bar"></div>
-<script src="/js/api.js"></script>
-<script src="/js/utils.js"></script>
-<script>
-(async () => {
-  const user = await loadSession();
-  if (!user) return;
-  document.getElementById('userNameSidebar').textContent = user.full_name;
+  <div id="alert-bar"></div>
+  <script src="/js/api.js"></script>
+  <script src="/js/utils.js"></script>
+  <script>
+    (async () => {
+      const user = await loadSession();
+      if (!user) return;
+      document.getElementById('userNameSidebar').textContent = user.full_name;
 
-  // Nav link handlers for Cafeteria and Merch
-  document.getElementById('navCafeteria').addEventListener('click', (e) => {
-    e.preventDefault();
-    showAlert('Cafeteria module is coming soon!', 'info');
-  });
-  document.getElementById('navMerch').addEventListener('click', (e) => {
-    e.preventDefault();
-    showAlert('Merchandise shop module is coming soon!', 'info');
-  });
+      const bookings = await api.get('/api/bookings').catch(() => []);
+      const tbody = document.querySelector('#bookTable tbody');
 
-  const bookings = await api.get('/api/bookings').catch(() => []);
-  const tbody    = document.querySelector('#bookTable tbody');
-
-  if (!bookings.length) {
-    tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-muted">
+      if (!bookings.length) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-muted">
       No bookings yet. <a href="/member/book.html" class="text-cc fw-semibold">Book your first court!</a>
     </td></tr>`;
-  } else {
-    tbody.innerHTML = bookings.map(b => `
+      } else {
+        tbody.innerHTML = bookings.map(b => `
       <tr>
         <td><code>${escHtml(b.booking_code)}</code></td>
         <td>${escHtml(b.court_name)}</td>
         <td><span class="badge bg-primary text-capitalize">${escHtml(b.sport)}</span></td>
         <td>${fmtDate(b.booking_date)}</td>
-        <td>${String(b.start_time).slice(0,5)} – ${String(b.end_time).slice(0,5)}</td>
+        <td>${String(b.start_time).slice(0, 5)} – ${String(b.end_time).slice(0, 5)}</td>
         <td>${fmtINR(b.price_charged)}</td>
         <td>${statusBadge(b.status)}</td>
         <td>${b.status === 'confirmed'
-          ? `<button class="btn btn-sm btn-outline-danger btn-cancel" data-id="${b.id}">Cancel</button>`
-          : '—'}</td>
+            ? `<button class="btn btn-sm btn-outline-danger btn-cancel" data-id="${b.id}">Cancel</button>`
+            : '—'}</td>
       </tr>`).join('');
 
-    document.querySelectorAll('.btn-cancel').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        if (!confirm('Cancel this booking?')) return;
-        try {
-          await api.post(`/api/bookings/${btn.dataset.id}/cancel`, { reason: 'Cancelled by member' });
-          showAlert('Booking cancelled.');
-          location.reload();
-        } catch(e) { showAlert(e.message, 'danger'); }
-      });
-    });
-  }
+        document.querySelectorAll('.btn-cancel').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            if (!confirm('Cancel this booking?')) return;
+            try {
+              await api.post(`/api/bookings/${btn.dataset.id}/cancel`, { reason: 'Cancelled by member' });
+              showAlert('Booking cancelled.');
+              location.reload();
+            } catch (e) { showAlert(e.message, 'danger'); }
+          });
+        });
+      }
 
-  document.getElementById('logoutBtn').addEventListener('click', async () => {
-    await api.post('/api/auth/logout');
-    window.location.href = '/shared/login.html';
-  });
-})();
-</script>
+      document.getElementById('logoutBtn').addEventListener('click', async () => {
+        await api.post('/api/auth/logout');
+        window.location.href = '/shared/login.html';
+      });
+    })();
+  </script>
 </body>
+
 </html>
