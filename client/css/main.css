@@ -504,3 +504,69 @@ body {
   z-index: 99999;
   min-width: 320px;
 }
+
+/* ── 1-Hour Slot Cards (from Nilesh branch) ─────────────────────────────────── */
+.slot-pill {
+  border: 1.5px solid #dee2e6;
+  border-radius: var(--cc-radius-md);
+  padding: .65rem .85rem;
+  background: #fff;
+  transition: all .2s ease-in-out;
+  cursor: pointer;
+  text-align: left;
+}
+.slot-pill:hover:not(.booked) {
+  border-color: var(--cc-green);
+  box-shadow: 0 2px 8px rgba(26,122,74,.15);
+  transform: translateY(-1px);
+}
+.slot-pill.booked {
+  background: #f8f9fa;
+  border-color: #e9ecef;
+  color: #adb5bd;
+  cursor: not-allowed;
+  opacity: .75;
+}
+.slot-pill.mine {
+  background: #e7f3ff;
+  border-color: #0d6efd;
+  color: #0d6efd;
+}
+.slot-pill.selected {
+  background: var(--cc-green) !important;
+  border-color: var(--cc-green-dark) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 12px rgba(26,122,74,.3);
+}
+.slot-pill.selected .badge {
+  background: #fff !important;
+  color: var(--cc-green) !important;
+}
+
+/* ── Membership Tier Cards (from Nilesh branch) ────────────────────────────── */
+.tier-card {
+  border-radius: var(--cc-radius-lg);
+  background: #fff;
+  box-shadow: var(--cc-shadow-sm);
+  transition: transform .2s ease, box-shadow .2s ease;
+  border: 2px solid transparent;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.tier-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--cc-shadow-hover);
+}
+.tier-card.tier-gold {
+  border-color: #ffc107;
+}
+.tier-card.tier-silver {
+  border-color: #adb5bd;
+}
+.tier-card.tier-junior {
+  border-color: #0dcaf0;
+}
+.tier-card.current-plan {
+  box-shadow: 0 0 0 3px var(--cc-green);
+}

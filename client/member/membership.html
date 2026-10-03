@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Membership Plans & Benefits – Champions Club</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+<div class="cc-wrapper">
+  <!-- Sidebar -->
+  <nav class="cc-sidebar d-flex flex-column justify-content-between">
+    <div>
+      <div class="brand"><i class="bi bi-trophy-fill me-2 text-warning"></i>Champions Club</div>
+      <ul class="nav flex-column mt-2">
+        <li><a href="/member/dashboard.html"  class="nav-link"><i class="bi bi-house"></i>My Dashboard</a></li>
+        <li><a href="/member/membership.html" class="nav-link active"><i class="bi bi-stars"></i>Membership Plans</a></li>
+        <li><a href="/member/shop.html"       class="nav-link"><i class="bi bi-shop"></i>Browse Products</a></li>
+        <li><a href="/member/cafeteria.html"  class="nav-link"><i class="bi bi-cup-hot"></i>Cafeteria & Bar</a></li>
+        <li><a href="/member/book.html"       class="nav-link"><i class="bi bi-calendar-plus"></i>Book a Court</a></li>
+        <li><a href="/member/bookings.html"   class="nav-link"><i class="bi bi-calendar-check"></i>My Bookings</a></li>
+      </ul>
+    </div>
+    <div class="p-3 border-top border-secondary border-opacity-25">
+      <div class="d-flex align-items-center gap-2 mb-2 p-2 rounded" style="background:rgba(255,255,255,0.08);">
+        <div class="rounded-circle bg-warning text-dark fw-bold d-flex align-items-center justify-content-center" style="width:32px; height:32px; font-size:0.85rem;" id="userInitial">
+          M
+        </div>
+        <div class="overflow-hidden">
+          <span id="userNameSidebar" class="fw-semibold text-white d-block text-truncate small" style="max-width:140px;">Member</span>
+          <span id="userPlanSidebar" class="badge bg-warning text-dark py-0 px-1" style="font-size:0.68rem;">Member</span>
+        </div>
+      </div>
+      <button id="logoutBtn" class="btn btn-sm btn-outline-light w-100"><i class="bi bi-box-arrow-right me-1"></i>Logout</button>
+    </div>
+  </nav>
+
+  <div class="d-flex flex-column flex-grow-1">
+    <div class="cc-topbar d-flex justify-content-between align-items-center">
+      <div class="d-flex align-items-center">
+        <h5 class="page-title mb-0"><i class="bi bi-stars me-2 text-warning"></i>Membership Tiers & Privileges</h5>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-light text-dark border d-none" id="currentTierBadge">
+          Active Tier: <strong id="activePlanName" class="text-cc ms-1">Gold</strong>
+        </span>
+      </div>
+    </div>
+
+    <main class="cc-main">
+      <!-- Header Banner -->
+      <div class="mb-4 text-center py-4 px-3 rounded-4 shadow-sm" style="background: linear-gradient(135deg, var(--cc-green) 0%, var(--cc-green-dark) 100%); color: #fff;">
+        <h2 class="fw-bold mb-2">Unlock Premium Sports Complex Privileges</h2>
+        <p class="lead opacity-90 mb-0" style="max-width: 680px; margin: 0 auto; font-size: 1.05rem;">
+          Enjoy exclusive court discounts, pro shop savings, sports cafe perks, and daily booking allowances across all facilities.
+        </p>
+      </div>
+
+      <!-- Plan Cards Grid -->
+      <div class="row g-4 mb-4" id="plansContainer">
+        <div class="col-12 text-center py-5 text-muted">
+          <div class="spinner-border spinner-border-sm me-2"></div>Loading membership tiers...
+        </div>
+      </div>
+
+      <!-- Comparison Matrix -->
+      <div class="cc-card">
+        <div class="cc-card-header">
+          <h5><i class="bi bi-table me-2 text-cc"></i>Tier Comparison Matrix</h5>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0 text-center">
+            <thead class="table-light">
+              <tr>
+                <th class="text-start" style="width: 28%;">Feature / Benefit</th>
+                <th style="width: 24%;"><i class="bi bi-shield text-secondary me-1"></i>Silver</th>
+                <th style="width: 24%;"><i class="bi bi-trophy-fill text-warning me-1"></i>Gold (Most Popular)</th>
+                <th style="width: 24%;"><i class="bi bi-person-badge text-info me-1"></i>Junior (U-18)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="text-start fw-semibold">Target Athlete</td>
+                <td>Standard Club Player</td>
+                <td><strong class="text-warning-emphasis">Premium / Full Access</strong></td>
+                <td>Under 18 / Youth Athlete</td>
+              </tr>
+              <tr>
+                <td class="text-start fw-semibold">Court Booking Discount</td>
+                <td><span class="badge bg-secondary-subtle text-secondary-emphasis">10% OFF</span></td>
+                <td><span class="badge bg-warning-subtle text-warning-emphasis fw-bold">20% OFF</span></td>
+                <td><span class="badge bg-info-subtle text-info-emphasis">15% OFF</span></td>
+              </tr>
+              <tr>
+                <td class="text-start fw-semibold">Pro Shop & Gear Discount</td>
+                <td>5% OFF</td>
+                <td><strong class="text-success">15% OFF</strong></td>
+                <td>10% OFF</td>
+              </tr>
+              <tr>
+                <td class="text-start fw-semibold">Bar & Cafeteria Discount</td>
+                <td>5% OFF</td>
+                <td><strong class="text-success">15% OFF</strong></td>
+                <td>10% OFF</td>
+              </tr>
+              <tr>
+                <td class="text-start fw-semibold">Daily Booking Allowance</td>
+                <td>Up to 2 bookings / day</td>
+                <td>Up to 2 bookings / day</td>
+                <td>Up to 2 bookings / day</td>
+              </tr>
+              <tr>
+                <td class="text-start fw-semibold">Tennis, Cricket & Badminton Access</td>
+                <td><i class="bi bi-check-circle-fill text-success fs-5"></i></td>
+                <td><i class="bi bi-check-circle-fill text-success fs-5"></i></td>
+                <td><i class="bi bi-check-circle-fill text-success fs-5"></i></td>
+              </tr>
+              <tr>
+                <td class="text-start fw-semibold">Validity Period</td>
+                <td>12 Months</td>
+                <td>12 Months</td>
+                <td>12 Months</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div id="alert-bar"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/utils.js"></script>
+<script>
+(async () => {
+  const user = await loadSession();
+  if (!user) return;
+  document.getElementById('userNameSidebar').textContent = user.full_name || user.name;
+  document.getElementById('userInitial').textContent = (user.full_name || user.name || 'M').charAt(0).toUpperCase();
+
+  // Fetch logged in member profile to identify current tier
+  let currentMember = null;
+  try {
+    currentMember = await api.get('/api/members/profile');
+    if (currentMember && currentMember.plan_name) {
+      document.getElementById('currentTierBadge').classList.remove('d-none');
+      document.getElementById('activePlanName').textContent = currentMember.plan_name;
+      document.getElementById('userPlanSidebar').textContent = currentMember.plan_name;
+    }
+  } catch (e) {
+    // Non-member or admin view
+  }
+
+  // Fetch all active plans from backend
+  try {
+    const plans = await api.get('/api/plans');
+    const container = document.getElementById('plansContainer');
+
+    if (!plans || !plans.length) {
+      container.innerHTML = '<div class="col-12 text-center text-muted py-4">No membership plans available currently.</div>';
+      return;
+    }
+
+    // Tier visual configs
+    const tierMeta = {
+      GOLD: {
+        badgeClass: 'bg-warning text-dark',
+        cardClass: 'tier-gold',
+        icon: 'bi-trophy-fill text-warning',
+        tagline: 'Premium / Full Access',
+        highlight: true
+      },
+      SILVER: {
+        badgeClass: 'bg-secondary text-white',
+        cardClass: 'tier-silver',
+        icon: 'bi-shield-check text-secondary',
+        tagline: 'Standard Membership',
+        highlight: false
+      },
+      JUNIOR: {
+        badgeClass: 'bg-info text-dark',
+        cardClass: 'tier-junior',
+        icon: 'bi-person-badge text-info',
+        tagline: 'Under 18 / Discounted',
+        highlight: false
+      }
+    };
+
+    // Render Gold, Silver, Junior cards
+    container.innerHTML = plans.map(p => {
+      const codeKey = (p.code || '').toUpperCase();
+      const meta = tierMeta[codeKey] || {
+        badgeClass: 'bg-light text-dark',
+        cardClass: '',
+        icon: 'bi-stars text-primary',
+        tagline: 'Club Membership',
+        highlight: false
+      };
+
+      const isCurrent = currentMember && (
+        currentMember.plan_id === p.id ||
+        (currentMember.plan_name && currentMember.plan_name.toLowerCase() === p.name.toLowerCase())
+      );
+
+      return `
+        <div class="col-md-4">
+          <div class="tier-card p-4 ${meta.cardClass} ${isCurrent ? 'current-plan' : ''}">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="badge ${meta.badgeClass} px-2 py-1">${meta.tagline}</span>
+              ${isCurrent ? '<span class="badge bg-success"><i class="bi bi-check2 me-1"></i>Active</span>' : ''}
+            </div>
+
+            <div class="text-center my-3">
+              <i class="bi ${meta.icon} fs-1 d-block mb-2"></i>
+              <h3 class="fw-bold mb-1">${escHtml(p.name)}</h3>
+              <p class="text-muted small">${escHtml(p.description || '')}</p>
+              <div class="display-6 fw-bold text-dark mt-3">
+                ${fmtINR(p.annual_fee)}
+                <span class="fs-6 text-muted fw-normal">/ yr</span>
+              </div>
+              <div class="text-muted small">₹${Math.round(p.annual_fee / 12).toLocaleString('en-IN')} per month</div>
+            </div>
+
+            <hr class="my-3">
+
+            <ul class="list-unstyled mb-4 flex-grow-1">
+              <li class="mb-2 d-flex align-items-center">
+                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                <span><strong>${p.court_discount_pct}% Discount</strong> on Court Bookings</span>
+              </li>
+              <li class="mb-2 d-flex align-items-center">
+                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                <span><strong>${p.shop_discount_pct}% Discount</strong> at Pro Shop</span>
+              </li>
+              <li class="mb-2 d-flex align-items-center">
+                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                <span><strong>${p.bar_discount_pct}% Discount</strong> at Sports Bar / Cafe</span>
+              </li>
+              <li class="mb-2 d-flex align-items-center">
+                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                <span>Up to <strong>${p.max_bookings_per_day} Bookings</strong> per day</span>
+              </li>
+              <li class="mb-2 d-flex align-items-center text-muted">
+                <i class="bi bi-clock-history me-2"></i>
+                <span>${p.duration_months} Months Full Validity</span>
+              </li>
+            </ul>
+
+            <div class="mt-auto">
+              ${isCurrent
+                ? `<button class="btn btn-outline-success w-100 fw-semibold" disabled>
+                     <i class="bi bi-check-circle-fill me-1"></i>Your Current Plan
+                   </button>`
+                : `<a href="/member/book.html" class="btn btn-cc w-100 fw-semibold">
+                     <i class="bi bi-calendar-plus me-1"></i>Book Courts with Discounts
+                   </a>`
+              }
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+  } catch (err) {
+    document.getElementById('plansContainer').innerHTML = `
+      <div class="col-12 alert alert-danger">
+        Failed to load membership plans: ${escHtml(err.message)}
+      </div>
+    `;
+  }
+
+  // Logout
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    await api.post('/api/auth/logout');
+    window.location.href = '/shared/login.html';
+  });
+})();
+</script>
+</body>
+</html>

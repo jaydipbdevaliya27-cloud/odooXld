@@ -60,6 +60,25 @@ router.get('/', requireLogin, requireRole('staff', 'owner'), async (req, res, ne
   } catch (err) { next(err); }
 });
 
+// ── GET /api/members/profile (logged-in user profile from Nilesh branch) ────
+router.get('/profile', requireLogin, async (req, res, next) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT m.*, p.name AS plan_name, p.code AS plan_code, p.annual_fee, p.shop_discount_pct, p.bar_discount_pct, p.court_discount_pct,
+              p.max_bookings_per_day,
+              COALESCE(u.full_name, u.name) AS full_name, u.email, u.phone,
+              DATEDIFF(m.expiry_date, CURDATE()) AS days_left
+         FROM cc_members m
+         JOIN users u ON m.user_id = u.id
+         JOIN cc_plans p ON m.plan_id = p.id
+        WHERE m.user_id = ?`,
+      [req.session.user.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Member profile not found for this user' });
+    res.json(rows[0]);
+  } catch (err) { next(err); }
+});
+
 // ── GET /api/members/me ──────────────────────────────────────────────────────
 router.get('/me', requireLogin, async (req, res, next) => {
   try {
