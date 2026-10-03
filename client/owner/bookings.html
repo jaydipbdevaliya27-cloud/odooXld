@@ -3,28 +3,48 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bookings – Champions Club</title>
+  <title>Bookings – Champions Club Admin</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="/css/main.css">
+  <style>
+    .view-tabs .nav-link{border-radius:8px;padding:.4rem 1rem;font-size:.85rem;color:#888;}
+    .view-tabs .nav-link.active{background:var(--cc-green);color:#fff;}
+    /* Schedule grid */
+    .schedule-grid{display:grid;gap:1rem;}
+    .court-card{background:var(--cc-card);border-radius:14px;border:1px solid rgba(255,255,255,.06);overflow:hidden;}
+    .court-header{padding:.75rem 1rem;display:flex;align-items:center;gap:.75rem;
+      background:linear-gradient(135deg,rgba(46,204,113,.12),rgba(39,174,96,.06));}
+    .court-sport-icon{width:38px;height:38px;border-radius:10px;background:rgba(46,204,113,.15);
+      display:flex;align-items:center;justify-content:center;font-size:1.3rem;}
+    .slot-row{display:flex;flex-wrap:wrap;gap:.5rem;padding:.75rem 1rem;}
+    .slot{border-radius:8px;padding:.35rem .7rem;font-size:.78rem;cursor:pointer;transition:all .2s;
+      border:1px solid transparent;min-width:90px;text-align:center;}
+    .slot-free{background:rgba(46,204,113,.12);color:#2ecc71;border-color:rgba(46,204,113,.25);}
+    .slot-free:hover{background:rgba(46,204,113,.25);}
+    .slot-booked{background:rgba(52,152,219,.15);color:#3498db;border-color:rgba(52,152,219,.3);cursor:default;}
+    .slot-booked-cancelled{background:rgba(150,150,150,.1);color:#888;border-color:rgba(200,200,200,.15);text-decoration:line-through;}
+    .slot-label{font-weight:600;font-size:.7rem;display:block;}
+    .slot-member{font-size:.65rem;color:inherit;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px;}
+    /* List view */
+    .status-confirmed{color:#3498db;} .status-completed{color:#2ecc71;} .status-cancelled{color:#e74c3c;}
+  </style>
 </head>
 <body>
 <div class="cc-wrapper">
   <nav class="cc-sidebar d-flex flex-column">
     <div class="brand"><i class="bi bi-trophy-fill me-2 text-warning"></i>Champions Club</div>
     <ul class="nav flex-column mt-2 flex-grow-1">
-      <li><a href="/owner/dashboard.html" class="nav-link"><i class="bi bi-speedometer2"></i>Dashboard</a></li>
-      <li><a href="/owner/staff.html"     class="nav-link"><i class="bi bi-person-badge"></i>Staff Management</a></li>
-      <li><a href="/owner/members.html"   class="nav-link"><i class="bi bi-people"></i>Members</a></li>
-      <li><a href="/owner/bookings.html"  class="nav-link active"><i class="bi bi-calendar-check"></i>Bookings</a></li>
-      <li><a href="/owner/orders.html"    class="nav-link"><i class="bi bi-bag"></i>Orders</a></li>
-      <li><a href="/owner/products.html"  class="nav-link"><i class="bi bi-box-seam"></i>Products</a></li>
-      <li><a href="/owner/payments.html"  class="nav-link"><i class="bi bi-credit-card"></i>Payments</a></li>
-      <li><a href="/owner/leads.html"     class="nav-link"><i class="bi bi-person-plus"></i>Leads</a></li>
-      <li><a href="/owner/plans.html"     class="nav-link"><i class="bi bi-stars"></i>Plans</a></li>
-      <li><a href="/owner/courts.html"    class="nav-link"><i class="bi bi-geo-alt"></i>Courts</a></li>
+      <li><a href="/owner/dashboard.html"  class="nav-link"><i class="bi bi-speedometer2"></i>Dashboard</a></li>
+      <li><a href="/owner/staff.html"      class="nav-link"><i class="bi bi-person-badge"></i>Staff</a></li>
+      <li><a href="/owner/members.html"    class="nav-link"><i class="bi bi-people"></i>Members</a></li>
+      <li><a href="/owner/bookings.html"   class="nav-link active"><i class="bi bi-calendar-check"></i>Bookings</a></li>
+      <li><a href="/owner/orders.html"     class="nav-link"><i class="bi bi-bag"></i>Orders</a></li>
+      <li><a href="/owner/products.html"   class="nav-link"><i class="bi bi-box-seam"></i>Products</a></li>
+      <li><a href="/owner/payments.html"   class="nav-link"><i class="bi bi-credit-card"></i>Payments</a></li>
+      <li><a href="/owner/plans.html"      class="nav-link"><i class="bi bi-stars"></i>Plans</a></li>
     </ul>
-    <div class="p-3">
+    <div class="p-3 border-top" style="border-color:rgba(255,255,255,.08)!important">
       <span id="userNameSidebar" class="small text-muted d-block mb-2"></span>
       <button id="logoutBtn" class="btn btn-sm btn-outline-light w-100"><i class="bi bi-box-arrow-right me-1"></i>Logout</button>
     </div>
@@ -32,57 +52,91 @@
 
   <div class="d-flex flex-column flex-grow-1">
     <div class="cc-topbar">
-      <h5 class="page-title"><i class="bi bi-calendar-check me-2 text-cc"></i>Court Bookings</h5>
-      <button class="btn btn-cc btn-sm" data-bs-toggle="modal" data-bs-target="#bookModal">
-        <i class="bi bi-plus-circle-fill me-1"></i>New Booking
+      <h5 class="page-title"><i class="bi bi-calendar-check me-2 text-cc"></i>Bookings</h5>
+      <button class="btn btn-cc btn-sm" data-bs-toggle="modal" data-bs-target="#newBookingModal">
+        <i class="bi bi-plus-circle me-1"></i>New Booking
       </button>
     </div>
 
     <main class="cc-main">
-      <!-- Filters -->
+
+      <!-- View toggle & date controls -->
       <div class="cc-card mb-3">
-        <div class="row g-2 align-items-end">
-          <div class="col-md-3">
-            <label class="form-label small fw-semibold">Date</label>
-            <input type="date" id="dateFilter" class="form-control form-control-sm">
+        <div class="row g-2 align-items-center">
+          <div class="col-auto">
+            <ul class="nav view-tabs gap-1">
+              <li class="nav-item"><a href="#" class="nav-link active" id="tab-schedule" onclick="switchTab('schedule',event)"><i class="bi bi-grid-3x3 me-1"></i>Schedule</a></li>
+              <li class="nav-item"><a href="#" class="nav-link" id="tab-list" onclick="switchTab('list',event)"><i class="bi bi-list-ul me-1"></i>List</a></li>
+            </ul>
           </div>
-          <div class="col-md-3">
-            <label class="form-label small fw-semibold">Court</label>
-            <select id="courtFilter" class="form-select form-select-sm"><option value="">All Courts</option></select>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label small fw-semibold">Status</label>
-            <select id="statusFilter" class="form-select form-select-sm">
-              <option value="">All</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="cancelled">Cancelled</option>
-              <option value="completed">Completed</option>
-            </select>
-          </div>
-          <div class="col-md-3">
-            <button id="filterBtn" class="btn btn-cc btn-sm w-100">Filter</button>
+          <div class="col-auto ms-auto d-flex gap-2 align-items-center">
+            <button class="btn btn-sm btn-outline-secondary" onclick="shiftDate(-1)"><i class="bi bi-chevron-left"></i></button>
+            <input type="date" id="dateInput" class="form-control form-control-sm" style="width:160px">
+            <button class="btn btn-sm btn-outline-secondary" onclick="shiftDate(1)"><i class="bi bi-chevron-right"></i></button>
+            <button class="btn btn-sm btn-cc" onclick="loadSchedule()">Today</button>
           </div>
         </div>
       </div>
 
-      <!-- Table -->
-      <div class="cc-card">
-        <div class="table-responsive">
-          <table class="table table-hover mb-0" id="bookTable">
-            <thead><tr>
-              <th>Code</th><th>Court</th><th>Date</th><th>Time</th>
-              <th>Member / Guest</th><th>Amount</th><th>Status</th><th>Action</th>
-            </tr></thead>
-            <tbody><tr><td colspan="8" class="text-center py-4 text-muted">Loading…</td></tr></tbody>
-          </table>
+      <!-- Filters (list view only) -->
+      <div class="cc-card mb-3 d-none" id="listFilters">
+        <div class="row g-2">
+          <div class="col-md-3">
+            <select id="fSport" class="form-select form-select-sm">
+              <option value="">All Sports</option>
+              <option value="tennis">Tennis</option>
+              <option value="cricket">Cricket</option>
+              <option value="badminton">Badminton</option>
+              <option value="pickleball">Pickleball</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <select id="fStatus" class="form-select form-select-sm">
+              <option value="">All Status</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <select id="fCourt" class="form-select form-select-sm"><option value="">All Courts</option></select>
+          </div>
+          <div class="col-md-3">
+            <button class="btn btn-cc btn-sm w-100" onclick="loadList()"><i class="bi bi-funnel me-1"></i>Filter</button>
+          </div>
         </div>
       </div>
+
+      <!-- Schedule view -->
+      <div id="scheduleView">
+        <div class="schedule-grid" id="scheduleGrid">
+          <div class="text-center py-5 text-muted"><span class="spinner-border spinner-sm me-2"></span>Loading schedule…</div>
+        </div>
+      </div>
+
+      <!-- List view -->
+      <div id="listView" class="d-none">
+        <div class="cc-card">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0" id="bookingsTable">
+              <thead>
+                <tr>
+                  <th>Code</th><th>Court</th><th>Date</th><th>Time</th>
+                  <th>Member</th><th>Status</th><th>Price</th><th>Payment</th><th>Actions</th>
+                </tr>
+              </thead>
+              <tbody><tr><td colspan="9" class="text-center py-4 text-muted">Loading…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
     </main>
   </div>
 </div>
 
 <!-- New Booking Modal -->
-<div class="modal fade" id="bookModal" tabindex="-1">
+<div class="modal fade" id="newBookingModal" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
@@ -90,60 +144,73 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <div class="row g-3 mb-3">
-          <div class="col-md-4">
-            <label class="form-label">Court *</label>
-            <select id="b_court" class="form-select" required></select>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">Date *</label>
-            <input type="date" id="b_date" class="form-control" required>
-          </div>
-          <div class="col-md-4 d-flex align-items-end">
-            <button type="button" id="loadSlotsBtn" class="btn btn-outline-secondary w-100">
-              <i class="bi bi-grid me-1"></i>Load Slots
-            </button>
-          </div>
-        </div>
-
-        <!-- Slot picker -->
-        <div id="slotPicker" class="mb-3 d-none">
-          <p class="small fw-semibold mb-2">Select 2 consecutive 30-min slots (= 1 hour):</p>
-          <div id="slotsGrid" class="d-flex flex-wrap gap-1"></div>
-          <p id="slotHint" class="small text-muted mt-2"></p>
-        </div>
-
-        <hr>
         <div class="row g-3">
           <div class="col-md-6">
-            <label class="form-label">Member Code (leave blank for guest)</label>
-            <input type="text" id="b_member_code" class="form-control" placeholder="CC-001">
-          </div>
-          <div class="col-md-6" id="guestFields">
-            <label class="form-label">Guest Name</label>
-            <input type="text" id="b_guest_name" class="form-control" placeholder="Walk-in guest">
+            <label class="form-label">Court *</label>
+            <select id="nb_court" class="form-select" required></select>
           </div>
           <div class="col-md-6">
+            <label class="form-label">Date *</label>
+            <input type="date" id="nb_date" class="form-control" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Start Time *</label>
+            <select id="nb_start" class="form-select" required></select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">End Time *</label>
+            <select id="nb_end" class="form-select" required></select>
+          </div>
+          <div class="col-md-4">
             <label class="form-label">Payment Method</label>
-            <select id="b_pay" class="form-select">
+            <select id="nb_pay" class="form-select">
+              <option value="">— Pay Later —</option>
               <option value="cash">Cash</option>
               <option value="card">Card</option>
               <option value="upi">UPI</option>
+              <option value="online">Online</option>
             </select>
           </div>
+          <div class="col-12">
+            <label class="form-label">Member Email (optional)</label>
+            <input type="email" id="nb_email" class="form-control" placeholder="member@example.com (for member discount)">
+          </div>
           <div class="col-md-6">
-            <label class="form-label">Estimated Price</label>
-            <input type="text" id="b_price" class="form-control" readonly placeholder="Calculated after slot selection">
+            <label class="form-label">Guest Name</label>
+            <input type="text" id="nb_guest" class="form-control" placeholder="Walk-in guest name">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Guest Phone</label>
+            <input type="tel" id="nb_guest_phone" class="form-control">
+          </div>
+          <div id="nb_pricePreview" class="col-12 d-none">
+            <div class="alert alert-info py-2 small" id="nb_priceText"></div>
           </div>
         </div>
-        <div id="bookErr" class="alert alert-danger mt-3 d-none small py-2"></div>
+        <div id="nbErr" class="alert alert-danger mt-3 d-none small py-2"></div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" id="bookSaveBtn" class="btn btn-cc">
-          <span id="bookSpinner" class="spinner-border spinner-sm d-none me-1"></span>
-          Confirm Booking
+        <button type="button" id="nbSaveBtn" class="btn btn-cc">
+          <span id="nbSpinner" class="spinner-border spinner-sm d-none me-1"></span>Book Court
         </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Booking Detail Modal -->
+<div class="modal fade" id="bookingDetailModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-info-circle me-2 text-cc"></i>Booking Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="bookingDetailBody">Loading…</div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" id="cancelBookingBtn" class="btn btn-danger btn-sm">Cancel Booking</button>
       </div>
     </div>
   </div>
@@ -154,157 +221,252 @@
 <script src="/js/api.js"></script>
 <script src="/js/utils.js"></script>
 <script>
-let courts = [];
-let selectedSlots = [];
+const sportEmoji = { tennis:'🎾', cricket:'🏏', badminton:'🏸', pickleball:'🏓' };
+const sportColor = { tennis:'#3498db', cricket:'#e67e22', badminton:'#9b59b6', pickleball:'#1abc9c' };
+let courts = [], currentView = 'schedule', currentBookingId = null;
 
-async function loadCourts() {
-  courts = await api.get('/api/courts');
-  const sel  = document.getElementById('courtFilter');
-  const bSel = document.getElementById('b_court');
-  courts.forEach(c => {
-    sel.insertAdjacentHTML('beforeend', `<option value="${c.id}">${escHtml(c.name)}</option>`);
-    bSel.insertAdjacentHTML('beforeend', `<option value="${c.id}" data-price="${c.base_price_per_hour}">${escHtml(c.name)} (₹${c.base_price_per_hour}/hr)</option>`);
-  });
+function switchTab(tab, e) {
+  e && e.preventDefault();
+  currentView = tab;
+  document.getElementById('tab-schedule').classList.toggle('active', tab === 'schedule');
+  document.getElementById('tab-list').classList.toggle('active', tab === 'list');
+  document.getElementById('scheduleView').classList.toggle('d-none', tab !== 'schedule');
+  document.getElementById('listView').classList.toggle('d-none', tab !== 'list');
+  document.getElementById('listFilters').classList.toggle('d-none', tab !== 'list');
+  if (tab === 'schedule') loadSchedule();
+  else loadList();
 }
 
-async function loadBookings() {
-  const date    = document.getElementById('dateFilter').value;
-  const courtId = document.getElementById('courtFilter').value;
-  const status  = document.getElementById('statusFilter').value;
-  let url = '/api/bookings?';
-  if (date)    url += 'date='     + date    + '&';
-  if (courtId) url += 'court_id=' + courtId + '&';
-  if (status)  url += 'status='   + status;
+function getDate() { return document.getElementById('dateInput').value; }
 
-  const rows  = await api.get(url).catch(() => []);
-  const tbody = document.querySelector('#bookTable tbody');
-  if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">No bookings found</td></tr>';
-    return;
-  }
-  tbody.innerHTML = rows.map(b => `
-    <tr>
-      <td><code>${escHtml(b.booking_code)}</code></td>
-      <td>${escHtml(b.court_name)}</td>
-      <td>${fmtDate(b.booking_date)}</td>
-      <td>${String(b.start_time).slice(0,5)} – ${String(b.end_time).slice(0,5)}</td>
-      <td>${escHtml(b.member_name || b.guest_name || 'Guest')}</td>
-      <td>${fmtINR(b.price_charged)}</td>
-      <td>${statusBadge(b.status)}</td>
-      <td>${b.status === 'confirmed'
-        ? `<button class="btn btn-sm btn-outline-danger btn-cancel" data-id="${b.id}">Cancel</button>`
-        : ''}</td>
-    </tr>`).join('');
-
-  document.querySelectorAll('.btn-cancel').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      if (!confirm('Cancel this booking?')) return;
-      try {
-        await api.post(`/api/bookings/${btn.dataset.id}/cancel`, { reason: 'Cancelled by staff' });
-        showAlert('Booking cancelled');
-        loadBookings();
-      } catch (e) { showAlert(e.message, 'danger'); }
-    });
-  });
+function shiftDate(delta) {
+  const d = new Date(getDate() || new Date());
+  d.setDate(d.getDate() + delta);
+  document.getElementById('dateInput').value = d.toISOString().slice(0,10);
+  if (currentView === 'schedule') loadSchedule();
+  else loadList();
 }
 
-// ── Slot picker ─────────────────────────────────────────────────────────────
-document.getElementById('loadSlotsBtn').addEventListener('click', async () => {
-  const courtId = document.getElementById('b_court').value;
-  const date    = document.getElementById('b_date').value;
-  if (!courtId || !date) { showAlert('Select court and date first', 'warning'); return; }
-
-  const slots = await api.get(`/api/courts/${courtId}/slots?date=${date}`).catch(() => []);
-  selectedSlots = [];
-  document.getElementById('b_price').value = '';
-  document.getElementById('slotHint').textContent = 'Click to select 2 consecutive slots.';
-
-  const grid = document.getElementById('slotsGrid');
-  grid.innerHTML = '';
-  slots.forEach(s => {
-    const time = s.slot_start.slice(11, 16);
-    const btn  = document.createElement('button');
-    btn.type        = 'button';
-    btn.className   = `slot-btn ${s.available ? 'available' : 'booked'}`;
-    btn.textContent = time;
-    btn.disabled    = !s.available;
-    btn.dataset.start = s.slot_start;
-    btn.dataset.end   = s.slot_end;
-
-    btn.addEventListener('click', () => {
-      if (btn.classList.contains('selected')) {
-        btn.classList.replace('selected','available');
-        selectedSlots = selectedSlots.filter(ss => ss.start !== s.slot_start);
-      } else {
-        if (selectedSlots.length >= 2) { showAlert('Select exactly 2 consecutive slots', 'warning'); return; }
-        btn.classList.replace('available','selected');
-        selectedSlots.push({ start: s.slot_start, end: s.slot_end });
-      }
-      updatePrice(courtId);
-    });
-    grid.appendChild(btn);
-  });
-  document.getElementById('slotPicker').classList.remove('d-none');
-});
-
-function updatePrice(courtId) {
-  const courtOpt = document.querySelector(`#b_court option[value="${courtId}"]`);
-  const priceHr  = courtOpt ? parseFloat(courtOpt.dataset.price) : 0;
-  const price    = (selectedSlots.length / 2) * priceHr;   // 2 slots = 1 hour
-  document.getElementById('b_price').value = selectedSlots.length === 2 ? `₹${price.toFixed(2)}` : '';
-}
-
-// ── Confirm Booking ──────────────────────────────────────────────────────────
-document.getElementById('bookSaveBtn').addEventListener('click', async () => {
-  const btn     = document.getElementById('bookSaveBtn');
-  const spinner = document.getElementById('bookSpinner');
-  const errDiv  = document.getElementById('bookErr');
-  errDiv.classList.add('d-none');
-
-  if (selectedSlots.length !== 2) {
-    errDiv.textContent = 'Please select exactly 2 consecutive 30-min slots.';
-    errDiv.classList.remove('d-none'); return;
-  }
-
-  btn.disabled = true; spinner.classList.remove('d-none');
-
-  // Sort slots by start time
-  selectedSlots.sort((a,b) => a.start.localeCompare(b.start));
-
+async function loadSchedule() {
+  const date = getDate();
+  const grid = document.getElementById('scheduleGrid');
+  grid.innerHTML = `<div class="text-center py-5 text-muted"><span class="spinner-border spinner-sm me-2"></span>Loading…</div>`;
   try {
-    await api.post('/api/bookings', {
-      court_id:       document.getElementById('b_court').value,
-      booking_date:   document.getElementById('b_date').value,
-      start_time:     selectedSlots[0].start.slice(11, 19),
-      end_time:       selectedSlots[1].end.slice(11, 19),
-      member_code:    document.getElementById('b_member_code').value.trim() || undefined,
-      guest_name:     document.getElementById('b_guest_name').value.trim()  || undefined,
-      payment_method: document.getElementById('b_pay').value,
-      slots: selectedSlots
-    });
-    bootstrap.Modal.getInstance(document.getElementById('bookModal')).hide();
-    selectedSlots = [];
-    showAlert('Booking confirmed!');
-    loadBookings();
-  } catch (e) {
-    errDiv.textContent = e.message;
-    errDiv.classList.remove('d-none');
-  } finally {
-    btn.disabled = false; spinner.classList.add('d-none');
+    const data = await api.get(`/api/bookings/schedule/${date}`);
+    if (!data.length) {
+      grid.innerHTML = `<div class="text-center py-5 text-muted"><i class="bi bi-calendar-x fs-2 d-block mb-2"></i>No courts available</div>`;
+      return;
+    }
+
+    // Build time slots 6:00 – 21:00 in 1h intervals
+    const hours = [];
+    for (let h = 6; h < 22; h++) hours.push(`${String(h).padStart(2,'0')}:00`);
+
+    grid.innerHTML = data.map(court => {
+      const color = sportColor[court.sport] || '#2ecc71';
+      const slots = hours.map(h => {
+        const end = `${String(parseInt(h)+1).padStart(2,'0')}:00`;
+        const booking = court.slots.find(s => s.start_time.slice(0,5) <= h && s.end_time.slice(0,5) > h);
+        if (booking) {
+          if (booking.status === 'cancelled') {
+            return `<div class="slot slot-booked-cancelled" title="Cancelled">
+              <span class="slot-label">${h}</span>
+              <span class="slot-member">Cancelled</span>
+            </div>`;
+          }
+          return `<div class="slot slot-booked" data-id="${booking.id}" onclick="showBookingDetail(${booking.id})" title="${escHtml(booking.member_name||'Walk-in')}: ${booking.start_time.slice(0,5)}-${booking.end_time.slice(0,5)}">
+            <span class="slot-label">${h}</span>
+            <span class="slot-member">${escHtml((booking.member_name||'Guest').split(' ')[0])}</span>
+          </div>`;
+        }
+        return `<div class="slot slot-free" onclick="prefillBooking('${court.id}','${h}','${end}')" title="Available ${h}–${end}">
+          <span class="slot-label">${h}</span>
+          <span class="slot-member">Free</span>
+        </div>`;
+      }).join('');
+
+      const booked = court.slots.filter(s => s.status !== 'cancelled').length;
+      const revenue = court.slots.filter(s => s.status !== 'cancelled').reduce((a,s) => a+Number(s.price_charged||0),0);
+      return `<div class="court-card">
+        <div class="court-header">
+          <div class="court-sport-icon">${sportEmoji[court.sport]||'🏟️'}</div>
+          <div class="flex-grow-1">
+            <div class="fw-semibold">${escHtml(court.name)}</div>
+            <div class="small text-muted">${court.sport.charAt(0).toUpperCase()+court.sport.slice(1)} · ${court.surface_type||'—'} · ₹${Number(court.base_price_per_hour).toLocaleString('en-IN')}/hr</div>
+          </div>
+          <div class="text-end small">
+            <div class="fw-bold text-cc">${booked} booked</div>
+            <div class="text-muted">₹${revenue.toLocaleString('en-IN')}</div>
+          </div>
+        </div>
+        <div class="slot-row">${slots}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    grid.innerHTML = `<div class="alert alert-warning m-3">${escHtml(e.message)}</div>`;
   }
+}
+
+async function loadList() {
+  const tbody = document.querySelector('#bookingsTable tbody');
+  tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4"><span class="spinner-border spinner-sm"></span></td></tr>`;
+  try {
+    const date = getDate();
+    const sport  = document.getElementById('fSport').value;
+    const status = document.getElementById('fStatus').value;
+    const court  = document.getElementById('fCourt').value;
+    let url = `/api/bookings?date=${date}`;
+    if (sport)  url += `&sport=${sport}`;
+    if (status) url += `&status=${status}`;
+    if (court)  url += `&court_id=${court}`;
+    const rows = await api.get(url);
+
+    if (!rows.length) {
+      tbody.innerHTML = `<tr><td colspan="9" class="text-center py-5 text-muted"><i class="bi bi-calendar-x fs-2 d-block mb-2"></i>No bookings found</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = rows.map(b => `
+      <tr>
+        <td><code class="small">${escHtml(b.booking_code)}</code></td>
+        <td><span class="me-1">${sportEmoji[b.sport]||'🏟️'}</span>${escHtml(b.court_name)}</td>
+        <td class="small">${fmtDate(b.booking_date)}</td>
+        <td class="small fw-semibold">${b.start_time.slice(0,5)} – ${b.end_time.slice(0,5)}</td>
+        <td class="small">${escHtml(b.member_name||b.guest_name||'Walk-in')}</td>
+        <td><span class="badge ${b.status==='confirmed'?'bg-primary':b.status==='completed'?'bg-success':'bg-secondary'}">${b.status}</span></td>
+        <td class="small fw-semibold">${fmtINR(b.price_charged)}</td>
+        <td class="small">${b.payment_method ? '<span class="badge bg-success bg-opacity-20 text-success">'+escHtml(b.payment_method)+'</span>' : '<span class="text-muted">Pending</span>'}</td>
+        <td>
+          <button class="btn btn-sm btn-outline-primary" onclick="showBookingDetail(${b.id})"><i class="bi bi-eye"></i></button>
+          ${b.status==='confirmed' ? `<button class="btn btn-sm btn-outline-danger ms-1" onclick="cancelBooking(${b.id})"><i class="bi bi-x-circle"></i></button>` : ''}
+        </td>
+      </tr>`).join('');
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-danger">${escHtml(e.message)}</td></tr>`;
+  }
+}
+
+async function showBookingDetail(id) {
+  currentBookingId = id;
+  const body = document.getElementById('bookingDetailBody');
+  body.innerHTML = '<div class="text-center py-4"><span class="spinner-border"></span></div>';
+  new bootstrap.Modal(document.getElementById('bookingDetailModal')).show();
+  try {
+    const b = await api.get(`/api/bookings/${id}`);
+    const discPct = b.discount_pct > 0 ? `<span class="badge bg-success">${b.discount_pct}% off</span>` : '';
+    body.innerHTML = `
+      <table class="table table-sm table-borderless">
+        <tr><th class="text-muted" style="width:130px">Code</th><td><code>${escHtml(b.booking_code)}</code></td></tr>
+        <tr><th class="text-muted">Court</th><td>${sportEmoji[b.sport]||'🏟️'} ${escHtml(b.court_name)} · ${b.surface_type||''}</td></tr>
+        <tr><th class="text-muted">Date & Time</th><td><strong>${fmtDate(b.booking_date)}</strong><br>${b.start_time.slice(0,5)} → ${b.end_time.slice(0,5)}</td></tr>
+        <tr><th class="text-muted">Member</th><td>${escHtml(b.member_name||b.guest_name||'Walk-in')}<br><span class="text-muted small">${escHtml(b.member_email||b.guest_phone||'')}</span></td></tr>
+        <tr><th class="text-muted">Status</th><td><span class="badge ${b.status==='confirmed'?'bg-primary':b.status==='completed'?'bg-success':'bg-secondary'}">${b.status}</span></td></tr>
+        <tr><th class="text-muted">Base Price</th><td>${fmtINR(b.base_price)}</td></tr>
+        <tr><th class="text-muted">Discount</th><td>${discPct || '—'}</td></tr>
+        <tr><th class="text-muted">Charged</th><td class="fw-bold text-cc">${fmtINR(b.price_charged)}</td></tr>
+        <tr><th class="text-muted">Payment</th><td>${b.payment_method || '<span class="text-muted">Pending</span>'}</td></tr>
+      </table>`;
+    document.getElementById('cancelBookingBtn').style.display = b.status === 'confirmed' ? '' : 'none';
+  } catch(e) { body.innerHTML = `<div class="alert alert-danger">${escHtml(e.message)}</div>`; }
+}
+
+async function cancelBooking(id) {
+  if (!confirm('Cancel this booking?')) return;
+  try {
+    await api.post(`/api/bookings/${id}/cancel`, { reason: 'Cancelled by admin' });
+    bootstrap.Modal.getInstance(document.getElementById('bookingDetailModal'))?.hide();
+    showAlert('Booking cancelled.', 'warning');
+    loadSchedule(); loadList();
+  } catch(e) { showAlert(e.message, 'danger'); }
+}
+
+document.getElementById('cancelBookingBtn').addEventListener('click', () => { if (currentBookingId) cancelBooking(currentBookingId); });
+
+// New booking modal helpers
+function prefillBooking(courtId, start, end) {
+  const sel = document.getElementById('nb_court');
+  if (sel) sel.value = courtId;
+  document.getElementById('nb_date').value = getDate();
+  document.getElementById('nb_start').value = start;
+  document.getElementById('nb_end').value = end;
+  new bootstrap.Modal(document.getElementById('newBookingModal')).show();
+}
+
+// Populate time selects
+function populateTimeSelects() {
+  const starts = document.getElementById('nb_start');
+  const ends   = document.getElementById('nb_end');
+  for (let h = 6; h < 22; h++) {
+    const val = `${String(h).padStart(2,'0')}:00:00`;
+    const lbl = `${String(h).padStart(2,'0')}:00`;
+    const o1 = new Option(lbl, val); starts.add(o1);
+    const o2 = new Option(lbl, val); ends.add(o2);
+  }
+  const o = new Option('22:00','22:00:00'); ends.add(o);
+  starts.value = '07:00:00'; ends.value = '08:00:00';
+}
+
+document.getElementById('nbSaveBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('nbSaveBtn');
+  const sp  = document.getElementById('nbSpinner');
+  const err = document.getElementById('nbErr');
+  err.classList.add('d-none'); btn.disabled=true; sp.classList.remove('d-none');
+  try {
+    // Resolve member by email
+    let user_id = null;
+    const emailVal = document.getElementById('nb_email').value.trim();
+    if (emailVal) {
+      try {
+        const u = await api.get(`/api/members?search=${encodeURIComponent(emailVal)}&limit=1`);
+        if (u.members && u.members.length) user_id = u.members[0].user_id;
+      } catch(e) {}
+    }
+    await api.post('/api/bookings', {
+      court_id:      document.getElementById('nb_court').value,
+      booking_date:  document.getElementById('nb_date').value,
+      start_time:    document.getElementById('nb_start').value,
+      end_time:      document.getElementById('nb_end').value,
+      user_id,
+      guest_name:    document.getElementById('nb_guest').value.trim() || undefined,
+      guest_phone:   document.getElementById('nb_guest_phone').value.trim() || undefined,
+      payment_method:document.getElementById('nb_pay').value || undefined
+    });
+    bootstrap.Modal.getInstance(document.getElementById('newBookingModal')).hide();
+    showAlert('Booking created successfully!');
+    loadSchedule(); loadList();
+  } catch(e) { err.textContent=e.message; err.classList.remove('d-none'); }
+  finally { btn.disabled=false; sp.classList.add('d-none'); }
 });
 
 (async () => {
   const user = await loadSession();
-  if (!user) return;
+  if (!user || user.role !== 'owner') { window.location.href='/shared/login.html'; return; }
   document.getElementById('userNameSidebar').textContent = user.full_name;
-  // Default to today
-  document.getElementById('dateFilter').value = new Date().toISOString().slice(0,10);
-  document.getElementById('b_date').value     = new Date().toISOString().slice(0,10);
-  await loadCourts();
-  await loadBookings();
 
-  document.getElementById('filterBtn').addEventListener('click', loadBookings);
+  // Set today's date
+  document.getElementById('dateInput').value = new Date().toISOString().slice(0,10);
+  document.getElementById('nb_date').value   = new Date().toISOString().slice(0,10);
+
+  // Load courts
+  try {
+    courts = await api.get('/api/bookings/courts/list');
+    const sel = document.getElementById('nb_court');
+    const fCourt = document.getElementById('fCourt');
+    courts.forEach(c => {
+      const o1 = new Option(`${sportEmoji[c.sport]||''} ${c.name} (₹${c.base_price_per_hour}/hr)`, c.id);
+      sel.add(o1);
+      const o2 = new Option(`${c.name}`, c.id);
+      fCourt.add(o2);
+    });
+  } catch(e) {}
+
+  populateTimeSelects();
+  loadSchedule();
+
+  document.getElementById('dateInput').addEventListener('change', () => {
+    if (currentView === 'schedule') loadSchedule(); else loadList();
+  });
+
   document.getElementById('logoutBtn').addEventListener('click', async () => {
     await api.post('/api/auth/logout');
     window.location.href = '/shared/login.html';

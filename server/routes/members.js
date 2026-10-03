@@ -1,69 +1,224 @@
 /**
  * @file server/routes/members.js
- * @description Member management routes.
- * GET  /api/members            – list members (staff/owner)
- * GET  /api/members/:id        – member detail + plan info
- * POST /api/members            – enroll new member (staff/owner)
- * PUT  /api/members/:id        – update member details (staff/owner)
- * POST /api/members/:id/renew  – renew membership (staff/owner)
+ * @description Member management routes – fully dynamic, uses cc_members table.
  */
-
-const express       = require('express');
-const memberService = require('../services/memberService');
+const express = require('express');
+const bcrypt  = require('bcryptjs');
+const db      = require('../db');
 const { requireLogin, requireRole } = require('../middleware/auth');
+const router  = express.Router();
 
-const router = express.Router();
-
-// ── GET /api/members ────────────────────────────────────────────────────────
+// ── GET /api/members ─────────────────────────────────────────────────────────
 router.get('/', requireLogin, requireRole('staff', 'owner'), async (req, res, next) => {
   try {
-    const { search, status, plan_id, page = 1 } = req.query;
-    const members = await memberService.listMembers({ search, status, plan_id, page: Number(page) });
-    res.json(members);
+    const { search, status, plan_id, expiring_days, page = 1, limit = 50 } = req.query;
+    const offset = (Number(page) - 1) * Number(limit);
+    let where = '1=1';
+    const params = [];
+
+    if (search) {
+      where += ` AND (u.full_name LIKE ? OR u.name LIKE ? OR u.email LIKE ? OR m.member_code LIKE ? OR u.phone LIKE ?)`;
+      const s = `%${search}%`;
+      params.push(s, s, s, s, s);
+    }
+    if (status)       { where += ' AND m.status = ?';    params.push(status); }
+    if (plan_id)      { where += ' AND m.plan_id = ?';   params.push(plan_id); }
+    if (expiring_days) {
+      where += ` AND m.status='active' AND m.expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL ? DAY)`;
+      params.push(Number(expiring_days));
+    }
+
+    const [[{ total }]] = await db.query(
+      `SELECT COUNT(*) AS total FROM cc_members m
+         JOIN users u ON m.user_id = u.id
+        WHERE ${where}`, params
+    );
+
+    const [rows] = await db.query(
+      `SELECT m.*, p.name AS plan_name, p.annual_fee, p.shop_discount_pct, p.bar_discount_pct, p.court_discount_pct,
+              COALESCE(u.full_name, u.name) AS full_name, u.email, u.phone,
+              DATEDIFF(m.expiry_date, CURDATE()) AS days_left
+         FROM cc_members m
+         JOIN users u ON m.user_id = u.id
+         JOIN cc_plans p ON m.plan_id = p.id
+        WHERE ${where}
+        ORDER BY m.expiry_date ASC
+        LIMIT ? OFFSET ?`,
+      [...params, Number(limit), offset]
+    );
+
+    res.json({ members: rows, total, page: Number(page), pages: Math.ceil(total / Number(limit)) });
   } catch (err) { next(err); }
 });
 
-// ── GET /api/members/:id ────────────────────────────────────────────────────
+// ── GET /api/members/:id ─────────────────────────────────────────────────────
 router.get('/:id', requireLogin, async (req, res, next) => {
   try {
-    // Members can only view their own profile
-    const member = await memberService.getMemberById(req.params.id);
-    if (!member) return res.status(404).json({ error: 'Member not found' });
-
-    const sessionRole = req.session.user.role;
-    if (sessionRole === 'member' && member.user_id !== req.session.user.id) {
+    const [rows] = await db.query(
+      `SELECT m.*, p.name AS plan_name, p.annual_fee, p.shop_discount_pct, p.bar_discount_pct, p.court_discount_pct,
+              COALESCE(u.full_name, u.name) AS full_name, u.email, u.phone,
+              DATEDIFF(m.expiry_date, CURDATE()) AS days_left
+         FROM cc_members m
+         JOIN users u ON m.user_id = u.id
+         JOIN cc_plans p ON m.plan_id = p.id
+        WHERE m.id = ?`, [req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Member not found' });
+    const m = rows[0];
+    if (req.session.user.role === 'member' && m.user_id !== req.session.user.id)
       return res.status(403).json({ error: 'Forbidden' });
-    }
-    res.json(member);
+    res.json(m);
   } catch (err) { next(err); }
 });
 
-// ── POST /api/members ───────────────────────────────────────────────────────
+// ── GET /api/members/by-user/:userId ─────────────────────────────────────────
+router.get('/by-user/:userId', requireLogin, async (req, res, next) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT m.*, p.name AS plan_name, p.shop_discount_pct, p.bar_discount_pct, p.court_discount_pct
+         FROM cc_members m JOIN cc_plans p ON m.plan_id = p.id
+        WHERE m.user_id = ?`, [req.params.userId]
+    );
+    res.json(rows[0] || null);
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/members ────────────────────────────────────────────────────────
 router.post('/', requireLogin, requireRole('staff', 'owner'), async (req, res, next) => {
   try {
-    const member = await memberService.enrollMember(req.body);
-    res.status(201).json(member);
+    const { full_name, email, phone, date_of_birth, plan_id, payment_method,
+            password, emergency_contact_name, emergency_contact_phone, notes } = req.body;
+
+    if (!full_name || !email || !plan_id)
+      return res.status(400).json({ error: 'Name, email, and plan are required' });
+
+    // Check plan exists
+    const [plans] = await db.query('SELECT * FROM cc_plans WHERE id = ? AND is_active = 1', [plan_id]);
+    if (!plans.length) return res.status(400).json({ error: 'Invalid plan' });
+    const plan = plans[0];
+
+    // Create or find user
+    let userId;
+    const [existing] = await db.query('SELECT id FROM users WHERE email = ?', [email.trim().toLowerCase()]);
+    if (existing.length) {
+      userId = existing[0].id;
+    } else {
+      const hash = await bcrypt.hash(password || 'Champions@123', 10);
+      const [ins] = await db.query(
+        `INSERT INTO users (name, full_name, email, password_hash, role, phone, assigned_area, is_active)
+         VALUES (?,?,?,?,'member',?,?,1)`,
+        [full_name.trim(), full_name.trim(), email.trim().toLowerCase(), hash, phone || null, 'member']
+      );
+      userId = ins.insertId;
+    }
+
+    // Check not already a member
+    const [mCheck] = await db.query('SELECT id FROM cc_members WHERE user_id = ?', [userId]);
+    if (mCheck.length) return res.status(409).json({ error: 'User is already a member' });
+
+    // Generate member code
+    const [[{ cnt }]] = await db.query('SELECT COUNT(*) AS cnt FROM cc_members');
+    const memberCode = `CC-${new Date().getFullYear()}-${String(cnt + 1).padStart(3, '0')}`;
+
+    const joinDate   = new Date().toISOString().slice(0, 10);
+    const expiryDate = (() => {
+      const d = new Date();
+      d.setMonth(d.getMonth() + (plan.duration_months || 12));
+      return d.toISOString().slice(0, 10);
+    })();
+
+    const [ins] = await db.query(
+      `INSERT INTO cc_members (user_id,member_code,plan_id,date_of_birth,join_date,expiry_date,status,emergency_contact_name,emergency_contact_phone,notes)
+       VALUES (?,?,?,?,?,?,'active',?,?,?)`,
+      [userId, memberCode, plan_id, date_of_birth || null, joinDate, expiryDate,
+       emergency_contact_name || null, emergency_contact_phone || null, notes || null]
+    );
+
+    // Record payment
+    if (payment_method) {
+      const payCode = `PAY-MBR-${Date.now()}`;
+      await db.query(
+        `INSERT INTO cc_payments (payment_code,source,reference_id,user_id,amount,method,status,paid_at)
+         VALUES (?,?,?,?,?,?,'paid',NOW())`,
+        [payCode, 'membership', ins.insertId, userId, plan.annual_fee, payment_method]
+      );
+    }
+
+    const [rows] = await db.query(
+      `SELECT m.*, p.name AS plan_name, COALESCE(u.full_name, u.name) AS full_name, u.email, u.phone
+         FROM cc_members m JOIN users u ON m.user_id = u.id JOIN cc_plans p ON m.plan_id = p.id
+        WHERE m.id = ?`, [ins.insertId]
+    );
+    res.status(201).json(rows[0]);
   } catch (err) {
-    // Propagate user-facing validation messages as 400
-    if (err.message && !err.status) err.status = 400;
+    if (err.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'Member code conflict, try again' });
     next(err);
   }
 });
 
-// ── PUT /api/members/:id ────────────────────────────────────────────────────
+// ── PUT /api/members/:id ─────────────────────────────────────────────────────
 router.put('/:id', requireLogin, requireRole('staff', 'owner'), async (req, res, next) => {
   try {
-    const member = await memberService.updateMember(req.params.id, req.body);
-    res.json(member);
+    const { status, notes, emergency_contact_name, emergency_contact_phone, plan_id } = req.body;
+    await db.query(
+      `UPDATE cc_members SET status=COALESCE(?,status), notes=COALESCE(?,notes),
+              emergency_contact_name=COALESCE(?,emergency_contact_name),
+              emergency_contact_phone=COALESCE(?,emergency_contact_phone),
+              plan_id=COALESCE(?,plan_id)
+        WHERE id=?`,
+      [status || null, notes || null, emergency_contact_name || null,
+       emergency_contact_phone || null, plan_id || null, req.params.id]
+    );
+    const [rows] = await db.query(
+      `SELECT m.*, p.name AS plan_name, COALESCE(u.full_name,u.name) AS full_name, u.email, u.phone,
+              DATEDIFF(m.expiry_date, CURDATE()) AS days_left
+         FROM cc_members m JOIN users u ON m.user_id=u.id JOIN cc_plans p ON m.plan_id=p.id
+        WHERE m.id=?`, [req.params.id]
+    );
+    res.json(rows[0]);
   } catch (err) { next(err); }
 });
 
-// ── POST /api/members/:id/renew ─────────────────────────────────────────────
+// ── POST /api/members/:id/renew ──────────────────────────────────────────────
 router.post('/:id/renew', requireLogin, requireRole('staff', 'owner'), async (req, res, next) => {
   try {
     const { plan_id, payment_method } = req.body;
-    const result = await memberService.renewMember(req.params.id, plan_id, payment_method);
-    res.json(result);
+    const [rows] = await db.query('SELECT * FROM cc_members WHERE id = ?', [req.params.id]);
+    if (!rows.length) return res.status(404).json({ error: 'Member not found' });
+    const m = rows[0];
+
+    const [plans] = await db.query('SELECT * FROM cc_plans WHERE id = ?', [plan_id || m.plan_id]);
+    if (!plans.length) return res.status(400).json({ error: 'Invalid plan' });
+    const plan = plans[0];
+
+    // Extend from today or current expiry (whichever is later)
+    const base = new Date(Math.max(new Date(), new Date(m.expiry_date)));
+    base.setMonth(base.getMonth() + plan.duration_months);
+    const newExpiry = base.toISOString().slice(0, 10);
+
+    await db.query(
+      `UPDATE cc_members SET plan_id=?, expiry_date=?, status='active' WHERE id=?`,
+      [plan.id, newExpiry, m.id]
+    );
+
+    if (payment_method) {
+      const payCode = `PAY-RNW-${Date.now()}`;
+      await db.query(
+        `INSERT INTO cc_payments (payment_code,source,reference_id,user_id,amount,method,status,paid_at)
+         VALUES (?,?,?,?,?,?,'paid',NOW())`,
+        [payCode, 'membership', m.id, m.user_id, plan.annual_fee, payment_method]
+      );
+    }
+
+    res.json({ message: 'Membership renewed', new_expiry: newExpiry });
+  } catch (err) { next(err); }
+});
+
+// ── DELETE /api/members/:id ──────────────────────────────────────────────────
+router.delete('/:id', requireLogin, requireRole('owner'), async (req, res, next) => {
+  try {
+    await db.query(`UPDATE cc_members SET status='suspended' WHERE id=?`, [req.params.id]);
+    res.json({ message: 'Member suspended' });
   } catch (err) { next(err); }
 });
 

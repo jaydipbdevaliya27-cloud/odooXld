@@ -3,28 +3,36 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Orders – Champions Club</title>
+  <title>Orders – Champions Club Admin</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="/css/main.css">
+  <style>
+    .dept-shop{color:#3498db;} .dept-bar{color:#e67e22;}
+    .order-status-open{background:rgba(255,193,7,.15);color:#ffc107;}
+    .order-status-completed{background:rgba(46,204,113,.15);color:#2ecc71;}
+    .order-status-cancelled{background:rgba(231,76,60,.12);color:#e74c3c;}
+    .kpi-strip{display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1rem;}
+    .kpi-mini{background:var(--cc-card);border-radius:12px;padding:.7rem 1rem;flex:1;min-width:100px;border:1px solid rgba(255,255,255,.06);}
+    .kpi-mini .val{font-size:1.5rem;font-weight:700;color:var(--cc-green);}
+    .kpi-mini .lbl{font-size:.7rem;color:#888;text-transform:uppercase;letter-spacing:.04em;}
+  </style>
 </head>
 <body>
 <div class="cc-wrapper">
   <nav class="cc-sidebar d-flex flex-column">
     <div class="brand"><i class="bi bi-trophy-fill me-2 text-warning"></i>Champions Club</div>
     <ul class="nav flex-column mt-2 flex-grow-1">
-      <li><a href="/owner/dashboard.html" class="nav-link"><i class="bi bi-speedometer2"></i>Dashboard</a></li>
-      <li><a href="/owner/staff.html"     class="nav-link"><i class="bi bi-person-badge"></i>Staff Management</a></li>
-      <li><a href="/owner/members.html"   class="nav-link"><i class="bi bi-people"></i>Members</a></li>
-      <li><a href="/owner/bookings.html"  class="nav-link"><i class="bi bi-calendar-check"></i>Bookings</a></li>
-      <li><a href="/owner/orders.html"    class="nav-link active"><i class="bi bi-bag"></i>Orders</a></li>
-      <li><a href="/owner/products.html"  class="nav-link"><i class="bi bi-box-seam"></i>Products</a></li>
-      <li><a href="/owner/payments.html"  class="nav-link"><i class="bi bi-credit-card"></i>Payments</a></li>
-      <li><a href="/owner/leads.html"     class="nav-link"><i class="bi bi-person-plus"></i>Leads</a></li>
-      <li><a href="/owner/plans.html"     class="nav-link"><i class="bi bi-stars"></i>Plans</a></li>
-      <li><a href="/owner/courts.html"    class="nav-link"><i class="bi bi-geo-alt"></i>Courts</a></li>
+      <li><a href="/owner/dashboard.html"  class="nav-link"><i class="bi bi-speedometer2"></i>Dashboard</a></li>
+      <li><a href="/owner/staff.html"      class="nav-link"><i class="bi bi-person-badge"></i>Staff</a></li>
+      <li><a href="/owner/members.html"    class="nav-link"><i class="bi bi-people"></i>Members</a></li>
+      <li><a href="/owner/bookings.html"   class="nav-link"><i class="bi bi-calendar-check"></i>Bookings</a></li>
+      <li><a href="/owner/orders.html"     class="nav-link active"><i class="bi bi-bag"></i>Orders</a></li>
+      <li><a href="/owner/products.html"   class="nav-link"><i class="bi bi-box-seam"></i>Products</a></li>
+      <li><a href="/owner/payments.html"   class="nav-link"><i class="bi bi-credit-card"></i>Payments</a></li>
+      <li><a href="/owner/plans.html"      class="nav-link"><i class="bi bi-stars"></i>Plans</a></li>
     </ul>
-    <div class="p-3">
+    <div class="p-3 border-top" style="border-color:rgba(255,255,255,.08)!important">
       <span id="userNameSidebar" class="small text-muted d-block mb-2"></span>
       <button id="logoutBtn" class="btn btn-sm btn-outline-light w-100"><i class="bi bi-box-arrow-right me-1"></i>Logout</button>
     </div>
@@ -32,30 +40,33 @@
 
   <div class="d-flex flex-column flex-grow-1">
     <div class="cc-topbar">
-      <h5 class="page-title"><i class="bi bi-bag me-2 text-cc"></i>Shop & Bar Orders</h5>
-      <button class="btn btn-cc btn-sm" data-bs-toggle="modal" data-bs-target="#newOrderModal">
-        <i class="bi bi-plus-circle-fill me-1"></i>New Order
-      </button>
+      <h5 class="page-title"><i class="bi bi-bag me-2 text-cc"></i>Orders</h5>
     </div>
 
     <main class="cc-main">
-      <!-- Tabs -->
-      <ul class="nav nav-tabs mb-3" id="deptTabs">
-        <li class="nav-item"><button class="nav-link active" data-dept="">All</button></li>
-        <li class="nav-item"><button class="nav-link" data-dept="shop">Shop</button></li>
-        <li class="nav-item"><button class="nav-link" data-dept="bar">Bar</button></li>
-      </ul>
+      <!-- KPIs -->
+      <div class="kpi-strip">
+        <div class="kpi-mini"><div class="val" id="k-total">—</div><div class="lbl">Total Today</div></div>
+        <div class="kpi-mini"><div class="val text-warning" id="k-open">—</div><div class="lbl">Open</div></div>
+        <div class="kpi-mini"><div class="val text-success" id="k-completed">—</div><div class="lbl">Completed</div></div>
+        <div class="kpi-mini"><div class="val text-info" id="k-shop">—</div><div class="lbl">Shop Orders</div></div>
+        <div class="kpi-mini"><div class="val" style="color:#e67e22" id="k-bar">—</div><div class="lbl">Bar Orders</div></div>
+      </div>
 
       <!-- Filters -->
       <div class="cc-card mb-3">
         <div class="row g-2 align-items-end">
-          <div class="col-md-3">
-            <label class="form-label small fw-semibold">Date</label>
-            <input type="date" id="dateFilter" class="form-control form-control-sm">
+          <div class="col-md-2">
+            <label class="form-label small fw-semibold">Department</label>
+            <select id="fDept" class="form-select form-select-sm">
+              <option value="">All</option>
+              <option value="shop">🛍️ Shop</option>
+              <option value="bar">🍹 Bar</option>
+            </select>
           </div>
-          <div class="col-md-3">
+          <div class="col-md-2">
             <label class="form-label small fw-semibold">Status</label>
-            <select id="statusFilter" class="form-select form-select-sm">
+            <select id="fStatus" class="form-select form-select-sm">
               <option value="">All</option>
               <option value="open">Open</option>
               <option value="completed">Completed</option>
@@ -63,19 +74,42 @@
             </select>
           </div>
           <div class="col-md-2">
-            <button id="filterBtn" class="btn btn-cc btn-sm w-100">Filter</button>
+            <label class="form-label small fw-semibold">Payment</label>
+            <select id="fPayment" class="form-select form-select-sm">
+              <option value="">All</option>
+              <option value="cash">Cash</option>
+              <option value="card">Card</option>
+              <option value="upi">UPI</option>
+              <option value="online">Online</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small fw-semibold">From Date</label>
+            <input type="date" id="fFrom" class="form-control form-control-sm">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small fw-semibold">To Date</label>
+            <input type="date" id="fTo" class="form-control form-control-sm">
+          </div>
+          <div class="col-md-2 d-flex gap-1">
+            <button class="btn btn-cc btn-sm flex-grow-1" onclick="loadOrders()"><i class="bi bi-funnel me-1"></i>Filter</button>
+            <button class="btn btn-outline-secondary btn-sm" onclick="resetFilters()">↺</button>
           </div>
         </div>
       </div>
 
+      <!-- Table -->
       <div class="cc-card">
         <div class="table-responsive">
-          <table class="table table-hover mb-0" id="orderTable">
-            <thead><tr>
-              <th>Code</th><th>Dept</th><th>Channel</th>
-              <th>Customer</th><th>Total</th><th>Status</th><th>Actions</th>
-            </tr></thead>
-            <tbody><tr><td colspan="7" class="text-center py-4 text-muted">Loading…</td></tr></tbody>
+          <table class="table table-hover mb-0" id="ordersTable">
+            <thead>
+              <tr>
+                <th>Order</th><th>Dept</th><th>Member/Guest</th>
+                <th>Items</th><th>Subtotal</th><th>Discount</th><th>Total</th>
+                <th>Status</th><th>Payment</th><th>Time</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody><tr><td colspan="11" class="text-center py-4 text-muted">Loading…</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -83,104 +117,31 @@
   </div>
 </div>
 
-<!-- ── New Order Modal ────────────────────────────────────────────────────── -->
-<div class="modal fade" id="newOrderModal" tabindex="-1">
-  <div class="modal-dialog modal-xl">
+<!-- Order Detail Modal -->
+<div class="modal fade" id="orderDetailModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="bi bi-bag-plus me-2 text-cc"></i>New Order</h5>
+        <h5 class="modal-title"><i class="bi bi-receipt me-2 text-cc"></i>Order Details</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body">
-        <div class="row g-3 mb-3">
-          <div class="col-md-3">
-            <label class="form-label">Department *</label>
-            <select id="o_dept" class="form-select">
-              <option value="shop">Shop</option>
-              <option value="bar">Bar</option>
-            </select>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label">Channel *</label>
-            <select id="o_channel" class="form-select">
-              <option value="counter">Counter</option>
-              <option value="table">Table</option>
-              <option value="online">Online</option>
-            </select>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label">Table No</label>
-            <input type="text" id="o_table" class="form-control" placeholder="T1 – T12">
-          </div>
-          <div class="col-md-3">
-            <label class="form-label">Member Code / Guest</label>
-            <input type="text" id="o_member" class="form-control" placeholder="CC-001 or blank">
-          </div>
-        </div>
-
-        <!-- Product picker -->
-        <div class="row g-2 mb-2">
-          <div class="col-md-6">
-            <label class="form-label">Add Product</label>
-            <select id="o_product" class="form-select form-select-sm">
-              <option value="">-- Select product --</option>
-            </select>
-          </div>
-          <div class="col-md-2">
-            <label class="form-label">Qty</label>
-            <input type="number" id="o_qty" class="form-control form-control-sm" value="1" min="1">
-          </div>
-          <div class="col-md-2 d-flex align-items-end">
-            <button type="button" id="addItemBtn" class="btn btn-outline-secondary btn-sm w-100">Add</button>
-          </div>
-        </div>
-
-        <!-- Items table -->
-        <table class="table table-sm" id="itemsTable">
-          <thead><tr><th>Product</th><th>Qty</th><th>Unit Price</th><th>Total</th><th></th></tr></thead>
-          <tbody></tbody>
-          <tfoot>
-            <tr><td colspan="3" class="text-end fw-semibold">Order Total:</td>
-                <td colspan="2" id="orderTotal" class="fw-bold text-cc">₹0.00</td></tr>
-          </tfoot>
-        </table>
-
-        <div id="orderErr" class="alert alert-danger d-none small py-2"></div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" id="orderSaveBtn" class="btn btn-cc">
-          <span id="orderSpinner" class="spinner-border spinner-sm d-none me-1"></span>
-          Create Order
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Complete Order Modal -->
-<div class="modal fade" id="completeModal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header"><h5 class="modal-title">Complete Order & Record Payment</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <input type="hidden" id="c_orderId">
-        <p>Order Total: <strong id="c_total"></strong></p>
-        <div class="mb-3">
-          <label class="form-label">Payment Method</label>
-          <select id="c_pay" class="form-select">
+      <div class="modal-body" id="orderDetailBody">Loading…</div>
+      <div class="modal-footer" id="orderDetailFooter">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <div id="completeSection" class="d-flex gap-2 d-none">
+          <select id="completePayMethod" class="form-select form-select-sm" style="width:140px">
             <option value="cash">Cash</option>
             <option value="card">Card</option>
             <option value="upi">UPI</option>
+            <option value="online">Online</option>
           </select>
+          <button type="button" id="completeOrderBtn" class="btn btn-cc btn-sm">
+            <i class="bi bi-check-circle me-1"></i>Mark Completed
+          </button>
         </div>
-        <div id="completeErr" class="alert alert-danger d-none small py-2"></div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" id="completeSaveBtn" class="btn btn-cc">Mark Completed</button>
+        <button type="button" id="cancelOrderBtn" class="btn btn-danger btn-sm d-none">
+          <i class="bi bi-x-circle me-1"></i>Cancel Order
+        </button>
       </div>
     </div>
   </div>
@@ -191,162 +152,163 @@
 <script src="/js/api.js"></script>
 <script src="/js/utils.js"></script>
 <script>
-let allProducts = [];
-let orderItems  = [];  // [{product, qty}]
-let activeDept  = '';
+let currentOrderId = null;
 
-async function loadProducts() {
-  allProducts = await api.get('/api/products').catch(() => []);
-  populateProductSelect();
+function resetFilters() {
+  ['fDept','fStatus','fPayment','fFrom','fTo'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.tagName === 'SELECT' ? el.value='' : el.value='';
+  });
+  loadOrders();
 }
-
-function populateProductSelect() {
-  const dept = document.getElementById('o_dept').value;
-  const sel  = document.getElementById('o_product');
-  sel.innerHTML = '<option value="">-- Select product --</option>';
-  allProducts
-    .filter(p => p.department === dept)
-    .forEach(p => {
-      sel.insertAdjacentHTML('beforeend',
-        `<option value="${p.id}" data-price="${p.price}" data-name="${escHtml(p.name)}">${escHtml(p.name)} – ₹${p.price}</option>`);
-    });
-}
-
-function renderItems() {
-  const tbody = document.querySelector('#itemsTable tbody');
-  let total   = 0;
-  if (!orderItems.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="text-muted text-center">No items added</td></tr>';
-  } else {
-    tbody.innerHTML = orderItems.map((item, i) => {
-      const lt = item.qty * item.price;
-      total += lt;
-      return `<tr>
-        <td>${escHtml(item.name)}</td>
-        <td>${item.qty}</td>
-        <td>${fmtINR(item.price)}</td>
-        <td>${fmtINR(lt)}</td>
-        <td><button class="btn btn-sm btn-outline-danger btn-remove-item" data-idx="${i}">×</button></td>
-      </tr>`;
-    }).join('');
-    document.querySelectorAll('.btn-remove-item').forEach(b => {
-      b.addEventListener('click', () => { orderItems.splice(b.dataset.idx, 1); renderItems(); });
-    });
-  }
-  document.getElementById('orderTotal').textContent = fmtINR(total);
-}
-
-document.getElementById('o_dept').addEventListener('change', populateProductSelect);
-
-document.getElementById('addItemBtn').addEventListener('click', () => {
-  const sel = document.getElementById('o_product');
-  const opt = sel.options[sel.selectedIndex];
-  if (!opt.value) return;
-  const qty  = parseInt(document.getElementById('o_qty').value) || 1;
-  const existing = orderItems.find(x => x.id == opt.value);
-  if (existing) { existing.qty += qty; }
-  else { orderItems.push({ id: opt.value, name: opt.dataset.name, price: parseFloat(opt.dataset.price), qty }); }
-  renderItems();
-});
 
 async function loadOrders() {
-  const date   = document.getElementById('dateFilter').value;
-  const status = document.getElementById('statusFilter').value;
+  const tbody = document.querySelector('#ordersTable tbody');
+  tbody.innerHTML = `<tr><td colspan="11" class="text-center py-4"><span class="spinner-border spinner-sm"></span></td></tr>`;
+  const dept    = document.getElementById('fDept').value;
+  const status  = document.getElementById('fStatus').value;
+  const payment = document.getElementById('fPayment').value;
+  const from    = document.getElementById('fFrom').value;
+  const to      = document.getElementById('fTo').value;
   let url = '/api/orders?';
-  if (activeDept) url += 'dept=' + activeDept + '&';
-  if (date)   url += 'date='   + date   + '&';
-  if (status) url += 'status=' + status;
+  if (dept)    url += `&dept=${dept}`;
+  if (status)  url += `&status=${status}`;
+  if (payment) url += `&payment_method=${payment}`;
+  if (from)    url += `&from=${from}`;
+  if (to)      url += `&to=${to}`;
 
-  const rows  = await api.get(url).catch(() => []);
-  const tbody = document.querySelector('#orderTable tbody');
-  if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No orders found</td></tr>';
-    return;
+  try {
+    const rows = await api.get(url);
+    // Update KPIs
+    const today = new Date().toISOString().slice(0,10);
+    document.getElementById('k-total').textContent     = rows.filter(r => r.created_at?.slice(0,10) === today).length;
+    document.getElementById('k-open').textContent      = rows.filter(r => r.status === 'open').length;
+    document.getElementById('k-completed').textContent = rows.filter(r => r.status === 'completed').length;
+    document.getElementById('k-shop').textContent      = rows.filter(r => r.department === 'shop').length;
+    document.getElementById('k-bar').textContent       = rows.filter(r => r.department === 'bar').length;
+
+    if (!rows.length) {
+      tbody.innerHTML = `<tr><td colspan="11" class="text-center py-5 text-muted"><i class="bi bi-bag-x fs-2 d-block mb-2"></i>No orders found</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = rows.map(o => {
+      const deptIcon  = o.department === 'shop' ? '🛍️' : '🍹';
+      const statClass = `order-status-${o.status}`;
+      return `<tr>
+        <td><code class="small">${escHtml(o.order_code)}</code></td>
+        <td><span class="badge rounded-pill" style="background:${o.department==='shop'?'rgba(52,152,219,.2)':'rgba(230,126,34,.2)'}; color:${o.department==='shop'?'#3498db':'#e67e22'}">${deptIcon} ${o.department.charAt(0).toUpperCase()+o.department.slice(1)}</span></td>
+        <td class="small">
+          ${o.member_name ? `<div class="fw-semibold">${escHtml(o.member_name)}</div><div class="text-muted">${escHtml(o.member_email||'')}</div>` : '<span class="text-muted">Guest</span>'}
+          ${o.table_no ? `<span class="badge bg-secondary">Table ${o.table_no}</span>` : ''}
+        </td>
+        <td>—</td>
+        <td class="small">${fmtINR(o.subtotal)}</td>
+        <td class="small">${o.discount_pct > 0 ? `<span class="badge bg-success bg-opacity-20 text-success">-${o.discount_pct}%</span>` : '—'}</td>
+        <td class="fw-semibold text-cc">${fmtINR(o.total)}</td>
+        <td><span class="badge rounded-pill ${statClass}">${o.status}</span></td>
+        <td class="small">${o.payment_method ? `<span class="badge bg-success bg-opacity-10 text-success">${o.payment_method}</span>` : '<span class="text-muted">—</span>'}</td>
+        <td class="small text-muted">${o.created_at ? new Date(o.created_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}) : '—'}</td>
+        <td>
+          <button class="btn btn-sm btn-outline-primary" onclick="showOrderDetail(${o.id})"><i class="bi bi-eye"></i></button>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="11" class="text-center py-4 text-danger">${escHtml(e.message)}</td></tr>`;
   }
-  tbody.innerHTML = rows.map(o => `
-    <tr>
-      <td><code>${escHtml(o.order_code)}</code></td>
-      <td><span class="badge bg-secondary text-capitalize">${escHtml(o.department)}</span></td>
-      <td>${escHtml(o.channel)}</td>
-      <td>${escHtml(o.member_name || o.guest_name || 'Walk-in')}</td>
-      <td>${fmtINR(o.total)}</td>
-      <td>${statusBadge(o.status)}</td>
-      <td>${o.status === 'open' ? `
-        <button class="btn btn-sm btn-cc btn-complete" data-id="${o.id}" data-total="${o.total}">Complete</button>
-        <button class="btn btn-sm btn-outline-danger ms-1 btn-cancel-order" data-id="${o.id}">Cancel</button>` : ''
-      }</td>
-    </tr>`).join('');
-
-  document.querySelectorAll('.btn-complete').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.getElementById('c_orderId').value = btn.dataset.id;
-      document.getElementById('c_total').textContent = fmtINR(btn.dataset.total);
-      new bootstrap.Modal(document.getElementById('completeModal')).show();
-    });
-  });
-  document.querySelectorAll('.btn-cancel-order').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      if (!confirm('Cancel this order?')) return;
-      try { await api.post(`/api/orders/${btn.dataset.id}/cancel`); showAlert('Order cancelled'); loadOrders(); }
-      catch(e) { showAlert(e.message, 'danger'); }
-    });
-  });
 }
 
-document.getElementById('completeSaveBtn').addEventListener('click', async () => {
-  const id  = document.getElementById('c_orderId').value;
-  const err = document.getElementById('completeErr');
-  err.classList.add('d-none');
+async function showOrderDetail(id) {
+  currentOrderId = id;
+  const body = document.getElementById('orderDetailBody');
+  body.innerHTML = '<div class="text-center py-4"><span class="spinner-border"></span></div>';
+  document.getElementById('completeSection').classList.add('d-none');
+  document.getElementById('cancelOrderBtn').classList.add('d-none');
+  new bootstrap.Modal(document.getElementById('orderDetailModal')).show();
   try {
-    await api.post(`/api/orders/${id}/complete`, { payment_method: document.getElementById('c_pay').value });
-    bootstrap.Modal.getInstance(document.getElementById('completeModal')).hide();
+    const o = await api.get(`/api/orders/${id}`);
+    const deptIcon = o.department === 'shop' ? '🛍️' : '🍹';
+    body.innerHTML = `
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <div class="small text-muted">Order Code</div>
+          <div class="fw-bold">${escHtml(o.order_code)}</div>
+        </div>
+        <div class="col-md-3">
+          <div class="small text-muted">Department</div>
+          <div>${deptIcon} ${o.department.charAt(0).toUpperCase()+o.department.slice(1)}</div>
+        </div>
+        <div class="col-md-3">
+          <div class="small text-muted">Status</div>
+          <span class="badge order-status-${o.status}">${o.status}</span>
+        </div>
+        ${o.member_name ? `<div class="col-md-6"><div class="small text-muted">Member</div><div class="fw-semibold">${escHtml(o.member_name)}</div><div class="small text-muted">${escHtml(o.member_email||'')} · ${escHtml(o.member_phone||'')}</div></div>` : ''}
+        ${o.table_no ? `<div class="col-md-3"><div class="small text-muted">Table</div><div class="fw-bold">${escHtml(o.table_no)}</div></div>` : ''}
+        ${o.discount_pct > 0 ? `<div class="col-12"><div class="alert alert-success py-2 small">Member discount applied: ${o.discount_pct}% off — saved ${fmtINR(o.discount_amount)}</div></div>` : ''}
+      </div>
+      <h6 class="fw-semibold mb-2"><i class="bi bi-list-ul me-2"></i>Items</h6>
+      <div class="table-responsive">
+        <table class="table table-sm mb-3">
+          <thead><tr><th>Product</th><th>Variant</th><th>Qty</th><th>Unit Price</th><th>Total</th></tr></thead>
+          <tbody>
+            ${(o.items||[]).map(i => `<tr>
+              <td>${escHtml(i.product_name)}<br><span class="text-muted small">${escHtml(i.sku||'')}</span></td>
+              <td>${i.variant_name ? `<span class="badge bg-secondary">${escHtml(i.variant_name)}</span>` : '—'}</td>
+              <td>${i.quantity}</td>
+              <td>${fmtINR(i.unit_price)}</td>
+              <td class="fw-semibold">${fmtINR(i.line_total)}</td>
+            </tr>`).join('') || '<tr><td colspan="5" class="text-muted">No items</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+      <div class="d-flex justify-content-end">
+        <table class="table table-sm w-auto">
+          <tr><td class="text-muted pe-4">Subtotal</td><td class="text-end">${fmtINR(o.subtotal)}</td></tr>
+          ${o.discount_amount > 0 ? `<tr><td class="text-success pe-4">Discount (${o.discount_pct}%)</td><td class="text-end text-success">-${fmtINR(o.discount_amount)}</td></tr>` : ''}
+          <tr class="border-top"><td class="fw-bold pe-4">Total</td><td class="fw-bold text-cc fs-5 text-end">${fmtINR(o.total)}</td></tr>
+        </table>
+      </div>`;
+
+    if (o.status === 'open') {
+      document.getElementById('completeSection').classList.remove('d-none');
+      document.getElementById('cancelOrderBtn').classList.remove('d-none');
+      document.getElementById('completeOrderBtn').dataset.id = id;
+      document.getElementById('cancelOrderBtn').dataset.id = id;
+    }
+  } catch(e) { body.innerHTML = `<div class="alert alert-danger">${escHtml(e.message)}</div>`; }
+}
+
+document.getElementById('completeOrderBtn').addEventListener('click', async function() {
+  const id  = this.dataset.id;
+  const pay = document.getElementById('completePayMethod').value;
+  try {
+    await api.post(`/api/orders/${id}/complete`, { payment_method: pay });
+    bootstrap.Modal.getInstance(document.getElementById('orderDetailModal')).hide();
     showAlert('Order completed & payment recorded!');
     loadOrders();
-  } catch(e) { err.textContent = e.message; err.classList.remove('d-none'); }
+  } catch(e) { showAlert(e.message, 'danger'); }
 });
 
-document.getElementById('orderSaveBtn').addEventListener('click', async () => {
-  const btn = document.getElementById('orderSaveBtn');
-  const sp  = document.getElementById('orderSpinner');
-  const err = document.getElementById('orderErr');
-  err.classList.add('d-none');
-  if (!orderItems.length) { err.textContent='Add at least one item'; err.classList.remove('d-none'); return; }
-  btn.disabled=true; sp.classList.remove('d-none');
+document.getElementById('cancelOrderBtn').addEventListener('click', async function() {
+  if (!confirm('Cancel this order? Stock will be restored.')) return;
   try {
-    await api.post('/api/orders', {
-      department:  document.getElementById('o_dept').value,
-      channel:     document.getElementById('o_channel').value,
-      table_no:    document.getElementById('o_table').value.trim() || undefined,
-      member_code: document.getElementById('o_member').value.trim() || undefined,
-      items: orderItems.map(i => ({ product_id: i.id, quantity: i.qty }))
-    });
-    bootstrap.Modal.getInstance(document.getElementById('newOrderModal')).hide();
-    orderItems = []; renderItems();
-    showAlert('Order created!');
+    await api.post(`/api/orders/${this.dataset.id}/cancel`);
+    bootstrap.Modal.getInstance(document.getElementById('orderDetailModal')).hide();
+    showAlert('Order cancelled, stock restored.', 'warning');
     loadOrders();
-  } catch(e) { err.textContent=e.message; err.classList.remove('d-none'); }
-  finally { btn.disabled=false; sp.classList.add('d-none'); }
-});
-
-// Dept tab switching
-document.querySelectorAll('#deptTabs button').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('#deptTabs button').forEach(t=>t.classList.remove('active'));
-    tab.classList.add('active');
-    activeDept = tab.dataset.dept;
-    loadOrders();
-  });
+  } catch(e) { showAlert(e.message, 'danger'); }
 });
 
 (async () => {
   const user = await loadSession();
-  if (!user) return;
+  if (!user || user.role !== 'owner') { window.location.href='/shared/login.html'; return; }
   document.getElementById('userNameSidebar').textContent = user.full_name;
-  document.getElementById('dateFilter').value = new Date().toISOString().slice(0,10);
-  await loadProducts();
-  renderItems();
-  await loadOrders();
-  document.getElementById('filterBtn').addEventListener('click', loadOrders);
+  // Set default date range (today)
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('fFrom').value = today;
+  document.getElementById('fTo').value   = today;
+  loadOrders();
   document.getElementById('logoutBtn').addEventListener('click', async () => {
     await api.post('/api/auth/logout');
     window.location.href = '/shared/login.html';

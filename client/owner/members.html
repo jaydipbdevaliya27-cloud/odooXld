@@ -3,29 +3,38 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Members – Champions Club</title>
+  <title>Members – Champions Club Admin</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="/css/main.css">
+  <style>
+    .expiry-critical { background: linear-gradient(90deg,rgba(220,53,69,.08),transparent) !important; }
+    .expiry-warning  { background: linear-gradient(90deg,rgba(255,193,7,.07),transparent) !important; }
+    .member-avatar { width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#2ecc71,#27ae60);
+      display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.9rem;flex-shrink:0; }
+    .kpi-strip { display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.2rem; }
+    .kpi-mini  { background:var(--cc-card);border-radius:12px;padding:.8rem 1.2rem;flex:1;min-width:120px;
+      border:1px solid rgba(255,255,255,.06); }
+    .kpi-mini .val { font-size:1.6rem;font-weight:700;color:var(--cc-green); }
+    .kpi-mini .lbl { font-size:.72rem;color:#888;text-transform:uppercase;letter-spacing:.04em; }
+  </style>
 </head>
 <body>
 <div class="cc-wrapper">
-  <!-- Sidebar (same as dashboard) -->
+  <!-- Sidebar -->
   <nav class="cc-sidebar d-flex flex-column">
     <div class="brand"><i class="bi bi-trophy-fill me-2 text-warning"></i>Champions Club</div>
     <ul class="nav flex-column mt-2 flex-grow-1">
-      <li><a href="/owner/dashboard.html" class="nav-link"><i class="bi bi-speedometer2"></i>Dashboard</a></li>
-      <li><a href="/owner/staff.html"     class="nav-link"><i class="bi bi-person-badge"></i>Staff Management</a></li>
-      <li><a href="/owner/members.html"   class="nav-link active"><i class="bi bi-people"></i>Members</a></li>
-      <li><a href="/owner/bookings.html"  class="nav-link"><i class="bi bi-calendar-check"></i>Bookings</a></li>
-      <li><a href="/owner/orders.html"    class="nav-link"><i class="bi bi-bag"></i>Orders</a></li>
-      <li><a href="/owner/products.html"  class="nav-link"><i class="bi bi-box-seam"></i>Products</a></li>
-      <li><a href="/owner/payments.html"  class="nav-link"><i class="bi bi-credit-card"></i>Payments</a></li>
-      <li><a href="/owner/leads.html"     class="nav-link"><i class="bi bi-person-plus"></i>Leads</a></li>
-      <li><a href="/owner/plans.html"     class="nav-link"><i class="bi bi-stars"></i>Plans</a></li>
-      <li><a href="/owner/courts.html"    class="nav-link"><i class="bi bi-geo-alt"></i>Courts</a></li>
+      <li><a href="/owner/dashboard.html"  class="nav-link"><i class="bi bi-speedometer2"></i>Dashboard</a></li>
+      <li><a href="/owner/staff.html"      class="nav-link"><i class="bi bi-person-badge"></i>Staff</a></li>
+      <li><a href="/owner/members.html"    class="nav-link active"><i class="bi bi-people"></i>Members</a></li>
+      <li><a href="/owner/bookings.html"   class="nav-link"><i class="bi bi-calendar-check"></i>Bookings</a></li>
+      <li><a href="/owner/orders.html"     class="nav-link"><i class="bi bi-bag"></i>Orders</a></li>
+      <li><a href="/owner/products.html"   class="nav-link"><i class="bi bi-box-seam"></i>Products</a></li>
+      <li><a href="/owner/payments.html"   class="nav-link"><i class="bi bi-credit-card"></i>Payments</a></li>
+      <li><a href="/owner/plans.html"      class="nav-link"><i class="bi bi-stars"></i>Plans</a></li>
     </ul>
-    <div class="p-3">
+    <div class="p-3 border-top" style="border-color:rgba(255,255,255,.08)!important">
       <span id="userNameSidebar" class="small text-muted d-block mb-2"></span>
       <button id="logoutBtn" class="btn btn-sm btn-outline-light w-100"><i class="bi bi-box-arrow-right me-1"></i>Logout</button>
     </div>
@@ -40,47 +49,88 @@
     </div>
 
     <main class="cc-main">
+
+      <!-- KPI Strip -->
+      <div class="kpi-strip" id="memberKPIs">
+        <div class="kpi-mini"><div class="val" id="k-total">—</div><div class="lbl">Total Members</div></div>
+        <div class="kpi-mini"><div class="val text-success" id="k-active">—</div><div class="lbl">Active</div></div>
+        <div class="kpi-mini"><div class="val text-danger" id="k-expired">—</div><div class="lbl">Expired</div></div>
+        <div class="kpi-mini"><div class="val text-warning" id="k-expiring">—</div><div class="lbl">Expiring (30d)</div></div>
+        <div class="kpi-mini"><div class="val text-info" id="k-suspended">—</div><div class="lbl">Suspended</div></div>
+      </div>
+
       <!-- Filters -->
       <div class="cc-card mb-3">
         <div class="row g-2 align-items-end">
-          <div class="col-md-5">
-            <label class="form-label small fw-semibold">Search</label>
-            <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Name, email, code…">
-          </div>
           <div class="col-md-3">
+            <label class="form-label small fw-semibold">Search</label>
+            <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Name, email, phone, code…">
+          </div>
+          <div class="col-md-2">
             <label class="form-label small fw-semibold">Status</label>
             <select id="statusFilter" class="form-select form-select-sm">
-              <option value="">All</option>
+              <option value="">All Status</option>
               <option value="active">Active</option>
               <option value="expired">Expired</option>
               <option value="suspended">Suspended</option>
             </select>
           </div>
           <div class="col-md-2">
-            <button id="filterBtn" class="btn btn-cc btn-sm w-100">Filter</button>
+            <label class="form-label small fw-semibold">Plan</label>
+            <select id="planFilter" class="form-select form-select-sm"><option value="">All Plans</option></select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small fw-semibold">Expiring In</label>
+            <select id="expiringFilter" class="form-select form-select-sm">
+              <option value="">Any</option>
+              <option value="7">Next 7 Days</option>
+              <option value="15">Next 15 Days</option>
+              <option value="30">Next 30 Days</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <button id="filterBtn" class="btn btn-cc btn-sm w-100"><i class="bi bi-funnel me-1"></i>Filter</button>
+          </div>
+          <div class="col-md-1">
+            <button id="resetBtn" class="btn btn-outline-secondary btn-sm w-100">Reset</button>
           </div>
         </div>
       </div>
 
       <!-- Table -->
       <div class="cc-card">
+        <div class="cc-card-header">
+          <h6 class="mb-0">Members <span id="memberCount" class="badge bg-secondary ms-2">0</span></h6>
+          <span class="text-muted small" id="legendNote">
+            <span class="badge bg-danger me-1">≤7d</span> Critical &nbsp;
+            <span class="badge bg-warning text-dark me-1">≤30d</span> Expiring Soon
+          </span>
+        </div>
         <div class="table-responsive">
           <table class="table table-hover mb-0" id="membersTable">
             <thead>
               <tr>
-                <th>Code</th><th>Name</th><th>Plan</th>
-                <th>Status</th><th>Expiry</th><th>Actions</th>
+                <th>Member</th>
+                <th>Contact</th>
+                <th>Plan</th>
+                <th>Discounts</th>
+                <th>Status</th>
+                <th>Joined</th>
+                <th>Expiry</th>
+                <th>Days Left</th>
+                <th>Actions</th>
               </tr>
             </thead>
-            <tbody><tr><td colspan="6" class="text-center py-4 text-muted">Loading…</td></tr></tbody>
+            <tbody><tr><td colspan="9" class="text-center py-4 text-muted"><i class="bi bi-hourglass-split me-2"></i>Loading…</td></tr></tbody>
           </table>
         </div>
+        <div class="d-flex justify-content-between align-items-center p-3" id="pagination"></div>
       </div>
     </main>
   </div>
 </div>
 
-<!-- ── Enroll Modal ───────────────────────────────────────────────────────── -->
+<!-- ── Enroll Modal ─────────────────────────────────────────────────────────── -->
 <div class="modal fade" id="enrollModal" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
@@ -93,25 +143,29 @@
           <div class="row g-3">
             <div class="col-md-6">
               <label class="form-label">Full Name *</label>
-              <input type="text" id="e_name" class="form-control" required>
+              <input type="text" id="e_name" class="form-control" required placeholder="John Smith">
             </div>
             <div class="col-md-6">
               <label class="form-label">Email *</label>
-              <input type="email" id="e_email" class="form-control" required>
+              <input type="email" id="e_email" class="form-control" required placeholder="john@example.com">
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
               <label class="form-label">Phone</label>
-              <input type="tel" id="e_phone" class="form-control">
+              <input type="tel" id="e_phone" class="form-control" placeholder="+91 98765 43210">
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
               <label class="form-label">Date of Birth</label>
               <input type="date" id="e_dob" class="form-control">
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
+              <label class="form-label">Login Password</label>
+              <input type="text" id="e_password" class="form-control" placeholder="Champions@123">
+            </div>
+            <div class="col-md-4">
               <label class="form-label">Plan *</label>
               <select id="e_plan" class="form-select" required></select>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
               <label class="form-label">Payment Method *</label>
               <select id="e_pay_method" class="form-select" required>
                 <option value="cash">Cash</option>
@@ -120,13 +174,13 @@
                 <option value="online">Online</option>
               </select>
             </div>
-            <div class="col-md-6">
-              <label class="form-label">Password (for login)</label>
-              <input type="text" id="e_password" class="form-control" placeholder="Champions@123">
-            </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
               <label class="form-label">Emergency Contact</label>
-              <input type="text" id="e_emg" class="form-control" placeholder="Name – Phone">
+              <input type="text" id="e_emg_name" class="form-control" placeholder="Name">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Emergency Phone</label>
+              <input type="tel" id="e_emg_phone" class="form-control" placeholder="+91 …">
             </div>
           </div>
           <div id="enrollErr" class="alert alert-danger mt-3 d-none small py-2"></div>
@@ -143,20 +197,40 @@
   </div>
 </div>
 
+<!-- ── View / Edit Modal ───────────────────────────────────────────────────── -->
+<div class="modal fade" id="viewModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-person-badge me-2 text-cc"></i>Member Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="viewModalBody">Loading…</div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" id="suspendBtn" class="btn btn-warning btn-sm">Suspend</button>
+        <button type="button" id="activateBtn" class="btn btn-success btn-sm">Activate</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ── Renew Modal ────────────────────────────────────────────────────────── -->
 <div class="modal fade" id="renewModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Renew Membership</h5>
+        <h5 class="modal-title"><i class="bi bi-arrow-clockwise me-2 text-cc"></i>Renew Membership</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="r_memberId">
+        <p class="text-muted small" id="r_memberName"></p>
         <div class="mb-3">
           <label class="form-label">Plan</label>
           <select id="r_plan" class="form-select"></select>
         </div>
+        <div id="r_planDetails" class="alert alert-info py-2 small d-none"></div>
         <div class="mb-3">
           <label class="form-label">Payment Method</label>
           <select id="r_pay" class="form-select">
@@ -170,7 +244,10 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" id="renewSaveBtn" class="btn btn-cc">Renew</button>
+        <button type="button" id="renewSaveBtn" class="btn btn-cc">
+          <span id="renewSpinner" class="spinner-border spinner-sm d-none me-1"></span>
+          Renew Membership
+        </button>
       </div>
     </div>
   </div>
@@ -181,115 +258,299 @@
 <script src="/js/api.js"></script>
 <script src="/js/utils.js"></script>
 <script>
-let plans = [];
+let plans = [], allMembers = [], currentPage = 1;
 
-async function loadPlans() {
-  plans = await api.get('/api/plans?all=1');
-  const opts = plans.map(p => ({ value: p.id, label: `${p.name} (₹${Number(p.annual_fee).toLocaleString('en-IN')})` }));
-  fillSelect(document.getElementById('e_plan'), opts, '-- Select Plan --');
-  fillSelect(document.getElementById('r_plan'), opts, '-- Select Plan --');
+const sportEmoji = { tennis:'🎾', cricket:'🏏', badminton:'🏸', pickleball:'🏓' };
+
+function initials(name) {
+  if (!name) return '?';
+  return name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
 }
 
-async function loadMembers() {
-  const search   = document.getElementById('searchInput').value.trim();
-  const status   = document.getElementById('statusFilter').value;
-  let url = '/api/members?page=1';
-  if (search) url += '&search=' + encodeURIComponent(search);
-  if (status) url += '&status=' + status;
+function daysLeftBadge(days) {
+  if (days === null || days === undefined) return '<span class="badge bg-secondary">—</span>';
+  if (days < 0)  return `<span class="badge bg-danger">Expired ${Math.abs(days)}d ago</span>`;
+  if (days <= 7)  return `<span class="badge bg-danger">${days}d left</span>`;
+  if (days <= 30) return `<span class="badge bg-warning text-dark">${days}d left</span>`;
+  return `<span class="badge bg-success">${days}d left</span>`;
+}
 
-  const data = await api.get(url).catch(() => []);
+function rowClass(m) {
+  if (!m.days_left && m.days_left !== 0) return '';
+  if (m.days_left <= 7 && m.status === 'active')  return 'expiry-critical';
+  if (m.days_left <= 30 && m.status === 'active') return 'expiry-warning';
+  return '';
+}
+
+async function loadPlans() {
+  try {
+    plans = await api.get('/api/plans');
+    const opts = plans.map(p => ({ value: p.id, label: `${p.name} — ₹${Number(p.annual_fee).toLocaleString('en-IN')}` }));
+    fillSelect(document.getElementById('e_plan'), opts, '-- Select Plan --');
+    fillSelect(document.getElementById('r_plan'), opts, '-- Same Plan --');
+    const pf = document.getElementById('planFilter');
+    plans.forEach(p => { const o = document.createElement('option'); o.value=p.id; o.textContent=p.name; pf.append(o); });
+  } catch(e) {}
+}
+
+async function loadMembers(page = 1) {
+  currentPage = page;
+  const search  = document.getElementById('searchInput').value.trim();
+  const status  = document.getElementById('statusFilter').value;
+  const plan_id = document.getElementById('planFilter').value;
+  const expiring = document.getElementById('expiringFilter').value;
+
+  let url = `/api/members?page=${page}&limit=20`;
+  if (search)  url += `&search=${encodeURIComponent(search)}`;
+  if (status)  url += `&status=${status}`;
+  if (plan_id) url += `&plan_id=${plan_id}`;
+  if (expiring)url += `&expiring_days=${expiring}`;
+
   const tbody = document.querySelector('#membersTable tbody');
+  tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-muted"><span class="spinner-border spinner-sm me-2"></span>Loading…</td></tr>`;
 
-  if (!data.members || !data.members.length) {
-    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">No members found</td></tr>';
-    return;
-  }
-  tbody.innerHTML = data.members.map(m => `
-    <tr>
-      <td><code>${escHtml(m.member_code)}</code></td>
-      <td>${escHtml(m.full_name)}<br><small class="text-muted">${escHtml(m.email)}</small></td>
-      <td>${escHtml(m.plan_name || '—')}</td>
-      <td>${statusBadge(m.status)}</td>
-      <td>${fmtDate(m.expiry_date)}</td>
-      <td>
-        <button class="btn btn-sm btn-outline-primary me-1 btn-renew"
-                data-id="${m.id}" data-plan="${m.plan_id}">Renew</button>
-      </td>
-    </tr>`).join('');
+  try {
+    const data = await api.get(url);
+    allMembers = data.members || [];
+    document.getElementById('memberCount').textContent = data.total;
 
-  // Bind renew buttons
-  document.querySelectorAll('.btn-renew').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.getElementById('r_memberId').value = btn.dataset.id;
-      document.getElementById('r_plan').value     = btn.dataset.plan || '';
-      new bootstrap.Modal(document.getElementById('renewModal')).show();
+    if (!allMembers.length) {
+      tbody.innerHTML = `<tr><td colspan="9" class="text-center py-5 text-muted"><i class="bi bi-people fs-2 d-block mb-2"></i>No members found</td></tr>`;
+      document.getElementById('pagination').innerHTML = '';
+      return;
+    }
+
+    tbody.innerHTML = allMembers.map(m => `
+      <tr class="${rowClass(m)}">
+        <td>
+          <div class="d-flex align-items-center gap-2">
+            <div class="member-avatar">${escHtml(initials(m.full_name))}</div>
+            <div>
+              <div class="fw-semibold">${escHtml(m.full_name)}</div>
+              <code class="small text-muted">${escHtml(m.member_code)}</code>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="small">${escHtml(m.email || '—')}</div>
+          <div class="small text-muted">${escHtml(m.phone || '—')}</div>
+        </td>
+        <td><span class="badge" style="background:rgba(46,204,113,.2);color:#2ecc71">${escHtml(m.plan_name)}</span></td>
+        <td class="small">
+          🎾 ${m.court_discount_pct}% &nbsp;
+          🛍️ ${m.shop_discount_pct}% &nbsp;
+          🍹 ${m.bar_discount_pct}%
+        </td>
+        <td>${statusBadge(m.status)}</td>
+        <td class="small">${fmtDate(m.join_date)}</td>
+        <td class="small">${fmtDate(m.expiry_date)}</td>
+        <td>${daysLeftBadge(m.days_left)}</td>
+        <td>
+          <div class="d-flex gap-1">
+            <button class="btn btn-sm btn-outline-primary btn-view" data-id="${m.id}" title="View"><i class="bi bi-eye"></i></button>
+            <button class="btn btn-sm btn-cc btn-renew" data-id="${m.id}" data-name="${escHtml(m.full_name)}" data-plan="${m.plan_id}" title="Renew"><i class="bi bi-arrow-clockwise"></i></button>
+          </div>
+        </td>
+      </tr>`).join('');
+
+    // Pagination
+    const pages = data.pages || 1;
+    document.getElementById('pagination').innerHTML = pages > 1 ? `
+      <span class="text-muted small">Page ${page} of ${pages}</span>
+      <div class="d-flex gap-1">
+        ${page > 1 ? `<button class="btn btn-sm btn-outline-secondary" onclick="loadMembers(${page-1})"><i class="bi bi-chevron-left"></i></button>` : ''}
+        ${page < pages ? `<button class="btn btn-sm btn-cc" onclick="loadMembers(${page+1})"><i class="bi bi-chevron-right"></i></button>` : ''}
+      </div>` : '';
+
+    // Bind view
+    document.querySelectorAll('.btn-view').forEach(btn => {
+      btn.addEventListener('click', () => openViewModal(btn.dataset.id));
     });
-  });
+    // Bind renew
+    document.querySelectorAll('.btn-renew').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById('r_memberId').value = btn.dataset.id;
+        document.getElementById('r_memberName').textContent = `Renewing: ${btn.dataset.name}`;
+        const sel = document.getElementById('r_plan');
+        sel.value = btn.dataset.plan;
+        showPlanDetails(btn.dataset.plan);
+        new bootstrap.Modal(document.getElementById('renewModal')).show();
+      });
+    });
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-danger"><i class="bi bi-exclamation-circle me-2"></i>${escHtml(e.message)}</td></tr>`;
+  }
+}
+
+async function loadKPIs() {
+  try {
+    // Active
+    const a = await api.get('/api/members?status=active&limit=1');
+    document.getElementById('k-active').textContent = a.total;
+    const e = await api.get('/api/members?status=expired&limit=1');
+    document.getElementById('k-expired').textContent = e.total;
+    const s = await api.get('/api/members?status=suspended&limit=1');
+    document.getElementById('k-suspended').textContent = s.total;
+    const ex = await api.get('/api/members?expiring_days=30&limit=1');
+    document.getElementById('k-expiring').textContent = ex.total;
+    const total = (a.total||0) + (e.total||0) + (s.total||0);
+    document.getElementById('k-total').textContent = total;
+  } catch(e) {}
+}
+
+function showPlanDetails(planId) {
+  const p = plans.find(x => String(x.id) === String(planId));
+  const el = document.getElementById('r_planDetails');
+  if (p) {
+    el.classList.remove('d-none');
+    el.innerHTML = `<strong>${escHtml(p.name)}</strong> — ₹${Number(p.annual_fee).toLocaleString('en-IN')} for ${p.duration_months} months`;
+  } else el.classList.add('d-none');
+}
+
+let currentMemberId = null;
+async function openViewModal(id) {
+  currentMemberId = id;
+  const body = document.getElementById('viewModalBody');
+  body.innerHTML = '<div class="text-center py-4"><span class="spinner-border"></span></div>';
+  new bootstrap.Modal(document.getElementById('viewModal')).show();
+  try {
+    const m = await api.get(`/api/members/${id}`);
+    body.innerHTML = `
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="member-avatar" style="width:56px;height:56px;font-size:1.4rem">${escHtml(initials(m.full_name))}</div>
+            <div>
+              <h6 class="mb-0">${escHtml(m.full_name)}</h6>
+              <code class="text-muted">${escHtml(m.member_code)}</code>
+            </div>
+          </div>
+          <table class="table table-sm table-borderless">
+            <tr><th class="text-muted" style="width:120px">Email</th><td>${escHtml(m.email||'—')}</td></tr>
+            <tr><th class="text-muted">Phone</th><td>${escHtml(m.phone||'—')}</td></tr>
+            <tr><th class="text-muted">Status</th><td>${statusBadge(m.status)}</td></tr>
+            <tr><th class="text-muted">Joined</th><td>${fmtDate(m.join_date)}</td></tr>
+            <tr><th class="text-muted">Expiry</th><td>${fmtDate(m.expiry_date)} ${daysLeftBadge(m.days_left)}</td></tr>
+            <tr><th class="text-muted">Emergency</th><td>${escHtml(m.emergency_contact_name||'—')} ${m.emergency_contact_phone ? '· '+escHtml(m.emergency_contact_phone) : ''}</td></tr>
+          </table>
+        </div>
+        <div class="col-md-6">
+          <div class="cc-card p-3" style="background:rgba(46,204,113,.06);border:1px solid rgba(46,204,113,.15)">
+            <h6 class="text-cc mb-3"><i class="bi bi-stars me-2"></i>Plan: ${escHtml(m.plan_name)}</h6>
+            <div class="row g-2 text-center">
+              <div class="col-4">
+                <div class="fw-bold text-cc fs-5">₹${Number(m.annual_fee||0).toLocaleString('en-IN')}</div>
+                <div class="small text-muted">Annual Fee</div>
+              </div>
+              <div class="col-4">
+                <div class="fw-bold text-warning fs-5">${m.court_discount_pct}%</div>
+                <div class="small text-muted">🎾 Court</div>
+              </div>
+              <div class="col-4">
+                <div class="fw-bold text-info fs-5">${m.shop_discount_pct}%</div>
+                <div class="small text-muted">🛍️ Shop</div>
+              </div>
+              <div class="col-4">
+                <div class="fw-bold text-danger fs-5">${m.bar_discount_pct}%</div>
+                <div class="small text-muted">🍹 Bar</div>
+              </div>
+            </div>
+          </div>
+          ${m.notes ? `<div class="mt-3 small text-muted"><strong>Notes:</strong> ${escHtml(m.notes)}</div>` : ''}
+        </div>
+      </div>`;
+    document.getElementById('suspendBtn').dataset.memberId = m.id;
+    document.getElementById('activateBtn').dataset.memberId = m.id;
+    document.getElementById('suspendBtn').style.display  = m.status === 'active' ? '' : 'none';
+    document.getElementById('activateBtn').style.display = m.status !== 'active' ? '' : 'none';
+  } catch(e) {
+    body.innerHTML = `<div class="alert alert-danger">${escHtml(e.message)}</div>`;
+  }
 }
 
 (async () => {
   const user = await loadSession();
-  if (!user || (user.role !== 'owner' && user.role !== 'staff')) {
-    window.location.href = '/shared/login.html'; return;
-  }
+  if (!user || user.role !== 'owner') { window.location.href='/shared/login.html'; return; }
   document.getElementById('userNameSidebar').textContent = user.full_name;
 
   await loadPlans();
-  await loadMembers();
+  loadKPIs();
+  loadMembers();
 
-  document.getElementById('filterBtn').addEventListener('click', loadMembers);
-  document.getElementById('searchInput').addEventListener('keydown', e => { if (e.key==='Enter') loadMembers(); });
+  document.getElementById('filterBtn').addEventListener('click', () => loadMembers(1));
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    document.getElementById('searchInput').value='';
+    document.getElementById('statusFilter').value='';
+    document.getElementById('planFilter').value='';
+    document.getElementById('expiringFilter').value='';
+    loadMembers(1);
+  });
+  document.getElementById('searchInput').addEventListener('keydown', e => { if(e.key==='Enter') loadMembers(1); });
 
-  // ── Enroll submit ───────────────────────────────────────────────────────
+  // Plan details in renew modal
+  document.getElementById('r_plan').addEventListener('change', function() { showPlanDetails(this.value); });
+
+  // Enroll submit
   document.getElementById('enrollSaveBtn').addEventListener('click', async () => {
     const btn = document.getElementById('enrollSaveBtn');
     const sp  = document.getElementById('enrollSpinner');
     const err = document.getElementById('enrollErr');
     err.classList.add('d-none');
     btn.disabled = true; sp.classList.remove('d-none');
-
-    const emg = document.getElementById('e_emg').value.split('–').map(s => s.trim());
     try {
       await api.post('/api/members', {
         full_name:              document.getElementById('e_name').value.trim(),
         email:                  document.getElementById('e_email').value.trim(),
         phone:                  document.getElementById('e_phone').value.trim() || undefined,
-        date_of_birth:          document.getElementById('e_dob').value  || undefined,
+        date_of_birth:          document.getElementById('e_dob').value || undefined,
         plan_id:                document.getElementById('e_plan').value,
         payment_method:         document.getElementById('e_pay_method').value,
         password:               document.getElementById('e_password').value || 'Champions@123',
-        emergency_contact_name: emg[0] || undefined,
-        emergency_contact_phone:emg[1] || undefined
+        emergency_contact_name: document.getElementById('e_emg_name').value.trim() || undefined,
+        emergency_contact_phone:document.getElementById('e_emg_phone').value.trim() || undefined
       });
       bootstrap.Modal.getInstance(document.getElementById('enrollModal')).hide();
       document.getElementById('enrollForm').reset();
-      showAlert('Member enrolled successfully!');
-      loadMembers();
-    } catch (e) {
-      err.textContent = e.message;
-      err.classList.remove('d-none');
-    } finally {
-      btn.disabled = false; sp.classList.add('d-none');
-    }
+      showAlert('Member enrolled successfully! Payment recorded.');
+      loadKPIs(); loadMembers(1);
+    } catch(e) { err.textContent=e.message; err.classList.remove('d-none'); }
+    finally { btn.disabled=false; sp.classList.add('d-none'); }
   });
 
-  // ── Renew submit ────────────────────────────────────────────────────────
+  // Renew submit
   document.getElementById('renewSaveBtn').addEventListener('click', async () => {
-    const id  = document.getElementById('r_memberId').value;
+    const btn = document.getElementById('renewSaveBtn');
+    const sp  = document.getElementById('renewSpinner');
     const err = document.getElementById('renewErr');
     err.classList.add('d-none');
+    btn.disabled=true; sp.classList.remove('d-none');
     try {
-      await api.post(`/api/members/${id}/renew`, {
-        plan_id:        document.getElementById('r_plan').value,
+      const res = await api.post(`/api/members/${document.getElementById('r_memberId').value}/renew`, {
+        plan_id:        document.getElementById('r_plan').value || undefined,
         payment_method: document.getElementById('r_pay').value
       });
       bootstrap.Modal.getInstance(document.getElementById('renewModal')).hide();
-      showAlert('Membership renewed!');
-      loadMembers();
-    } catch (e) {
-      err.textContent = e.message;
-      err.classList.remove('d-none');
-    }
+      showAlert(`Membership renewed! New expiry: ${fmtDate(res.new_expiry)}`);
+      loadKPIs(); loadMembers(currentPage);
+    } catch(e) { err.textContent=e.message; err.classList.remove('d-none'); }
+    finally { btn.disabled=false; sp.classList.add('d-none'); }
+  });
+
+  // Suspend/Activate
+  document.getElementById('suspendBtn').addEventListener('click', async function() {
+    if (!confirm('Suspend this member?')) return;
+    try {
+      await api.del(`/api/members/${this.dataset.memberId}`);
+      bootstrap.Modal.getInstance(document.getElementById('viewModal')).hide();
+      showAlert('Member suspended.', 'warning'); loadMembers(currentPage);
+    } catch(e) { showAlert(e.message, 'danger'); }
+  });
+  document.getElementById('activateBtn').addEventListener('click', async function() {
+    try {
+      await api.put(`/api/members/${this.dataset.memberId}`, { status: 'active' });
+      bootstrap.Modal.getInstance(document.getElementById('viewModal')).hide();
+      showAlert('Member reactivated!'); loadMembers(currentPage);
+    } catch(e) { showAlert(e.message, 'danger'); }
   });
 
   document.getElementById('logoutBtn').addEventListener('click', async () => {

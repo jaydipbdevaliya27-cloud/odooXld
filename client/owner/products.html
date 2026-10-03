@@ -1,29 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Products – Champions Club</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Products – Champions Club Admin</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="/css/main.css">
+  <style>
+    .stock-bar{height:6px;border-radius:3px;background:rgba(255,255,255,.08);}
+    .stock-fill{height:6px;border-radius:3px;transition:width .5s;}
+    .variant-row{background:rgba(255,255,255,.03);border-radius:8px;padding:.5rem .75rem;margin:.25rem 0;}
+    .variant-row.low{border-left:3px solid #e74c3c;}
+    .variant-row.ok{border-left:3px solid #2ecc71;}
+    .low-stock-badge{animation:pulse 1.5s infinite;}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+    .prod-img-thumb{width:48px;height:48px;border-radius:8px;object-fit:cover;border:1px solid rgba(255,255,255,.08);}
+    .prod-img-placeholder{width:48px;height:48px;border-radius:8px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;color:#555;font-size:1.2rem;}
+    .kpi-strip{display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1rem;}
+    .kpi-mini{background:var(--cc-card);border-radius:12px;padding:.7rem 1rem;flex:1;min-width:100px;border:1px solid rgba(255,255,255,.06);}
+    .kpi-mini .val{font-size:1.5rem;font-weight:700;color:var(--cc-green);}
+    .kpi-mini .lbl{font-size:.7rem;color:#888;text-transform:uppercase;letter-spacing:.04em;}
+  </style>
 </head>
 <body>
 <div class="cc-wrapper">
   <nav class="cc-sidebar d-flex flex-column">
     <div class="brand"><i class="bi bi-trophy-fill me-2 text-warning"></i>Champions Club</div>
     <ul class="nav flex-column mt-2 flex-grow-1">
-      <li><a href="/owner/dashboard.html" class="nav-link"><i class="bi bi-speedometer2"></i>Dashboard</a></li>
-      <li><a href="/owner/staff.html"     class="nav-link"><i class="bi bi-person-badge"></i>Staff Management</a></li>
-      <li><a href="/owner/members.html"   class="nav-link"><i class="bi bi-people"></i>Members</a></li>
-      <li><a href="/owner/bookings.html"  class="nav-link"><i class="bi bi-calendar-check"></i>Bookings</a></li>
-      <li><a href="/owner/orders.html"    class="nav-link"><i class="bi bi-bag"></i>Orders</a></li>
-      <li><a href="/owner/products.html"  class="nav-link active"><i class="bi bi-box-seam"></i>Products</a></li>
-      <li><a href="/owner/payments.html"  class="nav-link"><i class="bi bi-credit-card"></i>Payments</a></li>
-      <li><a href="/owner/leads.html"     class="nav-link"><i class="bi bi-person-plus"></i>Leads</a></li>
-      <li><a href="/owner/plans.html"     class="nav-link"><i class="bi bi-stars"></i>Plans</a></li>
-      <li><a href="/owner/courts.html"    class="nav-link"><i class="bi bi-geo-alt"></i>Courts</a></li>
+      <li><a href="/owner/dashboard.html"  class="nav-link"><i class="bi bi-speedometer2"></i>Dashboard</a></li>
+      <li><a href="/owner/staff.html"      class="nav-link"><i class="bi bi-person-badge"></i>Staff</a></li>
+      <li><a href="/owner/members.html"    class="nav-link"><i class="bi bi-people"></i>Members</a></li>
+      <li><a href="/owner/bookings.html"   class="nav-link"><i class="bi bi-calendar-check"></i>Bookings</a></li>
+      <li><a href="/owner/orders.html"     class="nav-link"><i class="bi bi-bag"></i>Orders</a></li>
+      <li><a href="/owner/products.html"   class="nav-link active"><i class="bi bi-box-seam"></i>Products</a></li>
+      <li><a href="/owner/payments.html"   class="nav-link"><i class="bi bi-credit-card"></i>Payments</a></li>
+      <li><a href="/owner/plans.html"      class="nav-link"><i class="bi bi-stars"></i>Plans</a></li>
     </ul>
-    <div class="p-3"><span id="userNameSidebar" class="small text-muted d-block mb-2"></span>
+    <div class="p-3 border-top" style="border-color:rgba(255,255,255,.08)!important">
+      <span id="userNameSidebar" class="small text-muted d-block mb-2"></span>
       <button id="logoutBtn" class="btn btn-sm btn-outline-light w-100"><i class="bi bi-box-arrow-right me-1"></i>Logout</button>
     </div>
   </nav>
@@ -31,26 +46,68 @@
   <div class="d-flex flex-column flex-grow-1">
     <div class="cc-topbar">
       <h5 class="page-title"><i class="bi bi-box-seam me-2 text-cc"></i>Products & Inventory</h5>
-      <button class="btn btn-cc btn-sm" data-bs-toggle="modal" data-bs-target="#prodModal" id="addProdBtn">
-        <i class="bi bi-plus-circle-fill me-1"></i>Add Product
+      <button class="btn btn-cc btn-sm" data-bs-toggle="modal" data-bs-target="#addProductModal">
+        <i class="bi bi-plus-circle me-1"></i>Add Product
       </button>
     </div>
 
     <main class="cc-main">
-      <ul class="nav nav-tabs mb-3" id="deptTabs">
-        <li class="nav-item"><button class="nav-link active" data-dept="">All</button></li>
-        <li class="nav-item"><button class="nav-link" data-dept="shop">Shop</button></li>
-        <li class="nav-item"><button class="nav-link" data-dept="bar">Bar</button></li>
-      </ul>
+      <!-- KPIs -->
+      <div class="kpi-strip">
+        <div class="kpi-mini"><div class="val" id="k-total">—</div><div class="lbl">Total Products</div></div>
+        <div class="kpi-mini"><div class="val text-info" id="k-shop">—</div><div class="lbl">Shop Items</div></div>
+        <div class="kpi-mini"><div class="val" style="color:#e67e22" id="k-bar">—</div><div class="lbl">Bar Items</div></div>
+        <div class="kpi-mini"><div class="val text-danger low-stock-badge" id="k-lowstock">—</div><div class="lbl">⚠️ Low Stock</div></div>
+        <div class="kpi-mini"><div class="val text-danger" id="k-outofstock">—</div><div class="lbl">Out of Stock</div></div>
+      </div>
 
+      <!-- Filters -->
+      <div class="cc-card mb-3">
+        <div class="row g-2 align-items-end">
+          <div class="col-md-3">
+            <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Search products…">
+          </div>
+          <div class="col-md-2">
+            <select id="fDept" class="form-select form-select-sm">
+              <option value="">All Depts</option>
+              <option value="shop">🛍️ Shop</option>
+              <option value="bar">🍹 Bar</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <select id="fCat" class="form-select form-select-sm"><option value="">All Categories</option></select>
+          </div>
+          <div class="col-md-2">
+            <select id="fStock" class="form-select form-select-sm">
+              <option value="">All Stock</option>
+              <option value="1">Low Stock Only</option>
+            </select>
+          </div>
+          <div class="col-md-3 d-flex gap-1">
+            <button class="btn btn-cc btn-sm flex-grow-1" onclick="loadProducts()"><i class="bi bi-funnel me-1"></i>Filter</button>
+            <button class="btn btn-outline-secondary btn-sm" onclick="resetFilters()">↺</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Products table -->
       <div class="cc-card">
         <div class="table-responsive">
-          <table class="table table-hover mb-0" id="prodTable">
-            <thead><tr>
-              <th>SKU</th><th>Name</th><th>Category</th><th>Dept</th>
-              <th class="text-end">Price</th><th class="text-end">Stock</th><th>Actions</th>
-            </tr></thead>
-            <tbody><tr><td colspan="7" class="text-center py-4 text-muted">Loading…</td></tr></tbody>
+          <table class="table table-hover mb-0" id="productsTable">
+            <thead>
+              <tr>
+                <th style="width:60px">Image</th>
+                <th>Product</th>
+                <th>Dept</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th>Stock</th>
+                <th>Variants</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody><tr><td colspan="9" class="text-center py-4 text-muted">Loading…</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -59,42 +116,133 @@
 </div>
 
 <!-- Add/Edit Product Modal -->
-<div class="modal fade" id="prodModal" tabindex="-1">
-  <div class="modal-dialog">
+<div class="modal fade" id="addProductModal" tabindex="-1">
+  <div class="modal-dialog modal-xl">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="prodModalTitle">Add Product</h5>
+        <h5 class="modal-title" id="productModalTitle"><i class="bi bi-box-seam me-2 text-cc"></i>Add Product</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="p_id">
         <div class="row g-3">
-          <div class="col-md-6"><label class="form-label">SKU *</label>
-            <input type="text" id="p_sku" class="form-control" required></div>
-          <div class="col-md-6"><label class="form-label">Name *</label>
-            <input type="text" id="p_name" class="form-control" required></div>
-          <div class="col-md-6"><label class="form-label">Department *</label>
+          <div class="col-md-4">
+            <label class="form-label">SKU *</label>
+            <input type="text" id="p_sku" class="form-control" placeholder="SHO-001">
+          </div>
+          <div class="col-md-8">
+            <label class="form-label">Product Name *</label>
+            <input type="text" id="p_name" class="form-control" placeholder="Nike Air Zoom Tennis Shoes">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Department *</label>
             <select id="p_dept" class="form-select">
-              <option value="shop">Shop</option><option value="bar">Bar</option>
-            </select></div>
-          <div class="col-md-6"><label class="form-label">Category *</label>
-            <input type="text" id="p_cat" class="form-control" placeholder="Rackets, Drinks…"></div>
-          <div class="col-md-6"><label class="form-label">Selling Price (₹) *</label>
-            <input type="number" id="p_price" class="form-control" min="0" step="0.01"></div>
-          <div class="col-md-6"><label class="form-label">Cost Price (₹)</label>
-            <input type="number" id="p_cost" class="form-control" min="0" step="0.01" value="0"></div>
-          <div class="col-md-6"><label class="form-label">Stock Qty</label>
-            <input type="number" id="p_stock" class="form-control" min="0" value="0"></div>
-          <div class="col-md-6"><label class="form-label">Reorder Level</label>
-            <input type="number" id="p_reorder" class="form-control" min="0" value="5"></div>
-          <div class="col-12"><label class="form-label">Description</label>
-            <textarea id="p_desc" class="form-control" rows="2"></textarea></div>
+              <option value="shop">🛍️ Shop</option>
+              <option value="bar">🍹 Bar</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Category *</label>
+            <select id="p_cat" class="form-select">
+              <optgroup label="Shop – Footwear">
+                <option value="Sports Shoes">Sports Shoes</option>
+              </optgroup>
+              <optgroup label="Shop – Rackets">
+                <option value="Tennis Rackets">Tennis Rackets</option>
+                <option value="Badminton Rackets">Badminton Rackets</option>
+                <option value="Cricket Bats">Cricket Bats</option>
+              </optgroup>
+              <optgroup label="Shop – Balls">
+                <option value="Tennis Balls">Tennis Balls</option>
+                <option value="Cricket Balls">Cricket Balls</option>
+                <option value="Shuttlecocks">Shuttlecocks</option>
+              </optgroup>
+              <optgroup label="Shop – Apparel">
+                <option value="Sports Apparel">Sports Apparel</option>
+                <option value="Sports Bags">Sports Bags</option>
+              </optgroup>
+              <optgroup label="Shop – Accessories">
+                <option value="Accessories">Accessories</option>
+                <option value="Protective Gear">Protective Gear</option>
+                <option value="Services">Services</option>
+              </optgroup>
+              <optgroup label="Bar – Drinks">
+                <option value="Beverages">Beverages</option>
+                <option value="Hot Drinks">Hot Drinks</option>
+                <option value="Energy Drinks">Energy Drinks</option>
+              </optgroup>
+              <optgroup label="Bar – Food">
+                <option value="Snacks">Snacks</option>
+                <option value="Meals">Meals</option>
+                <option value="Desserts">Desserts</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Price (₹) *</label>
+            <input type="number" id="p_price" class="form-control" min="0" step="0.01">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Cost Price (₹)</label>
+            <input type="number" id="p_cost" class="form-control" min="0" step="0.01" placeholder="0">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Stock Qty</label>
+            <input type="number" id="p_stock" class="form-control" min="0" value="0">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Reorder Level</label>
+            <input type="number" id="p_reorder" class="form-control" min="0" value="5">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Description</label>
+            <textarea id="p_desc" class="form-control" rows="2"></textarea>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Image URL(s) <span class="text-muted small">(comma-separated for multiple)</span></label>
+            <input type="text" id="p_images" class="form-control" placeholder="https://example.com/img1.jpg, https://example.com/img2.jpg">
+          </div>
         </div>
-        <div id="prodErr" class="alert alert-danger mt-3 d-none small py-2"></div>
+
+        <!-- Variants section -->
+        <div class="mt-4">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0"><i class="bi bi-tags me-2 text-cc"></i>Size / Variant Inventory</h6>
+            <button type="button" class="btn btn-outline-cc btn-sm" onclick="addVariantRow()">
+              <i class="bi bi-plus-circle me-1"></i>Add Variant
+            </button>
+          </div>
+          <div class="small text-muted mb-2">Add size variants (e.g., UK 6, UK 7) or other variants (e.g., Grip 3, Small). Each variant has its own stock level.</div>
+          <div id="variantsList">
+            <!-- dynamic rows -->
+          </div>
+        </div>
+
+        <div id="productErr" class="alert alert-danger mt-3 d-none small py-2"></div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" id="prodSaveBtn" class="btn btn-cc">Save Product</button>
+        <button type="button" id="productSaveBtn" class="btn btn-cc">
+          <span id="productSpinner" class="spinner-border spinner-sm d-none me-1"></span>
+          Save Product
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Inventory Modal (full variant breakdown) -->
+<div class="modal fade" id="inventoryModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-clipboard-data me-2 text-cc"></i>Inventory: <span id="invProductName"></span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="inventoryBody">Loading…</div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" id="saveInventoryBtn" class="btn btn-cc">Save Changes</button>
       </div>
     </div>
   </div>
@@ -105,108 +253,322 @@
 <script src="/js/api.js"></script>
 <script src="/js/utils.js"></script>
 <script>
-let activeDept = '';
+let allProducts = [], currentInventoryProductId = null;
 
-async function loadProducts() {
-  let url = '/api/products';
-  if (activeDept) url += '?dept=' + activeDept;
-  const rows  = await api.get(url).catch(() => []);
-  const tbody = document.querySelector('#prodTable tbody');
-  if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No products found</td></tr>';
-    return;
-  }
-  tbody.innerHTML = rows.map(p => {
-    const lowStock = p.track_stock && p.stock_qty <= p.reorder_level;
-    return `<tr>
-      <td><code>${escHtml(p.sku)}</code></td>
-      <td>${escHtml(p.name)}</td>
-      <td>${escHtml(p.category)}</td>
-      <td><span class="badge bg-secondary">${escHtml(p.department)}</span></td>
-      <td class="text-end">${fmtINR(p.price)}</td>
-      <td class="text-end ${lowStock ? 'text-danger fw-bold' : ''}">${p.stock_qty}</td>
-      <td>
-        <button class="btn btn-sm btn-outline-primary me-1 btn-edit" data-p='${JSON.stringify(p)}'>Edit</button>
-        <button class="btn btn-sm btn-outline-danger btn-del" data-id="${p.id}">Delete</button>
-      </td>
-    </tr>`;
-  }).join('');
-
-  document.querySelectorAll('.btn-edit').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const p = JSON.parse(btn.dataset.p);
-      document.getElementById('prodModalTitle').textContent = 'Edit Product';
-      document.getElementById('p_id').value     = p.id;
-      document.getElementById('p_sku').value    = p.sku;
-      document.getElementById('p_name').value   = p.name;
-      document.getElementById('p_dept').value   = p.department;
-      document.getElementById('p_cat').value    = p.category;
-      document.getElementById('p_price').value  = p.price;
-      document.getElementById('p_cost').value   = p.cost_price;
-      document.getElementById('p_stock').value  = p.stock_qty;
-      document.getElementById('p_reorder').value= p.reorder_level;
-      document.getElementById('p_desc').value   = p.description || '';
-      new bootstrap.Modal(document.getElementById('prodModal')).show();
-    });
-  });
-  document.querySelectorAll('.btn-del').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      if (!confirm('Deactivate this product?')) return;
-      try { await api.del(`/api/products/${btn.dataset.id}`); showAlert('Product deactivated'); loadProducts(); }
-      catch(e) { showAlert(e.message, 'danger'); }
-    });
-  });
+function stockBar(qty, reorder, max) {
+  const pct = max > 0 ? Math.min(100, (qty / max) * 100) : 0;
+  const color = qty === 0 ? '#e74c3c' : qty <= reorder ? '#e67e22' : '#2ecc71';
+  return `<div class="stock-bar mt-1"><div class="stock-fill" style="width:${pct}%;background:${color}"></div></div>`;
 }
 
-document.getElementById('addProdBtn').addEventListener('click', () => {
-  document.getElementById('prodModalTitle').textContent = 'Add Product';
-  document.getElementById('p_id').value = '';
-  document.getElementById('p_sku').value = document.getElementById('p_name').value =
-  document.getElementById('p_cat').value = document.getElementById('p_desc').value = '';
-  document.getElementById('p_price').value = document.getElementById('p_cost').value = '';
-  document.getElementById('p_stock').value = '0';
-  document.getElementById('p_reorder').value = '5';
-});
+function lowStockLabel(p) {
+  if (p.stock_qty === 0) return '<span class="badge bg-danger low-stock-badge">Out of Stock</span>';
+  if (p.is_low_stock)    return '<span class="badge bg-warning text-dark low-stock-badge">⚠️ Low</span>';
+  return '<span class="badge bg-success bg-opacity-20 text-success">OK</span>';
+}
 
-document.getElementById('prodSaveBtn').addEventListener('click', async () => {
-  const id  = document.getElementById('p_id').value;
-  const err = document.getElementById('prodErr');
-  const body = {
-    sku: document.getElementById('p_sku').value.trim(),
-    name: document.getElementById('p_name').value.trim(),
-    department: document.getElementById('p_dept').value,
-    category: document.getElementById('p_cat').value.trim(),
-    price: parseFloat(document.getElementById('p_price').value),
-    cost_price: parseFloat(document.getElementById('p_cost').value) || 0,
-    stock_qty: parseInt(document.getElementById('p_stock').value) || 0,
-    reorder_level: parseInt(document.getElementById('p_reorder').value) || 5,
-    description: document.getElementById('p_desc').value.trim() || undefined,
-    is_active: 1
-  };
-  err.classList.add('d-none');
+function addVariantRow(v = {}) {
+  const id = Date.now() + Math.random();
+  const row = document.createElement('div');
+  row.className = 'variant-row d-flex gap-2 align-items-center';
+  row.dataset.tempId = id;
+  row.innerHTML = `
+    <input type="text" class="form-control form-control-sm" placeholder="Name (e.g. UK 7)" style="width:180px" value="${escHtml(v.variant_name||'')}">
+    <input type="text" class="form-control form-control-sm" placeholder="Code (e.g. S7)" style="width:80px" value="${escHtml(v.sku_suffix||'')}">
+    <div class="input-group input-group-sm" style="width:130px">
+      <span class="input-group-text">Qty</span>
+      <input type="number" class="form-control" min="0" value="${v.stock_qty||0}">
+    </div>
+    <div class="input-group input-group-sm" style="width:130px">
+      <span class="input-group-text">Reorder</span>
+      <input type="number" class="form-control" min="0" value="${v.reorder_level||3}">
+    </div>
+    <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.variant-row').remove()"><i class="bi bi-trash"></i></button>`;
+  document.getElementById('variantsList').appendChild(row);
+}
+
+function getVariantsFromForm() {
+  return Array.from(document.querySelectorAll('#variantsList .variant-row')).map(row => {
+    const inputs = row.querySelectorAll('input');
+    return {
+      variant_name:  inputs[0].value.trim(),
+      sku_suffix:    inputs[1].value.trim(),
+      stock_qty:     parseInt(inputs[2].value) || 0,
+      reorder_level: parseInt(inputs[3].value) || 3
+    };
+  }).filter(v => v.variant_name);
+}
+
+async function loadProducts() {
+  const tbody = document.querySelector('#productsTable tbody');
+  tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4"><span class="spinner-border spinner-sm"></span></td></tr>`;
+  const search    = document.getElementById('searchInput').value.trim();
+  const dept      = document.getElementById('fDept').value;
+  const cat       = document.getElementById('fCat').value;
+  const low_stock = document.getElementById('fStock').value;
+  let url = '/api/products?';
+  if (search)    url += `&search=${encodeURIComponent(search)}`;
+  if (dept)      url += `&dept=${dept}`;
+  if (cat)       url += `&category=${encodeURIComponent(cat)}`;
+  if (low_stock) url += `&low_stock=1`;
+
   try {
-    if (id) { await api.put(`/api/products/${id}`, body); }
-    else    { await api.post('/api/products', body); }
-    bootstrap.Modal.getInstance(document.getElementById('prodModal')).hide();
-    showAlert('Product saved!');
+    allProducts = await api.get(url);
+    // KPIs
+    document.getElementById('k-total').textContent     = allProducts.length;
+    document.getElementById('k-shop').textContent      = allProducts.filter(p => p.department==='shop').length;
+    document.getElementById('k-bar').textContent       = allProducts.filter(p => p.department==='bar').length;
+    document.getElementById('k-lowstock').textContent  = allProducts.filter(p => p.is_low_stock && p.stock_qty > 0).length;
+    document.getElementById('k-outofstock').textContent= allProducts.filter(p => p.stock_qty === 0 && p.track_stock).length;
+
+    if (!allProducts.length) {
+      tbody.innerHTML = `<tr><td colspan="9" class="text-center py-5 text-muted"><i class="bi bi-box fs-2 d-block mb-2"></i>No products found</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = allProducts.map(p => {
+      const img = p.images && p.images.length ?
+        `<img src="${escHtml(p.images[0])}" class="prod-img-thumb" onerror="this.style.display='none'">` :
+        `<div class="prod-img-placeholder"><i class="bi bi-image"></i></div>`;
+
+      const variantCount = (p.variants || []).length;
+      const variantLowCount = (p.variants || []).filter(v => v.stock_qty <= v.reorder_level).length;
+      const variantInfo = variantCount > 0 ?
+        `<span class="badge bg-secondary">${variantCount} variants</span> ${variantLowCount > 0 ? `<span class="badge bg-warning text-dark">${variantLowCount} low</span>` : ''}` :
+        `<span class="text-muted small">No variants</span>`;
+
+      const maxStock = Math.max(p.stock_qty, (p.reorder_level||5) * 3);
+
+      return `<tr ${p.is_low_stock || p.stock_qty === 0 ? 'style="background:rgba(231,76,60,.04)"' : ''}>
+        <td>${img}</td>
+        <td>
+          <div class="fw-semibold">${escHtml(p.name)}</div>
+          <code class="small text-muted">${escHtml(p.sku)}</code>
+        </td>
+        <td><span class="badge" style="background:${p.department==='shop'?'rgba(52,152,219,.2)':'rgba(230,126,34,.2)'}; color:${p.department==='shop'?'#3498db':'#e67e22'}">${p.department==='shop'?'🛍️':'🍹'} ${p.department.charAt(0).toUpperCase()+p.department.slice(1)}</span></td>
+        <td class="small">${escHtml(p.category)}</td>
+        <td class="fw-semibold text-cc">${fmtINR(p.price)}</td>
+        <td>
+          <div class="d-flex align-items-center gap-2">
+            <span class="fw-semibold ${p.stock_qty === 0 ? 'text-danger' : p.is_low_stock ? 'text-warning' : ''}">${p.stock_qty}</span>
+            <span class="text-muted small">/ min ${p.reorder_level}</span>
+          </div>
+          ${stockBar(p.stock_qty, p.reorder_level, maxStock)}
+          ${lowStockLabel(p)}
+        </td>
+        <td>${variantInfo}</td>
+        <td><span class="badge ${p.is_active ? 'bg-success bg-opacity-20 text-success' : 'bg-secondary'}">
+          ${p.is_active ? 'Active' : 'Inactive'}</span></td>
+        <td>
+          <div class="d-flex gap-1 flex-wrap">
+            <button class="btn btn-sm btn-outline-primary" onclick="openEditProduct(${p.id})" title="Edit"><i class="bi bi-pencil"></i></button>
+            <button class="btn btn-sm btn-outline-info" onclick="openInventory(${p.id})" title="Inventory"><i class="bi bi-clipboard-data"></i></button>
+            <button class="btn btn-sm btn-outline-danger" onclick="deactivateProduct(${p.id})" title="Remove"><i class="bi bi-trash"></i></button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-danger">${escHtml(e.message)}</td></tr>`;
+  }
+}
+
+async function loadCategories() {
+  try {
+    const cats = await api.get('/api/products/categories');
+    const sel = document.getElementById('fCat');
+    const unique = [...new Set(cats.map(c => c.category))];
+    unique.forEach(c => { const o = new Option(c,c); sel.add(o); });
+  } catch(e) {}
+}
+
+function resetFilters() {
+  document.getElementById('searchInput').value='';
+  document.getElementById('fDept').value='';
+  document.getElementById('fCat').value='';
+  document.getElementById('fStock').value='';
+  loadProducts();
+}
+
+function clearProductForm() {
+  document.getElementById('p_id').value='';
+  document.getElementById('p_sku').value='';
+  document.getElementById('p_name').value='';
+  document.getElementById('p_dept').value='shop';
+  document.getElementById('p_cat').value='Sports Shoes';
+  document.getElementById('p_price').value='';
+  document.getElementById('p_cost').value='';
+  document.getElementById('p_stock').value='0';
+  document.getElementById('p_reorder').value='5';
+  document.getElementById('p_desc').value='';
+  document.getElementById('p_images').value='';
+  document.getElementById('variantsList').innerHTML='';
+  document.getElementById('productErr').classList.add('d-none');
+  document.getElementById('productModalTitle').innerHTML='<i class="bi bi-box-seam me-2 text-cc"></i>Add Product';
+}
+
+async function openEditProduct(id) {
+  clearProductForm();
+  const p = await api.get(`/api/products/${id}`);
+  document.getElementById('p_id').value     = p.id;
+  document.getElementById('p_sku').value    = p.sku;
+  document.getElementById('p_name').value   = p.name;
+  document.getElementById('p_dept').value   = p.department;
+  document.getElementById('p_cat').value    = p.category;
+  document.getElementById('p_price').value  = p.price;
+  document.getElementById('p_cost').value   = p.cost_price;
+  document.getElementById('p_stock').value  = p.stock_qty;
+  document.getElementById('p_reorder').value= p.reorder_level;
+  document.getElementById('p_desc').value   = p.description || '';
+  document.getElementById('p_images').value = (p.images||[]).join(', ');
+  document.getElementById('productModalTitle').innerHTML=`<i class="bi bi-pencil me-2 text-cc"></i>Edit: ${escHtml(p.name)}`;
+  (p.variants||[]).forEach(v => addVariantRow(v));
+  new bootstrap.Modal(document.getElementById('addProductModal')).show();
+}
+
+async function openInventory(id) {
+  currentInventoryProductId = id;
+  const body = document.getElementById('inventoryBody');
+  body.innerHTML = '<div class="text-center py-4"><span class="spinner-border"></span></div>';
+  new bootstrap.Modal(document.getElementById('inventoryModal')).show();
+  try {
+    const p = await api.get(`/api/products/${id}`);
+    document.getElementById('invProductName').textContent = p.name;
+    const maxQty = Math.max(p.stock_qty, (p.reorder_level||5)*4);
+
+    let html = `
+      <div class="mb-3 p-3 rounded" style="background:rgba(255,255,255,.04)">
+        <div class="row g-2 align-items-center">
+          <div class="col-md-6"><strong>${escHtml(p.name)}</strong> <code class="ms-2">${escHtml(p.sku)}</code></div>
+          <div class="col-md-3">
+            <label class="form-label small">Total Stock</label>
+            <input type="number" class="form-control form-control-sm" id="inv_total_stock" value="${p.stock_qty}" min="0">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small">Reorder Level</label>
+            <input type="number" class="form-control form-control-sm" id="inv_reorder" value="${p.reorder_level}" min="0">
+          </div>
+        </div>
+      </div>`;
+
+    if (p.variants && p.variants.length) {
+      html += `<h6 class="fw-semibold mb-3"><i class="bi bi-tags me-2"></i>Variant-wise Inventory</h6>
+        <div class="table-responsive">
+          <table class="table table-sm mb-0">
+            <thead><tr><th>Variant</th><th>SKU</th><th>Stock Qty</th><th>Reorder Level</th><th>Status</th><th>Stock Bar</th></tr></thead>
+            <tbody>`;
+      html += p.variants.map(v => {
+        const maxV = Math.max(v.stock_qty, (v.reorder_level||3)*4);
+        const isLow = v.stock_qty <= v.reorder_level;
+        const pct = maxV > 0 ? Math.min(100, (v.stock_qty/maxV)*100) : 0;
+        const color = v.stock_qty===0?'#e74c3c':isLow?'#e67e22':'#2ecc71';
+        return `<tr data-variant-id="${v.id}">
+          <td class="fw-semibold">${escHtml(v.variant_name)}</td>
+          <td><code class="small">${escHtml(v.sku_suffix)}</code></td>
+          <td><input type="number" class="form-control form-control-sm var-stock" value="${v.stock_qty}" min="0" style="width:90px" data-vid="${v.id}"></td>
+          <td><input type="number" class="form-control form-control-sm var-reorder" value="${v.reorder_level}" min="0" style="width:90px"></td>
+          <td>${v.stock_qty===0?'<span class="badge bg-danger">Out</span>':isLow?'<span class="badge bg-warning text-dark">Low</span>':'<span class="badge bg-success bg-opacity-20 text-success">OK</span>'}</td>
+          <td style="min-width:100px"><div class="stock-bar"><div class="stock-fill" style="width:${pct}%;background:${color}"></div></div></td>
+        </tr>`;
+      }).join('');
+      html += `</tbody></table></div>
+        <div class="alert alert-info small mt-3 py-2"><i class="bi bi-info-circle me-1"></i>Edit quantities above and click <strong>Save Changes</strong></div>`;
+    } else {
+      html += `<div class="text-muted small py-2">No size/variant breakdown — using total stock only.</div>`;
+    }
+    body.innerHTML = html;
+  } catch(e) { body.innerHTML = `<div class="alert alert-danger">${escHtml(e.message)}</div>`; }
+}
+
+document.getElementById('saveInventoryBtn').addEventListener('click', async () => {
+  const id = currentInventoryProductId;
+  if (!id) return;
+  try {
+    const p = allProducts.find(x => x.id === id) || {};
+    const totalStock = parseInt(document.getElementById('inv_total_stock').value)||0;
+    const reorder    = parseInt(document.getElementById('inv_reorder').value)||5;
+
+    // Save main product stock
+    await api.put(`/api/products/${id}`, {
+      ...p, stock_qty: totalStock, reorder_level: reorder, images: p.images,
+      sku: p.sku, name: p.name, department: p.department, category: p.category,
+      price: p.price, cost_price: p.cost_price, track_stock: p.track_stock, description: p.description
+    });
+
+    // Save variant stock
+    const varRows = document.querySelectorAll('#inventoryBody tr[data-variant-id]');
+    for (const row of varRows) {
+      const vid = row.dataset.variantId;
+      const stockInput   = row.querySelector('.var-stock');
+      const reorderInput = row.querySelector('.var-reorder');
+      await api.put(`/api/products/${id}/variant/${vid}`, {
+        stock_qty:    parseInt(stockInput?.value)||0,
+        reorder_level:parseInt(reorderInput?.value)||3
+      });
+    }
+
+    bootstrap.Modal.getInstance(document.getElementById('inventoryModal')).hide();
+    showAlert('Inventory updated successfully!');
     loadProducts();
-  } catch(e) { err.textContent = e.message; err.classList.remove('d-none'); }
+  } catch(e) { showAlert(e.message, 'danger'); }
 });
 
-document.querySelectorAll('#deptTabs button').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('#deptTabs button').forEach(t=>t.classList.remove('active'));
-    tab.classList.add('active');
-    activeDept = tab.dataset.dept;
+document.getElementById('productSaveBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('productSaveBtn');
+  const sp  = document.getElementById('productSpinner');
+  const err = document.getElementById('productErr');
+  err.classList.add('d-none'); btn.disabled=true; sp.classList.remove('d-none');
+  try {
+    const pid = document.getElementById('p_id').value;
+    const images = document.getElementById('p_images').value.split(',').map(s=>s.trim()).filter(Boolean);
+    const payload = {
+      sku:         document.getElementById('p_sku').value.trim(),
+      name:        document.getElementById('p_name').value.trim(),
+      department:  document.getElementById('p_dept').value,
+      category:    document.getElementById('p_cat').value,
+      price:       parseFloat(document.getElementById('p_price').value),
+      cost_price:  parseFloat(document.getElementById('p_cost').value)||0,
+      stock_qty:   parseInt(document.getElementById('p_stock').value)||0,
+      reorder_level:parseInt(document.getElementById('p_reorder').value)||5,
+      description: document.getElementById('p_desc').value.trim()||null,
+      images: images.length ? images : undefined,
+      variants: getVariantsFromForm()
+    };
+    if (pid) {
+      await api.put(`/api/products/${pid}`, payload);
+      showAlert('Product updated successfully!');
+    } else {
+      await api.post('/api/products', payload);
+      showAlert('Product added successfully!');
+    }
+    bootstrap.Modal.getInstance(document.getElementById('addProductModal')).hide();
+    clearProductForm();
     loadProducts();
-  });
+  } catch(e) { err.textContent=e.message; err.classList.remove('d-none'); }
+  finally { btn.disabled=false; sp.classList.add('d-none'); }
 });
+
+async function deactivateProduct(id) {
+  if (!confirm('Remove this product from the catalog?')) return;
+  try {
+    await api.del(`/api/products/${id}`);
+    showAlert('Product removed.', 'warning');
+    loadProducts();
+  } catch(e) { showAlert(e.message, 'danger'); }
+}
+
+// Reset modal on close
+document.getElementById('addProductModal').addEventListener('hidden.bs.modal', clearProductForm);
 
 (async () => {
   const user = await loadSession();
-  if (!user) return;
+  if (!user || user.role !== 'owner') { window.location.href='/shared/login.html'; return; }
   document.getElementById('userNameSidebar').textContent = user.full_name;
+
+  await loadCategories();
   loadProducts();
+
+  document.getElementById('searchInput').addEventListener('keydown', e => { if(e.key==='Enter') loadProducts(); });
   document.getElementById('logoutBtn').addEventListener('click', async () => {
     await api.post('/api/auth/logout');
     window.location.href = '/shared/login.html';
