@@ -12,9 +12,12 @@
   <nav class="cc-sidebar d-flex flex-column">
     <div class="brand"><i class="bi bi-trophy-fill me-2 text-warning"></i>Champions Club</div>
     <ul class="nav flex-column mt-2 flex-grow-1">
-      <li><a href="/member/dashboard.html" class="nav-link"><i class="bi bi-house"></i>My Dashboard</a></li>
-      <li><a href="/member/book.html"      class="nav-link"><i class="bi bi-calendar-plus"></i>Book a Court</a></li>
-      <li><a href="/member/bookings.html"  class="nav-link active"><i class="bi bi-calendar-check"></i>My Bookings</a></li>
+      <li><a href="/member/dashboard.html"  class="nav-link"><i class="bi bi-house"></i>My Dashboard</a></li>
+      <li><a href="/member/membership.html" class="nav-link"><i class="bi bi-stars"></i>Membership Plans</a></li>
+      <li><a href="/member/book.html"       class="nav-link"><i class="bi bi-calendar-plus"></i>Book a Court</a></li>
+      <li><a href="/member/bookings.html"   class="nav-link active"><i class="bi bi-calendar-check"></i>My Bookings</a></li>
+      <li><a href="#" class="nav-link" id="navCafeteria"><i class="bi bi-cup-hot"></i>Cafeteria</a></li>
+      <li><a href="#" class="nav-link" id="navMerch"><i class="bi bi-bag"></i>Merch</a></li>
     </ul>
     <div class="p-3"><span id="userNameSidebar" class="small text-muted d-block mb-2"></span>
       <button id="logoutBtn" class="btn btn-sm btn-outline-light w-100"><i class="bi bi-box-arrow-right me-1"></i>Logout</button>
@@ -23,7 +26,12 @@
 
   <div class="d-flex flex-column flex-grow-1">
     <div class="cc-topbar">
-      <h5 class="page-title"><i class="bi bi-calendar-check me-2 text-cc"></i>My Bookings</h5>
+      <div class="d-flex align-items-center">
+        <button id="sidebarToggle" class="btn btn-sm btn-outline-secondary me-2 py-0 px-2" aria-label="Toggle Navigation">
+          <i class="bi bi-list fs-5"></i>
+        </button>
+        <h5 class="page-title"><i class="bi bi-calendar-check me-2 text-cc"></i>My Bookings</h5>
+      </div>
       <a href="/member/book.html" class="btn btn-cc btn-sm"><i class="bi bi-plus-circle-fill me-1"></i>New Booking</a>
     </div>
 
@@ -51,6 +59,16 @@
   const user = await loadSession();
   if (!user) return;
   document.getElementById('userNameSidebar').textContent = user.full_name;
+
+  // Nav link handlers for Cafeteria and Merch
+  document.getElementById('navCafeteria').addEventListener('click', (e) => {
+    e.preventDefault();
+    showAlert('Cafeteria module is coming soon!', 'info');
+  });
+  document.getElementById('navMerch').addEventListener('click', (e) => {
+    e.preventDefault();
+    showAlert('Merchandise shop module is coming soon!', 'info');
+  });
 
   const bookings = await api.get('/api/bookings').catch(() => []);
   const tbody    = document.querySelector('#bookTable tbody');

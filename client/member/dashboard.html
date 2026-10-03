@@ -12,9 +12,12 @@
   <nav class="cc-sidebar d-flex flex-column">
     <div class="brand"><i class="bi bi-trophy-fill me-2 text-warning"></i>Champions Club</div>
     <ul class="nav flex-column mt-2 flex-grow-1">
-      <li><a href="/member/dashboard.html" class="nav-link active"><i class="bi bi-house"></i>My Dashboard</a></li>
-      <li><a href="/member/book.html"      class="nav-link"><i class="bi bi-calendar-plus"></i>Book a Court</a></li>
-      <li><a href="/member/bookings.html"  class="nav-link"><i class="bi bi-calendar-check"></i>My Bookings</a></li>
+      <li><a href="/member/dashboard.html"  class="nav-link active"><i class="bi bi-house"></i>My Dashboard</a></li>
+      <li><a href="/member/membership.html" class="nav-link"><i class="bi bi-stars"></i>Membership Plans</a></li>
+      <li><a href="/member/book.html"       class="nav-link"><i class="bi bi-calendar-plus"></i>Book a Court</a></li>
+      <li><a href="/member/bookings.html"   class="nav-link"><i class="bi bi-calendar-check"></i>My Bookings</a></li>
+      <li><a href="#" class="nav-link" id="navCafeteria"><i class="bi bi-cup-hot"></i>Cafeteria</a></li>
+      <li><a href="#" class="nav-link" id="navMerch"><i class="bi bi-bag"></i>Merch</a></li>
     </ul>
     <div class="p-3">
       <span id="userNameSidebar" class="small text-muted d-block mb-2"></span>
@@ -24,7 +27,12 @@
 
   <div class="d-flex flex-column flex-grow-1">
     <div class="cc-topbar">
-      <h5 class="page-title" id="welcomeTitle">Welcome!</h5>
+      <div class="d-flex align-items-center">
+        <button id="sidebarToggle" class="btn btn-sm btn-outline-secondary me-2 py-0 px-2" aria-label="Toggle Navigation">
+          <i class="bi bi-list fs-5"></i>
+        </button>
+        <h5 class="page-title" id="welcomeTitle">Welcome!</h5>
+      </div>
     </div>
 
     <main class="cc-main">
@@ -106,15 +114,23 @@
   document.getElementById('userNameSidebar').textContent = user.full_name;
   document.getElementById('welcomeTitle').textContent    = `Welcome back, ${user.full_name.split(' ')[0]}!`;
 
+  // Nav link handlers for Cafeteria and Merch
+  document.getElementById('navCafeteria').addEventListener('click', (e) => {
+    e.preventDefault();
+    showAlert('Cafeteria module is coming soon!', 'info');
+  });
+  document.getElementById('navMerch').addEventListener('click', (e) => {
+    e.preventDefault();
+    showAlert('Merchandise shop module is coming soon!', 'info');
+  });
+
   // Load member profile
   try {
-    const members = await api.get('/api/members?page=1');
-    // find the member record for this user
-    const member  = members.members?.find(m => m.user_id === user.id) || members.members?.[0];
+    const member = await api.get('/api/members/profile');
     if (member) {
       document.getElementById('memberCode').textContent   = member.member_code;
       document.getElementById('memberName').textContent   = member.full_name || user.full_name;
-      document.getElementById('planName').textContent     = member.plan_name;
+      document.getElementById('planName').textContent     = `${member.plan_name} Membership`;
       document.getElementById('joinDate').textContent     = fmtDate(member.join_date);
       document.getElementById('expiryDate').textContent   = fmtDate(member.expiry_date);
       document.getElementById('memberStatus').textContent = member.status.toUpperCase();
@@ -146,7 +162,7 @@
           </div>
         </div>`;
     }
-  } catch(e) { /* member data not critical */ }
+  } catch(e) { /* non-member or error */ }
 
   // Load recent bookings
   try {

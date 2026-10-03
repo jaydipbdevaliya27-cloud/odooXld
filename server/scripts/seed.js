@@ -24,10 +24,17 @@ async function seed() {
     INSERT INTO plans (code, name, description, annual_fee, duration_months,
                        court_discount_pct, shop_discount_pct, bar_discount_pct, max_bookings_per_day)
     VALUES
-      ('SILVER',   'Silver',   'Entry-level membership with basic benefits',         12000, 12, 10, 5,  5,  2),
-      ('GOLD',     'Gold',     'Popular choice with great discounts',                 24000, 12, 20, 15, 15, 3),
-      ('PLATINUM', 'Platinum', 'Premium all-inclusive membership for serious players',48000, 12, 30, 25, 25, 5)
-    ON DUPLICATE KEY UPDATE name=VALUES(name)
+      ('SILVER',   'Silver',   'Standard club membership with court and cafe discounts',             12000, 12, 10,  5,  5,  2),
+      ('GOLD',     'Gold',     'Premium full-access membership with maximum court discounts',        24000, 12, 20, 15, 15,  2),
+      ('JUNIOR',   'Junior',   'Under 18 discounted membership for young student & junior athletes',  6000, 12, 15, 10, 10,  2)
+    ON DUPLICATE KEY UPDATE
+      name=VALUES(name),
+      description=VALUES(description),
+      annual_fee=VALUES(annual_fee),
+      court_discount_pct=VALUES(court_discount_pct),
+      shop_discount_pct=VALUES(shop_discount_pct),
+      bar_discount_pct=VALUES(bar_discount_pct),
+      max_bookings_per_day=VALUES(max_bookings_per_day)
   `);
 
   // ── 2. Users ───────────────────────────────────────────────────────────────
@@ -78,7 +85,7 @@ async function seed() {
 
   const memberRecords = [
     { email: 'ravi@example.com',   code: 'CC-001', plan: 'GOLD',     join: joinDateStr, expiry: expiryDateStr },
-    { email: 'priya@example.com',  code: 'CC-002', plan: 'PLATINUM', join: joinDateStr, expiry: expiryDateStr },
+    { email: 'priya@example.com',  code: 'CC-002', plan: 'JUNIOR',   join: joinDateStr, expiry: expiryDateStr },
     { email: 'carlos@example.com', code: 'CC-003', plan: 'SILVER',   join: joinDateStr, expiry: expiryDateStr }
   ];
   for (const r of memberRecords) {

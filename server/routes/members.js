@@ -23,6 +23,15 @@ router.get('/', requireLogin, requireRole('staff', 'owner'), async (req, res, ne
   } catch (err) { next(err); }
 });
 
+// ── GET /api/members/profile (logged-in user's member profile) ─────────────
+router.get('/profile', requireLogin, async (req, res, next) => {
+  try {
+    const member = await memberService.getMemberByUserId(req.session.user.id);
+    if (!member) return res.status(404).json({ error: 'Member profile not found for this user' });
+    res.json(member);
+  } catch (err) { next(err); }
+});
+
 // ── GET /api/members/:id ────────────────────────────────────────────────────
 router.get('/:id', requireLogin, async (req, res, next) => {
   try {

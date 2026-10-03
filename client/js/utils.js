@@ -85,3 +85,43 @@ function fillSelect(selectEl, options, placeholder = '-- Select --') {
     selectEl.appendChild(opt);
   });
 }
+
+/**
+ * Initializes collapsible sidebar toggle for desktop & mobile.
+ */
+function initSidebarToggle() {
+  const toggleBtn = document.getElementById('sidebarToggle');
+  const sidebar = document.querySelector('.cc-sidebar');
+  if (!toggleBtn || !sidebar) return;
+
+  if (toggleBtn.dataset.bound) return;
+  toggleBtn.dataset.bound = 'true';
+
+  let backdrop = document.querySelector('.cc-sidebar-backdrop');
+  if (!backdrop) {
+    backdrop = document.createElement('div');
+    backdrop.className = 'cc-sidebar-backdrop';
+    document.body.appendChild(backdrop);
+    backdrop.addEventListener('click', () => {
+      sidebar.classList.remove('show');
+      backdrop.classList.remove('show');
+    });
+  }
+
+  toggleBtn.addEventListener('click', () => {
+    if (window.innerWidth <= 768) {
+      const isOpen = sidebar.classList.toggle('show');
+      backdrop.classList.toggle('show', isOpen);
+    } else {
+      sidebar.classList.toggle('collapsed');
+    }
+  });
+}
+
+// Auto-run once DOM is loaded
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initSidebarToggle);
+} else {
+  initSidebarToggle();
+}
+

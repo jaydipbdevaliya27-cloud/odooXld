@@ -56,7 +56,7 @@ Open **[http://localhost:3000](http://localhost:3000)** in your browser.
 | **Owner / Manager** | `owner@champions.club` | `Owner@123` | `/owner/dashboard.html` |
 | **Staff Member** | `staff@champions.club` | `Staff@123` | `/staff/dashboard.html` |
 | **Member (Gold Tier)** | `ravi@example.com` | `Member@123` | `/member/dashboard.html` |
-| **Member (Platinum Tier)** | `priya@example.com` | `Member@123` | `/member/dashboard.html` |
+| **Member (Junior Tier)** | `priya@example.com` | `Member@123` | `/member/dashboard.html` |
 | **Member (Silver Tier)** | `carlos@example.com` | `Member@123` | `/member/dashboard.html` |
 
 ---
@@ -111,7 +111,7 @@ odooXld/
 ## 💾 Database Schema (11 Tables)
 
 1. **`users`**: Human accounts with bcrypt password hashes and roles (`owner`, `staff`, `member`, `visitor`).
-2. **`plans`**: Membership tiers (`Silver`, `Gold`, `Platinum`) with configurable discount percentages for courts, shop, and bar, plus daily booking limits.
+2. **`plans`**: Membership tiers (`Silver`, `Gold`, `Junior`) with configurable discount percentages for courts, shop, and bar, plus daily booking limits.
 3. **`members`**: Member profile extending user account, storing `member_code` (`CC-0001`), join date, expiry date, and status.
 4. **`courts`**: Sports facilities (Tennis, Cricket, Badminton) with hourly base rates.
 5. **`bookings`**: Booking header capturing court, member/guest, time range, price charged, and discount applied.
