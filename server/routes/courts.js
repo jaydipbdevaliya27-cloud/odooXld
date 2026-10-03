@@ -41,7 +41,9 @@ router.get('/:id/slots', requireLogin, async (req, res, next) => {
     for (let h = openH; h < closeH; h++) {
       const startDt = `${String(h).padStart(2,'0')}:00:00`;
       const endDt   = `${String(h+1).padStart(2,'0')}:00:00`;
-      slots.push({ start_time: startDt, end_time: endDt });
+      const slot_start = `${date} ${startDt}`;
+      const slot_end   = `${date} ${endDt}`;
+      slots.push({ start_time: startDt, end_time: endDt, slot_start, slot_end });
     }
 
     const [booked] = await db.query(

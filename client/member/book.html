@@ -6,27 +6,79 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="/css/main.css">
+  <style>
+    .slot-card {
+      border: 1.5px solid #e2e8f0;
+      border-radius: var(--cc-radius-md);
+      padding: 0.75rem 1rem;
+      background: #ffffff;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .slot-card:hover:not(.booked) {
+      border-color: var(--cc-green);
+      background-color: #f7fdf9;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(22, 101, 52, 0.12);
+    }
+    .slot-card.booked {
+      background: #f8fafc;
+      border-color: #e2e8f0;
+      color: #94a3b8;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+    .slot-card.selected {
+      background: var(--cc-green) !important;
+      border-color: var(--cc-green-dark) !important;
+      color: #ffffff !important;
+      box-shadow: 0 4px 14px rgba(22, 101, 52, 0.35);
+    }
+    .slot-card.selected .badge {
+      background: #ffffff !important;
+      color: var(--cc-green) !important;
+    }
+  </style>
 </head>
 <body>
 <div class="cc-wrapper">
-  <nav class="cc-sidebar d-flex flex-column">
-    <div class="brand"><i class="bi bi-trophy-fill me-2 text-warning"></i>Champions Club</div>
-    <ul class="nav flex-column mt-2 flex-grow-1">
-      <li><a href="/member/dashboard.html"  class="nav-link"><i class="bi bi-house"></i>My Dashboard</a></li>
-      <li><a href="/member/membership.html" class="nav-link"><i class="bi bi-stars"></i>Membership Plans</a></li>
-      <li><a href="/member/shop.html"       class="nav-link"><i class="bi bi-shop"></i>Browse Products</a></li>
-      <li><a href="/member/cafeteria.html"  class="nav-link"><i class="bi bi-cup-hot"></i>Cafeteria & Bar</a></li>
-      <li><a href="/member/book.html"       class="nav-link active"><i class="bi bi-calendar-plus"></i>Book a Court</a></li>
-      <li><a href="/member/bookings.html"   class="nav-link"><i class="bi bi-calendar-check"></i>My Bookings</a></li>
-    </ul>
-    <div class="p-3"><span id="userNameSidebar" class="small text-muted d-block mb-2"></span>
+  <!-- Sidebar -->
+  <nav class="cc-sidebar d-flex flex-column justify-content-between">
+    <div>
+      <div class="brand"><i class="bi bi-trophy-fill me-2 text-warning"></i>Champions Club</div>
+      <ul class="nav flex-column mt-2">
+        <li><a href="/member/dashboard.html"  class="nav-link"><i class="bi bi-house"></i>My Dashboard</a></li>
+        <li><a href="/member/membership.html" class="nav-link"><i class="bi bi-stars"></i>Membership Plans</a></li>
+        <li><a href="/member/shop.html"       class="nav-link"><i class="bi bi-shop"></i>Browse Products</a></li>
+        <li><a href="/member/cafeteria.html"  class="nav-link"><i class="bi bi-cup-hot"></i>Cafeteria & Bar</a></li>
+        <li><a href="/member/book.html"       class="nav-link active"><i class="bi bi-calendar-plus"></i>Book a Court</a></li>
+        <li><a href="/member/bookings.html"   class="nav-link"><i class="bi bi-calendar-check"></i>My Bookings</a></li>
+      </ul>
+    </div>
+    <div class="p-3 border-top border-secondary border-opacity-25">
+      <div class="d-flex align-items-center gap-2 mb-2 p-2 rounded" style="background:rgba(255,255,255,0.08);">
+        <div class="rounded-circle bg-warning text-dark fw-bold d-flex align-items-center justify-content-center" style="width:32px; height:32px; font-size:0.85rem;" id="userInitial">
+          M
+        </div>
+        <div class="overflow-hidden">
+          <span id="userNameSidebar" class="fw-semibold text-white d-block text-truncate small" style="max-width:140px;">Member</span>
+          <span id="userPlanSidebar" class="badge bg-warning text-dark py-0 px-1" style="font-size:0.68rem;">Member</span>
+        </div>
+      </div>
       <button id="logoutBtn" class="btn btn-sm btn-outline-light w-100"><i class="bi bi-box-arrow-right me-1"></i>Logout</button>
     </div>
   </nav>
 
+  <!-- Main Content -->
   <div class="d-flex flex-column flex-grow-1">
-    <div class="cc-topbar">
-      <h5 class="page-title"><i class="bi bi-calendar-plus me-2 text-cc"></i>Book a Court</h5>
+    <div class="cc-topbar d-flex justify-content-between align-items-center">
+      <h5 class="page-title mb-0"><i class="bi bi-calendar-plus me-2 text-cc"></i>Book a Court</h5>
+      <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25" id="memberDiscountBadge">
+        <i class="bi bi-tag-fill me-1"></i>Member Court Discount
+      </span>
     </div>
 
     <main class="cc-main">
@@ -34,18 +86,18 @@
         <!-- Step 1: Select court & date -->
         <div class="col-lg-4">
           <div class="cc-card">
-            <h6 class="fw-bold mb-3">Step 1 – Choose Court & Date</h6>
+            <h6 class="fw-bold mb-3"><i class="bi bi-1-circle-fill text-cc me-2"></i>Choose Court & Date</h6>
             <div class="mb-3">
-              <label class="form-label">Court *</label>
+              <label class="form-label text-muted small fw-bold">Court / Sport *</label>
               <select id="courtSelect" class="form-select">
                 <option value="">-- Select court --</option>
               </select>
             </div>
             <div class="mb-3">
-              <label class="form-label">Date *</label>
+              <label class="form-label text-muted small fw-bold">Booking Date *</label>
               <input type="date" id="dateSelect" class="form-control">
             </div>
-            <button id="loadSlotsBtn" class="btn btn-cc w-100">
+            <button id="loadSlotsBtn" class="btn btn-cc w-100 fw-bold">
               <i class="bi bi-grid me-1"></i>Show Available Slots
             </button>
           </div>
@@ -54,36 +106,64 @@
         <!-- Step 2: Select slots -->
         <div class="col-lg-8">
           <div class="cc-card">
-            <h6 class="fw-bold mb-3">Step 2 – Select 2 Consecutive Slots (1 hour)</h6>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="fw-bold mb-0"><i class="bi bi-2-circle-fill text-cc me-2"></i>Select Court Time Slot</h6>
+              <span class="small text-muted" id="selectedCourtSummary"></span>
+            </div>
             <div id="slotArea" class="text-muted text-center py-5">
-              Select a court and date, then click "Show Available Slots".
+              <i class="bi bi-calendar-event fs-1 opacity-50 d-block mb-2"></i>
+              Select a court and date on the left, then click "Show Available Slots".
             </div>
           </div>
 
           <!-- Step 3: Confirm -->
           <div class="cc-card mt-3" id="confirmCard" style="display:none">
-            <h6 class="fw-bold mb-3">Step 3 – Confirm Booking</h6>
-            <div class="row g-3">
+            <h6 class="fw-bold mb-3"><i class="bi bi-3-circle-fill text-cc me-2"></i>Booking & Payment Summary</h6>
+            
+            <div class="bg-light p-3 rounded mb-3 border">
+              <div class="row g-2 small">
+                <div class="col-sm-6">
+                  <span class="text-muted d-block">Court:</span>
+                  <strong id="summaryCourtName" class="text-dark">—</strong>
+                </div>
+                <div class="col-sm-6">
+                  <span class="text-muted d-block">Date & Time:</span>
+                  <strong id="summaryDateTime" class="text-dark">—</strong>
+                </div>
+                <div class="col-sm-6 mt-2">
+                  <span class="text-muted d-block">Base Hourly Rate:</span>
+                  <span id="summaryBasePrice" class="fw-semibold text-dark">—</span>
+                </div>
+                <div class="col-sm-6 mt-2">
+                  <span class="text-muted d-block">Member Discount:</span>
+                  <span id="summaryDiscount" class="fw-bold text-success">—</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="row g-3 align-items-end">
               <div class="col-md-6">
-                <label class="form-label">Payment Method</label>
+                <label class="form-label text-muted small fw-bold">Payment Method</label>
                 <select id="payMethod" class="form-select">
-                  <option value="cash">Cash</option>
-                  <option value="card">Card</option>
-                  <option value="upi">UPI</option>
+                  <option value="card">Credit / Debit Card</option>
+                  <option value="upi">UPI / Online</option>
+                  <option value="cash">Pay at Reception (Cash)</option>
                 </select>
               </div>
               <div class="col-md-6">
-                <label class="form-label">Amount to Pay</label>
-                <input type="text" id="amountDisplay" class="form-control" readonly>
+                <label class="form-label text-muted small fw-bold">Total Amount to Pay</label>
+                <div class="fs-4 fw-bold text-success" id="amountDisplay">₹0.00</div>
               </div>
             </div>
+
             <div id="bookErr" class="alert alert-danger mt-3 d-none small py-2"></div>
-            <div class="mt-3">
-              <button id="confirmBtn" class="btn btn-cc">
-                <span id="confirmSpinner" class="spinner-border spinner-sm d-none me-1"></span>
-                <i class="bi bi-check-circle me-1"></i>Confirm Booking
+            
+            <div class="mt-4 d-flex gap-2">
+              <button id="confirmBtn" class="btn btn-cc px-4 py-2 fw-bold">
+                <span id="confirmSpinner" class="spinner-border spinner-border-sm d-none me-1"></span>
+                <i class="bi bi-check-circle me-1"></i>Confirm & Book Now
               </button>
-              <button id="clearBtn" class="btn btn-outline-secondary ms-2">Clear Selection</button>
+              <button id="clearBtn" class="btn btn-outline-secondary px-3">Clear Selection</button>
             </div>
           </div>
         </div>
@@ -93,120 +173,218 @@
 </div>
 
 <div id="alert-bar"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/js/api.js"></script>
 <script src="/js/utils.js"></script>
 <script>
-let selectedSlots = [];
-let currentCourt  = null;
+let selectedSlot = null;
+let currentCourt = null;
+let memberProfile = null;
+let courtsList = [];
 
 async function loadSlots() {
   const courtId = document.getElementById('courtSelect').value;
   const date    = document.getElementById('dateSelect').value;
-  if (!courtId || !date) { showAlert('Please select both a court and a date.', 'warning'); return; }
+  if (!courtId || !date) { 
+    showAlert('Please select both a court and a date.', 'warning'); 
+    return; 
+  }
 
-  const opts = document.getElementById('courtSelect').options;
-  currentCourt = { id: courtId, price: parseFloat(opts[opts.selectedIndex].dataset.price || 0) };
+  const courtObj = courtsList.find(c => String(c.id) === String(courtId));
+  if (courtObj) {
+    currentCourt = { ...courtObj, price: parseFloat(courtObj.base_price_per_hour || 500) };
+    document.getElementById('selectedCourtSummary').textContent = `${courtObj.name} (${courtObj.sport})`;
+  }
 
   const area = document.getElementById('slotArea');
-  area.innerHTML = '<div class="text-center py-3"><div class="spinner-border text-cc"></div> Loading slots…</div>';
-  selectedSlots = [];
+  area.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-cc mb-2"></div><div class="text-muted small">Loading available slots...</div></div>';
+  selectedSlot = null;
   document.getElementById('confirmCard').style.display = 'none';
 
   try {
     const slots = await api.get(`/api/courts/${courtId}/slots?date=${date}`);
-    if (!slots.length) { area.innerHTML = '<p class="text-muted text-center py-3">No slots available for this date.</p>'; return; }
+    if (!slots || !slots.length) { 
+      area.innerHTML = '<p class="text-muted text-center py-4"><i class="bi bi-info-circle me-1"></i>No slots available for this date.</p>'; 
+      return; 
+    }
 
-    area.innerHTML = '<div class="d-flex flex-wrap gap-1" id="slotsGrid"></div>';
-    const grid = document.getElementById('slotsGrid');
-    slots.forEach(s => {
-      const time = s.slot_start.slice(11, 16);
-      const btn  = document.createElement('button');
-      btn.type        = 'button';
-      btn.className   = `slot-btn ${s.available ? 'available' : 'booked'}`;
-      btn.textContent = time;
-      btn.title       = s.available ? 'Available' : 'Already booked';
-      btn.disabled    = !s.available;
-      btn.dataset.start = s.slot_start;
-      btn.dataset.end   = s.slot_end;
+    let gridHtml = '<div class="row g-2" id="slotsGrid">';
+    slots.forEach((s, idx) => {
+      const rawStart = s.start_time || (s.slot_start ? String(s.slot_start).slice(11, 19) : '00:00:00');
+      const rawEnd   = s.end_time   || (s.slot_end   ? String(s.slot_end).slice(11, 19)   : '00:00:00');
+      
+      const startShort = String(rawStart).slice(0, 5);
+      const endShort   = String(rawEnd).slice(0, 5);
+      const isAvailable = Boolean(s.available);
 
-      btn.addEventListener('click', () => toggleSlot(btn, s));
-      grid.appendChild(btn);
+      gridHtml += `
+        <div class="col-sm-6 col-md-4">
+          <div class="slot-card ${isAvailable ? 'available' : 'booked'}" 
+               id="slotCard_${idx}"
+               data-idx="${idx}"
+               data-start="${escHtml(rawStart)}" 
+               data-end="${escHtml(rawEnd)}"
+               data-startshort="${escHtml(startShort)}"
+               data-endshort="${escHtml(endShort)}"
+               data-available="${isAvailable}">
+            <div>
+              <strong class="d-block" style="font-size: 0.95rem;">${startShort} – ${endShort}</strong>
+              <small class="${isAvailable ? 'text-success' : 'text-muted'}">${isAvailable ? 'Available' : 'Booked'}</small>
+            </div>
+            <span class="badge ${isAvailable ? 'bg-success bg-opacity-10 text-success' : 'bg-secondary text-white'}">
+              ${isAvailable ? '<i class="bi bi-check2"></i>' : '<i class="bi bi-lock-fill"></i>'}
+            </span>
+          </div>
+        </div>
+      `;
     });
-  } catch(e) { area.innerHTML = `<p class="text-danger text-center py-3">${escHtml(e.message)}</p>`; }
+    gridHtml += '</div>';
+    area.innerHTML = gridHtml;
+
+    // Attach click event listeners to slot cards
+    document.querySelectorAll('#slotsGrid .slot-card.available').forEach(card => {
+      card.addEventListener('click', () => {
+        const rawStart = card.dataset.start;
+        const rawEnd   = card.dataset.end;
+        const startShort = card.dataset.startshort;
+        const endShort   = card.dataset.endshort;
+        
+        selectSlot(card, { rawStart, rawEnd, startShort, endShort });
+      });
+    });
+
+  } catch(e) { 
+    area.innerHTML = `<p class="text-danger text-center py-3"><i class="bi bi-exclamation-triangle me-1"></i>${escHtml(e.message || 'Failed to load slots')}</p>`; 
+  }
 }
 
-function toggleSlot(btn, s) {
-  if (btn.classList.contains('selected')) {
-    btn.classList.replace('selected','available');
-    selectedSlots = selectedSlots.filter(x => x.start !== s.slot_start);
-  } else {
-    if (selectedSlots.length >= 2) { showAlert('Select exactly 2 consecutive 30-minute slots.', 'warning'); return; }
-    btn.classList.replace('available','selected');
-    selectedSlots.push({ start: s.slot_start, end: s.slot_end });
-  }
-  // Show/hide confirm section
-  if (selectedSlots.length === 2) {
-    selectedSlots.sort((a,b) => a.start.localeCompare(b.start));
-    const price = (2/2) * currentCourt.price;  // 2 slots = 1 hr
-    document.getElementById('amountDisplay').value = `₹${price.toFixed(2)}`;
-    document.getElementById('confirmCard').style.display = '';
-    document.getElementById('bookErr').classList.add('d-none');
-  } else {
-    document.getElementById('confirmCard').style.display = 'none';
-  }
+function selectSlot(card, slotData) {
+  // Clear previous selection
+  document.querySelectorAll('#slotsGrid .slot-card.selected').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+
+  selectedSlot = {
+    court_id: currentCourt.id,
+    booking_date: document.getElementById('dateSelect').value,
+    start_time: slotData.rawStart,
+    end_time: slotData.rawEnd,
+    startShort: slotData.startShort,
+    endShort: slotData.endShort
+  };
+
+  const basePrice = currentCourt.price;
+  const discPct = memberProfile ? (Number(memberProfile.court_discount_pct) || 0) : 0;
+  const discAmount = (basePrice * discPct) / 100;
+  const finalPrice = Math.max(0, basePrice - discAmount);
+
+  document.getElementById('summaryCourtName').textContent = `${currentCourt.name} (${currentCourt.sport})`;
+  document.getElementById('summaryDateTime').textContent = `${fmtDate(selectedSlot.booking_date)} | ${slotData.startShort} to ${slotData.endShort} (1 hour)`;
+  document.getElementById('summaryBasePrice').textContent = fmtINR(basePrice);
+  document.getElementById('summaryDiscount').textContent = discPct > 0 
+    ? `-${fmtINR(discAmount)} (${discPct}% ${memberProfile.plan_name || 'Member'} Discount)`
+    : 'No discount (0%)';
+  document.getElementById('amountDisplay').textContent = fmtINR(finalPrice);
+
+  document.getElementById('confirmCard').style.display = '';
+  document.getElementById('bookErr').classList.add('d-none');
+  document.getElementById('confirmCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 document.getElementById('clearBtn').addEventListener('click', () => {
-  document.querySelectorAll('#slotsGrid .slot-btn.selected').forEach(b => b.classList.replace('selected','available'));
-  selectedSlots = [];
+  document.querySelectorAll('#slotsGrid .slot-card.selected').forEach(b => b.classList.remove('selected'));
+  selectedSlot = null;
   document.getElementById('confirmCard').style.display = 'none';
 });
 
 document.getElementById('confirmBtn').addEventListener('click', async () => {
+  if (!selectedSlot) return;
+
   const btn = document.getElementById('confirmBtn');
   const sp  = document.getElementById('confirmSpinner');
   const err = document.getElementById('bookErr');
   err.classList.add('d-none');
-  btn.disabled=true; sp.classList.remove('d-none');
+  btn.disabled = true; 
+  sp.classList.remove('d-none');
 
   try {
     const res = await api.post('/api/bookings', {
-      court_id:       currentCourt.id,
-      booking_date:   document.getElementById('dateSelect').value,
-      start_time:     selectedSlots[0].start.slice(11,19),
-      end_time:       selectedSlots[1].end.slice(11,19),
-      payment_method: document.getElementById('payMethod').value,
-      slots: selectedSlots
+      court_id:       selectedSlot.court_id,
+      booking_date:   selectedSlot.booking_date,
+      start_time:     selectedSlot.start_time,
+      end_time:       selectedSlot.end_time,
+      payment_method: document.getElementById('payMethod').value
     });
-    showAlert(`Booking confirmed! Code: ${res.booking_code}`);
-    selectedSlots = [];
-    document.getElementById('confirmCard').style.display='none';
-    loadSlots();
+    
+    showAlert(`🎉 Booking Confirmed! Code: ${res.booking_code || res.bookingCode || 'CC-BOOKED'}`);
+    selectedSlot = null;
+    document.getElementById('confirmCard').style.display = 'none';
+    await loadSlots();
   } catch(e) {
-    err.textContent = e.message;
+    err.textContent = e.message || 'Failed to complete booking.';
     err.classList.remove('d-none');
-  } finally { btn.disabled=false; sp.classList.add('d-none'); }
+  } finally { 
+    btn.disabled = false; 
+    sp.classList.add('d-none'); 
+  }
 });
 
 (async () => {
   const user = await loadSession();
-  if (!user) return;
-  document.getElementById('userNameSidebar').textContent = user.full_name;
+  if (!user || user.role !== 'member') {
+    window.location.href = '/shared/login.html';
+    return;
+  }
+  document.getElementById('userNameSidebar').textContent = user.full_name || user.name;
+  document.getElementById('userInitial').textContent = (user.full_name || user.name || 'M').charAt(0).toUpperCase();
 
-  // Set min date to today
-  const today = new Date().toISOString().slice(0,10);
-  document.getElementById('dateSelect').min   = today;
-  document.getElementById('dateSelect').value = today;
+  // Load Member Profile to show discount & plan badge
+  try {
+    memberProfile = await api.get('/api/members/profile');
+    if (memberProfile) {
+      document.getElementById('userPlanSidebar').textContent = memberProfile.plan_name || 'Member';
+      const badge = document.getElementById('memberDiscountBadge');
+      if (Number(memberProfile.court_discount_pct) > 0) {
+        badge.innerHTML = `<i class="bi bi-tag-fill me-1"></i>${memberProfile.court_discount_pct}% ${memberProfile.plan_name} Court Discount Active`;
+      }
+    }
+  } catch (e) {
+    console.warn('Member profile lookup', e);
+  }
 
-  // Load courts
-  const courts = await api.get('/api/courts').catch(() => []);
-  const sel    = document.getElementById('courtSelect');
-  courts.forEach(c => {
-    sel.insertAdjacentHTML('beforeend',
-      `<option value="${c.id}" data-price="${c.base_price_per_hour}">${escHtml(c.name)} – ₹${c.base_price_per_hour}/hr</option>`);
-  });
+  // Set min date to today and max date to 14 days in advance
+  const now = new Date();
+  const today = now.toISOString().slice(0, 10);
+  const maxDate = new Date();
+  maxDate.setDate(now.getDate() + 14);
+  const maxDateStr = maxDate.toISOString().slice(0, 10);
 
+  const dateInput = document.getElementById('dateSelect');
+  dateInput.min   = today;
+  dateInput.max   = maxDateStr;
+  dateInput.value = today;
+
+  // Load active courts list
+  try {
+    courtsList = await api.get('/api/courts').catch(() => []);
+    const sel = document.getElementById('courtSelect');
+    courtsList.forEach(c => {
+      sel.insertAdjacentHTML('beforeend',
+        `<option value="${c.id}">${escHtml(c.name)} (${escHtml(c.sport)}) – ₹${c.base_price_per_hour}/hr</option>`
+      );
+    });
+    if (courtsList.length > 0) {
+      sel.value = courtsList[0].id;
+      loadSlots();
+    }
+  } catch(e) {
+    showAlert('Failed to load courts: ' + e.message, 'danger');
+  }
+
+  document.getElementById('courtSelect').addEventListener('change', loadSlots);
+  document.getElementById('dateSelect').addEventListener('change', loadSlots);
   document.getElementById('loadSlotsBtn').addEventListener('click', loadSlots);
+
   document.getElementById('logoutBtn').addEventListener('click', async () => {
     await api.post('/api/auth/logout');
     window.location.href = '/shared/login.html';
