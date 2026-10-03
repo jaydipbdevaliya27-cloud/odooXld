@@ -1532,15 +1532,18 @@ function renderOrdersTable() {
   }).join('');
 }
 
-function openOrderDetail(orderId) {
-  const o = ORDERS_CACHE.find(item => item.id === orderId);
-  if (!o) return;
+async function openOrderDetail(orderId) {
+  let o = ORDERS_CACHE.find(item => item.id === orderId) || {};
+  try {
+    const liveOrder = await api.get(`/api/orders/${orderId}`);
+    if (liveOrder && liveOrder.id) o = liveOrder;
+  } catch (e) {}
 
-  document.getElementById('orderModalCode').textContent = `Order ${o.order_code}`;
+  document.getElementById('orderModalCode').textContent = `Order ${o.order_code || ('#' + o.id)}`;
   document.getElementById('orderModalDate').textContent = fmtDate(o.created_at);
   document.getElementById('orderCustomerName').textContent = o.member_name || o.guest_name || 'Walk-in Customer';
 
-  const tier = o.tier || (o.discount_pct >= 10 ? 'Gold' : (o.discount_pct >= 5 ? 'Silver' : 'Standard'));
+  const tier = o.tier || o.plan_name || (o.discount_pct >= 10 ? 'Gold' : (o.discount_pct >= 5 ? 'Silver' : 'Standard'));
   document.getElementById('orderMemberTier').textContent = tier;
   document.getElementById('orderDiscountRate').textContent = `${o.discount_pct || 0}% Automatic Shop Discount`;
   document.getElementById('orderPaymentMethod').textContent = (o.payment_method || 'card').toUpperCase();
@@ -1557,7 +1560,7 @@ function openOrderDetail(orderId) {
   const tbody = document.getElementById('orderItemsTableBody');
   tbody.innerHTML = items.map(item => `
     <tr>
-      <td>${escHtml(item.product_name)}</td>
+      <td>${escHtml(item.product_name)} ${item.variant_name ? `<span class="badge bg-light text-dark border ms-1">${escHtml(item.variant_name)}</span>` : ''}</td>
       <td class="text-center">${item.quantity}</td>
       <td>${fmtINR(item.unit_price)}</td>
       <td class="text-end fw-semibold">${fmtINR(item.line_total)}</td>
