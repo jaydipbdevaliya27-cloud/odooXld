@@ -38,16 +38,26 @@
 </head>
 <body>
 <div class="cc-wrapper">
-  <nav class="cc-sidebar d-flex flex-column">
-    <div class="brand"><i class="bi bi-trophy-fill me-2 text-warning"></i>Champions Club</div>
-    <ul class="nav flex-column mt-2 flex-grow-1">
-      <li><a href="/member/dashboard.html" class="nav-link active"><i class="bi bi-house"></i>My Dashboard</a></li>
-      <li><a href="/member/shop.html"      class="nav-link"><i class="bi bi-shop"></i>Browse Products</a></li>
-      <li><a href="/member/book.html"      class="nav-link"><i class="bi bi-calendar-plus"></i>Book a Court</a></li>
-      <li><a href="/member/bookings.html"  class="nav-link"><i class="bi bi-calendar-check"></i>My Bookings</a></li>
-    </ul>
-    <div class="p-3">
-      <span id="userNameSidebar" class="small text-muted d-block mb-2"></span>
+  <nav class="cc-sidebar d-flex flex-column justify-content-between">
+    <div>
+      <div class="brand"><i class="bi bi-trophy-fill me-2 text-warning"></i>Champions Club</div>
+      <ul class="nav flex-column mt-2">
+        <li><a href="/member/dashboard.html" class="nav-link active"><i class="bi bi-house"></i>My Dashboard</a></li>
+        <li><a href="/member/shop.html"      class="nav-link"><i class="bi bi-shop"></i>Browse Products</a></li>
+        <li><a href="/member/book.html"      class="nav-link"><i class="bi bi-calendar-plus"></i>Book a Court</a></li>
+        <li><a href="/member/bookings.html"  class="nav-link"><i class="bi bi-calendar-check"></i>My Bookings</a></li>
+      </ul>
+    </div>
+    <div class="p-3 border-top border-secondary border-opacity-25">
+      <div class="d-flex align-items-center gap-2 mb-2 p-2 rounded" style="background:rgba(255,255,255,0.08);">
+        <div class="rounded-circle bg-warning text-dark fw-bold d-flex align-items-center justify-content-center" style="width:32px; height:32px; font-size:0.85rem;" id="userInitial">
+          M
+        </div>
+        <div class="overflow-hidden">
+          <span id="userNameSidebar" class="fw-semibold text-white d-block text-truncate small" style="max-width:140px;">Member</span>
+          <span id="userPlanSidebar" class="badge bg-warning text-dark py-0 px-1" style="font-size:0.68rem;">Member</span>
+        </div>
+      </div>
       <button id="logoutBtn" class="btn btn-sm btn-outline-light w-100"><i class="bi bi-box-arrow-right me-1"></i>Logout</button>
     </div>
   </nav>
@@ -198,12 +208,12 @@
     if (Array.isArray(prods) && prods.length) {
       pGrid.innerHTML = prods.slice(0, 4).map(p => {
         const discPrice = memberDiscountPct > 0 ? (p.price * (1 - memberDiscountPct / 100)) : p.price;
-        const mainImg = (p.images && p.images[0]) || p.image_url || 'https://images.unsplash.com/photo-1617083934555-563d309be04e?w=400';
+        const mainImg = p.image_url || ((p.images && p.images[0]) ? p.images[0] : 'https://images.unsplash.com/photo-1617083934555-563d309be04e?w=400');
         return `
           <div class="col-md-6 col-lg-3">
             <div class="dash-prod-card">
               <div class="dash-prod-img">
-                <img src="${escHtml(mainImg)}" alt="${escHtml(p.name)}" onerror="this.src='https://images.unsplash.com/photo-1617083934555-563d309be04e?w=400'">
+                <img src="${escHtml(mainImg)}" alt="${escHtml(p.name)}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=400'">
               </div>
               <div class="p-3 d-flex flex-column flex-grow-1">
                 <span class="badge bg-light text-dark border align-self-start mb-1" style="font-size:0.7rem;">${escHtml(p.category || 'Gear')}</span>
