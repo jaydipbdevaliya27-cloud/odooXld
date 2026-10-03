@@ -1,0 +1,170 @@
+/* ==========================================================================
+   client/css/main.css  –  Champions Club global styles
+   Uses Bootstrap 5.3 as base; this file adds brand tokens, layout helpers,
+   card styles, status badges, and animation utilities.
+   ========================================================================== */
+
+/* ── Brand tokens ──────────────────────────────────────────────────────────── */
+:root {
+  --cc-green:       #1a7a4a;   /* primary brand colour */
+  --cc-green-dark:  #135c37;
+  --cc-green-light: #d4edda;
+  --cc-gold:        #c8962a;   /* accent – gold trophy */
+  --cc-bg:          #f5f7f5;   /* page background */
+  --cc-sidebar:     #0f3d25;   /* dark sidebar */
+  --cc-sidebar-txt: #c8e6c9;
+  --cc-card-shadow: 0 2px 8px rgba(0,0,0,.10);
+}
+
+/* ── Base ───────────────────────────────────────────────────────────────────── */
+body {
+  background: var(--cc-bg);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: .95rem;
+}
+
+/* ── Sidebar layout ─────────────────────────────────────────────────────────── */
+.cc-wrapper    { display: flex; min-height: 100vh; }
+.cc-sidebar    {
+  width: 230px;
+  min-height: 100vh;
+  background: var(--cc-sidebar);
+  color: var(--cc-sidebar-txt);
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+.cc-sidebar .brand {
+  padding: 1.25rem 1rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: .5px;
+  border-bottom: 1px solid rgba(255,255,255,.1);
+  color: #fff;
+}
+.cc-sidebar .nav-link {
+  color: var(--cc-sidebar-txt);
+  padding: .5rem 1rem;
+  border-radius: 6px;
+  margin: 2px 6px;
+  font-size: .9rem;
+  transition: background .2s, color .2s;
+}
+.cc-sidebar .nav-link:hover,
+.cc-sidebar .nav-link.active {
+  background: rgba(255,255,255,.12);
+  color: #fff;
+}
+.cc-sidebar .nav-link i { margin-right: 8px; }
+
+.cc-main { flex: 1; padding: 1.5rem; overflow-y: auto; }
+
+/* ── Topbar ─────────────────────────────────────────────────────────────────── */
+.cc-topbar {
+  background: #fff;
+  border-bottom: 1px solid #dee2e6;
+  padding: .6rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.cc-topbar .page-title { font-weight: 600; font-size: 1.1rem; margin: 0; }
+
+/* ── KPI Cards ──────────────────────────────────────────────────────────────── */
+.kpi-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: var(--cc-card-shadow);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.kpi-card .kpi-icon {
+  width: 48px; height: 48px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem;
+}
+.kpi-card .kpi-value { font-size: 1.6rem; font-weight: 700; line-height: 1; }
+.kpi-card .kpi-label { font-size: .8rem; color: #6c757d; margin-top: 2px; }
+
+/* ── Content card ───────────────────────────────────────────────────────────── */
+.cc-card {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: var(--cc-card-shadow);
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+.cc-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1rem;
+}
+.cc-card-header h5 { margin: 0; font-weight: 600; }
+
+/* ── Status badges ──────────────────────────────────────────────────────────── */
+.badge-active    { background: #d4edda; color: #155724; }
+.badge-expired   { background: #f8d7da; color: #721c24; }
+.badge-suspended { background: #fff3cd; color: #856404; }
+.badge-confirmed { background: #cce5ff; color: #004085; }
+.badge-cancelled { background: #f8d7da; color: #721c24; }
+.badge-completed { background: #d4edda; color: #155724; }
+.badge-open      { background: #fff3cd; color: #856404; }
+
+/* ── Primary button ─────────────────────────────────────────────────────────── */
+.btn-cc {
+  background: var(--cc-green);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: .42rem .9rem;
+  font-size: .9rem;
+  transition: background .2s;
+}
+.btn-cc:hover  { background: var(--cc-green-dark); color: #fff; }
+.btn-cc:disabled { opacity: .65; }
+
+/* ── Table tweaks ───────────────────────────────────────────────────────────── */
+.table th { font-size: .8rem; text-transform: uppercase; letter-spacing: .5px; color: #6c757d; }
+.table td { vertical-align: middle; font-size: .9rem; }
+
+/* ── Alert bar ──────────────────────────────────────────────────────────────── */
+#alert-bar { position: fixed; top: 1rem; right: 1rem; z-index: 9999; min-width: 300px; }
+
+/* ── Login page ─────────────────────────────────────────────────────────────── */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--cc-sidebar) 0%, var(--cc-green) 100%);
+}
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  background: #fff;
+  border-radius: 14px;
+  padding: 2.5rem 2rem;
+  box-shadow: 0 8px 32px rgba(0,0,0,.25);
+}
+.login-card .logo-area { text-align: center; margin-bottom: 1.5rem; }
+.login-card .logo-area h2 { color: var(--cc-green); font-weight: 800; margin: .5rem 0 0; }
+
+/* ── Slot grid ──────────────────────────────────────────────────────────────── */
+.slot-btn {
+  width: 80px; height: 40px;
+  font-size: .78rem; border-radius: 6px;
+  border: 1px solid #ced4da;
+  cursor: pointer; transition: background .15s;
+}
+.slot-btn.available  { background: #fff; }
+.slot-btn.booked     { background: #f8d7da; color: #721c24; cursor: not-allowed; }
+.slot-btn.selected   { background: var(--cc-green); color: #fff; border-color: var(--cc-green); }
+
+/* ── Misc ───────────────────────────────────────────────────────────────────── */
+.text-cc   { color: var(--cc-green) !important; }
+.bg-cc     { background: var(--cc-green) !important; }
+.spinner-sm { width: 1.2rem; height: 1.2rem; }

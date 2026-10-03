@@ -1,0 +1,21 @@
+{
+  "name": "champions-club",
+  "version": "1.0.0",
+  "description": "The Champions Club Management System",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "nodemon server/server.js",
+    "seed": "node server/scripts/seed.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "mysql2": "^3.9.7"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}

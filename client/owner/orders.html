@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Orders – Champions Club</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+<div class="cc-wrapper">
+  <nav class="cc-sidebar d-flex flex-column">
+    <div class="brand"><i class="bi bi-trophy-fill me-2 text-warning"></i>Champions Club</div>
+    <ul class="nav flex-column mt-2 flex-grow-1">
+      <li><a href="/owner/dashboard.html" class="nav-link"><i class="bi bi-speedometer2"></i>Dashboard</a></li>
+      <li><a href="/owner/members.html"   class="nav-link"><i class="bi bi-people"></i>Members</a></li>
+      <li><a href="/owner/bookings.html"  class="nav-link"><i class="bi bi-calendar-check"></i>Bookings</a></li>
+      <li><a href="/owner/orders.html"    class="nav-link active"><i class="bi bi-bag"></i>Orders</a></li>
+      <li><a href="/owner/products.html"  class="nav-link"><i class="bi bi-box-seam"></i>Products</a></li>
+      <li><a href="/owner/payments.html"  class="nav-link"><i class="bi bi-credit-card"></i>Payments</a></li>
+      <li><a href="/owner/leads.html"     class="nav-link"><i class="bi bi-person-plus"></i>Leads</a></li>
+      <li><a href="/owner/plans.html"     class="nav-link"><i class="bi bi-stars"></i>Plans</a></li>
+      <li><a href="/owner/courts.html"    class="nav-link"><i class="bi bi-geo-alt"></i>Courts</a></li>
+    </ul>
+    <div class="p-3">
+      <span id="userNameSidebar" class="small text-muted d-block mb-2"></span>
+      <button id="logoutBtn" class="btn btn-sm btn-outline-light w-100"><i class="bi bi-box-arrow-right me-1"></i>Logout</button>
+    </div>
+  </nav>
+
+  <div class="d-flex flex-column flex-grow-1">
+    <div class="cc-topbar">
+      <h5 class="page-title"><i class="bi bi-bag me-2 text-cc"></i>Shop & Bar Orders</h5>
+      <button class="btn btn-cc btn-sm" data-bs-toggle="modal" data-bs-target="#newOrderModal">
+        <i class="bi bi-plus-circle-fill me-1"></i>New Order
+      </button>
+    </div>
+
+    <main class="cc-main">
+      <!-- Tabs -->
+      <ul class="nav nav-tabs mb-3" id="deptTabs">
+        <li class="nav-item"><button class="nav-link active" data-dept="">All</button></li>
+        <li class="nav-item"><button class="nav-link" data-dept="shop">Shop</button></li>
+        <li class="nav-item"><button class="nav-link" data-dept="bar">Bar</button></li>
+      </ul>
+
+      <!-- Filters -->
+      <div class="cc-card mb-3">
+        <div class="row g-2 align-items-end">
+          <div class="col-md-3">
+            <label class="form-label small fw-semibold">Date</label>
+            <input type="date" id="dateFilter" class="form-control form-control-sm">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small fw-semibold">Status</label>
+            <select id="statusFilter" class="form-select form-select-sm">
+              <option value="">All</option>
+              <option value="open">Open</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <button id="filterBtn" class="btn btn-cc btn-sm w-100">Filter</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="cc-card">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0" id="orderTable">
+            <thead><tr>
+              <th>Code</th><th>Dept</th><th>Channel</th>
+              <th>Customer</th><th>Total</th><th>Status</th><th>Actions</th>
+            </tr></thead>
+            <tbody><tr><td colspan="7" class="text-center py-4 text-muted">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ── New Order Modal ────────────────────────────────────────────────────── -->
+<div class="modal fade" id="newOrderModal" tabindex="-1">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-bag-plus me-2 text-cc"></i>New Order</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3 mb-3">
+          <div class="col-md-3">
+            <label class="form-label">Department *</label>
+            <select id="o_dept" class="form-select">
+              <option value="shop">Shop</option>
+              <option value="bar">Bar</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Channel *</label>
+            <select id="o_channel" class="form-select">
+              <option value="counter">Counter</option>
+              <option value="table">Table</option>
+              <option value="online">Online</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Table No</label>
+            <input type="text" id="o_table" class="form-control" placeholder="T1 – T12">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Member Code / Guest</label>
+            <input type="text" id="o_member" class="form-control" placeholder="CC-001 or blank">
+          </div>
+        </div>
+
+        <!-- Product picker -->
+        <div class="row g-2 mb-2">
+          <div class="col-md-6">
+            <label class="form-label">Add Product</label>
+            <select id="o_product" class="form-select form-select-sm">
+              <option value="">-- Select product --</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Qty</label>
+            <input type="number" id="o_qty" class="form-control form-control-sm" value="1" min="1">
+          </div>
+          <div class="col-md-2 d-flex align-items-end">
+            <button type="button" id="addItemBtn" class="btn btn-outline-secondary btn-sm w-100">Add</button>
+          </div>
+        </div>
+
+        <!-- Items table -->
+        <table class="table table-sm" id="itemsTable">
+          <thead><tr><th>Product</th><th>Qty</th><th>Unit Price</th><th>Total</th><th></th></tr></thead>
+          <tbody></tbody>
+          <tfoot>
+            <tr><td colspan="3" class="text-end fw-semibold">Order Total:</td>
+                <td colspan="2" id="orderTotal" class="fw-bold text-cc">₹0.00</td></tr>
+          </tfoot>
+        </table>
+
+        <div id="orderErr" class="alert alert-danger d-none small py-2"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" id="orderSaveBtn" class="btn btn-cc">
+          <span id="orderSpinner" class="spinner-border spinner-sm d-none me-1"></span>
+          Create Order
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Complete Order Modal -->
+<div class="modal fade" id="completeModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Complete Order & Record Payment</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="c_orderId">
+        <p>Order Total: <strong id="c_total"></strong></p>
+        <div class="mb-3">
+          <label class="form-label">Payment Method</label>
+          <select id="c_pay" class="form-select">
+            <option value="cash">Cash</option>
+            <option value="card">Card</option>
+            <option value="upi">UPI</option>
+          </select>
+        </div>
+        <div id="completeErr" class="alert alert-danger d-none small py-2"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" id="completeSaveBtn" class="btn btn-cc">Mark Completed</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="alert-bar"></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/utils.js"></script>
+<script>
+let allProducts = [];
+let orderItems  = [];  // [{product, qty}]
+let activeDept  = '';
+
+async function loadProducts() {
+  allProducts = await api.get('/api/products').catch(() => []);
+  populateProductSelect();
+}
+
+function populateProductSelect() {
+  const dept = document.getElementById('o_dept').value;
+  const sel  = document.getElementById('o_product');
+  sel.innerHTML = '<option value="">-- Select product --</option>';
+  allProducts
+    .filter(p => p.department === dept)
+    .forEach(p => {
+      sel.insertAdjacentHTML('beforeend',
+        `<option value="${p.id}" data-price="${p.price}" data-name="${escHtml(p.name)}">${escHtml(p.name)} – ₹${p.price}</option>`);
+    });
+}
+
+function renderItems() {
+  const tbody = document.querySelector('#itemsTable tbody');
+  let total   = 0;
+  if (!orderItems.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="text-muted text-center">No items added</td></tr>';
+  } else {
+    tbody.innerHTML = orderItems.map((item, i) => {
+      const lt = item.qty * item.price;
+      total += lt;
+      return `<tr>
+        <td>${escHtml(item.name)}</td>
+        <td>${item.qty}</td>
+        <td>${fmtINR(item.price)}</td>
+        <td>${fmtINR(lt)}</td>
+        <td><button class="btn btn-sm btn-outline-danger btn-remove-item" data-idx="${i}">×</button></td>
+      </tr>`;
+    }).join('');
+    document.querySelectorAll('.btn-remove-item').forEach(b => {
+      b.addEventListener('click', () => { orderItems.splice(b.dataset.idx, 1); renderItems(); });
+    });
+  }
+  document.getElementById('orderTotal').textContent = fmtINR(total);
+}
+
+document.getElementById('o_dept').addEventListener('change', populateProductSelect);
+
+document.getElementById('addItemBtn').addEventListener('click', () => {
+  const sel = document.getElementById('o_product');
+  const opt = sel.options[sel.selectedIndex];
+  if (!opt.value) return;
+  const qty  = parseInt(document.getElementById('o_qty').value) || 1;
+  const existing = orderItems.find(x => x.id == opt.value);
+  if (existing) { existing.qty += qty; }
+  else { orderItems.push({ id: opt.value, name: opt.dataset.name, price: parseFloat(opt.dataset.price), qty }); }
+  renderItems();
+});
+
+async function loadOrders() {
+  const date   = document.getElementById('dateFilter').value;
+  const status = document.getElementById('statusFilter').value;
+  let url = '/api/orders?';
+  if (activeDept) url += 'dept=' + activeDept + '&';
+  if (date)   url += 'date='   + date   + '&';
+  if (status) url += 'status=' + status;
+
+  const rows  = await api.get(url).catch(() => []);
+  const tbody = document.querySelector('#orderTable tbody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No orders found</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(o => `
+    <tr>
+      <td><code>${escHtml(o.order_code)}</code></td>
+      <td><span class="badge bg-secondary text-capitalize">${escHtml(o.department)}</span></td>
+      <td>${escHtml(o.channel)}</td>
+      <td>${escHtml(o.member_name || o.guest_name || 'Walk-in')}</td>
+      <td>${fmtINR(o.total)}</td>
+      <td>${statusBadge(o.status)}</td>
+      <td>${o.status === 'open' ? `
+        <button class="btn btn-sm btn-cc btn-complete" data-id="${o.id}" data-total="${o.total}">Complete</button>
+        <button class="btn btn-sm btn-outline-danger ms-1 btn-cancel-order" data-id="${o.id}">Cancel</button>` : ''
+      }</td>
+    </tr>`).join('');
+
+  document.querySelectorAll('.btn-complete').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('c_orderId').value = btn.dataset.id;
+      document.getElementById('c_total').textContent = fmtINR(btn.dataset.total);
+      new bootstrap.Modal(document.getElementById('completeModal')).show();
+    });
+  });
+  document.querySelectorAll('.btn-cancel-order').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Cancel this order?')) return;
+      try { await api.post(`/api/orders/${btn.dataset.id}/cancel`); showAlert('Order cancelled'); loadOrders(); }
+      catch(e) { showAlert(e.message, 'danger'); }
+    });
+  });
+}
+
+document.getElementById('completeSaveBtn').addEventListener('click', async () => {
+  const id  = document.getElementById('c_orderId').value;
+  const err = document.getElementById('completeErr');
+  err.classList.add('d-none');
+  try {
+    await api.post(`/api/orders/${id}/complete`, { payment_method: document.getElementById('c_pay').value });
+    bootstrap.Modal.getInstance(document.getElementById('completeModal')).hide();
+    showAlert('Order completed & payment recorded!');
+    loadOrders();
+  } catch(e) { err.textContent = e.message; err.classList.remove('d-none'); }
+});
+
+document.getElementById('orderSaveBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('orderSaveBtn');
+  const sp  = document.getElementById('orderSpinner');
+  const err = document.getElementById('orderErr');
+  err.classList.add('d-none');
+  if (!orderItems.length) { err.textContent='Add at least one item'; err.classList.remove('d-none'); return; }
+  btn.disabled=true; sp.classList.remove('d-none');
+  try {
+    await api.post('/api/orders', {
+      department:  document.getElementById('o_dept').value,
+      channel:     document.getElementById('o_channel').value,
+      table_no:    document.getElementById('o_table').value.trim() || undefined,
+      member_code: document.getElementById('o_member').value.trim() || undefined,
+      items: orderItems.map(i => ({ product_id: i.id, quantity: i.qty }))
+    });
+    bootstrap.Modal.getInstance(document.getElementById('newOrderModal')).hide();
+    orderItems = []; renderItems();
+    showAlert('Order created!');
+    loadOrders();
+  } catch(e) { err.textContent=e.message; err.classList.remove('d-none'); }
+  finally { btn.disabled=false; sp.classList.add('d-none'); }
+});
+
+// Dept tab switching
+document.querySelectorAll('#deptTabs button').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('#deptTabs button').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    activeDept = tab.dataset.dept;
+    loadOrders();
+  });
+});
+
+(async () => {
+  const user = await loadSession();
+  if (!user) return;
+  document.getElementById('userNameSidebar').textContent = user.full_name;
+  document.getElementById('dateFilter').value = new Date().toISOString().slice(0,10);
+  await loadProducts();
+  renderItems();
+  await loadOrders();
+  document.getElementById('filterBtn').addEventListener('click', loadOrders);
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    await api.post('/api/auth/logout');
+    window.location.href = '/shared/login.html';
+  });
+})();
+</script>
+</body>
+</html>
