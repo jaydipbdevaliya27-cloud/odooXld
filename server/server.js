@@ -17,7 +17,6 @@ const bookingRoutes  = require('./routes/bookings');
 const productRoutes  = require('./routes/products');
 const orderRoutes    = require('./routes/orders');
 const paymentRoutes  = require('./routes/payments');
-const leadRoutes     = require('./routes/leads');
 const reportRoutes   = require('./routes/reports');
 const planRoutes     = require('./routes/plans');
 const staffRoutes    = require('./routes/staff');
@@ -47,7 +46,6 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders',   orderRoutes);
 app.use('/api/payments', paymentRoutes);
-app.use('/api/leads',    leadRoutes);
 app.use('/api/reports',  reportRoutes);
 app.use('/api/plans',    planRoutes);
 

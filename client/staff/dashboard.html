@@ -17,7 +17,6 @@
       <li><a href="/staff/cafeteria.html"      class="nav-link"><i class="bi bi-cup-hot"></i>Bar & Cafeteria</a></li>
       <li><a href="/owner/orders.html"    class="nav-link"><i class="bi bi-bag"></i>Orders</a></li>
       <li><a href="/owner/products.html"  class="nav-link"><i class="bi bi-box-seam"></i>Products</a></li>
-      <li><a href="/owner/leads.html"     class="nav-link"><i class="bi bi-person-plus"></i>Leads</a></li>
     </ul>
     <div class="p-3 border-top border-secondary border-opacity-25">
       <div class="d-flex align-items-center gap-2 mb-2 p-2 rounded" style="background:rgba(255,255,255,0.08);">
@@ -42,28 +41,22 @@
     <main class="cc-main">
       <!-- Quick stats -->
       <div class="row g-3 mb-4">
-        <div class="col-md-3">
+        <div class="col-md-4">
           <div class="kpi-card">
             <div class="kpi-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-calendar-check"></i></div>
             <div><div class="kpi-value" id="todayBookings">—</div><div class="kpi-label">Today's Bookings</div></div>
           </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-4">
           <div class="kpi-card">
             <div class="kpi-icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-bag"></i></div>
             <div><div class="kpi-value" id="openOrders">—</div><div class="kpi-label">Open Orders</div></div>
           </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-4">
           <div class="kpi-card">
             <div class="kpi-icon bg-cc bg-opacity-10" style="color:var(--cc-green)"><i class="bi bi-people"></i></div>
             <div><div class="kpi-value" id="activeMembers">—</div><div class="kpi-label">Active Members</div></div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="kpi-card">
-            <div class="kpi-icon bg-info bg-opacity-10 text-info"><i class="bi bi-person-plus"></i></div>
-            <div><div class="kpi-value" id="newLeads">—</div><div class="kpi-label">New Leads</div></div>
           </div>
         </div>
       </div>
@@ -125,12 +118,6 @@
     document.getElementById('todayBookings').textContent = s.today_bookings;
     document.getElementById('openOrders').textContent   = s.open_orders;
     document.getElementById('activeMembers').textContent= s.active_members;
-  } catch { }
-
-  // New leads count
-  try {
-    const leads = await api.get('/api/leads?status=new');
-    document.getElementById('newLeads').textContent = leads.length;
   } catch { }
 
   // Today's bookings
