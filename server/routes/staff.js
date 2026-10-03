@@ -24,16 +24,15 @@ async function ensureSchema() {
     }
     schemaChecked = true;
   } catch (err) {
-    // If DB is offline or table structure cannot be altered, proceed gracefully
     schemaChecked = true;
   }
 }
 
 // In-memory fallback cache when MySQL is offline or initializing
 let IN_MEMORY_STAFF = [
-  { id: 2, email: 'shop@championsclub.com', full_name: 'Alex Carter', phone: '+91 98765 43210', role: 'staff', assigned_area: 'shop', is_active: 1, created_at: new Date().toISOString() },
-  { id: 4, email: 'bar@championsclub.com', full_name: 'Elena Rostova', phone: '+91 98765 43211', role: 'staff', assigned_area: 'bar', is_active: 1, created_at: new Date().toISOString() },
-  { id: 5, email: 'booking@championsclub.com', full_name: 'David Chen', phone: '+91 98765 43212', role: 'staff', assigned_area: 'booking', is_active: 1, created_at: new Date().toISOString() }
+  { id: 15, email: 'shop@championsclub.com', full_name: 'Alex Carter', phone: '+91 98765 43210', role: 'staff', assigned_area: 'shop', is_active: 1, created_at: new Date().toISOString() },
+  { id: 16, email: 'bar@championsclub.com', full_name: 'Elena Rostova', phone: '+91 98765 43211', role: 'staff', assigned_area: 'bar', is_active: 1, created_at: new Date().toISOString() },
+  { id: 17, email: 'booking@championsclub.com', full_name: 'David Chen', phone: '+91 98765 43212', role: 'staff', assigned_area: 'booking', is_active: 1, created_at: new Date().toISOString() }
 ];
 
 // ── GET /api/staff ───────────────────────────────────────────────────────────
@@ -84,7 +83,7 @@ router.post('/', requireLogin, requireRole('owner'), async (req, res, next) => {
       // Insert into both 'name' and 'full_name' columns for schema compatibility
       const [result] = await db.query(
         `INSERT INTO users (name, full_name, email, password_hash, role, phone, assigned_area, is_active)
-         VALUES (?, ?, ?, 'staff', ?, ?, ?, 1)`,
+         VALUES (?, ?, ?, ?, 'staff', ?, ?, 1)`,
         [full_name.trim(), full_name.trim(), cleanEmail, hashedPassword, phone ? phone.trim() : null, assigned]
       );
 
@@ -128,28 +127,30 @@ router.put('/:id', requireLogin, requireRole('owner'), async (req, res, next) =>
           `UPDATE users SET
              email = COALESCE(?, email),
              full_name = COALESCE(?, full_name),
+             name = COALESCE(?, name),
              phone = ?,
              assigned_area = COALESCE(?, assigned_area),
              is_active = COALESCE(?, is_active),
              password_hash = ?
            WHERE id = ? AND role = 'staff'`,
-          [email ? email.trim().toLowerCase() : null, full_name ? full_name.trim() : null, phone ? phone.trim() : null, assigned_area || null, is_active != null ? is_active : 1, hashedPassword, staffId]
+          [email ? email.trim().toLowerCase() : null, full_name ? full_name.trim() : null, full_name ? full_name.trim() : null, phone ? phone.trim() : null, assigned_area || null, is_active != null ? is_active : 1, hashedPassword, staffId]
         );
       } else {
         await db.query(
           `UPDATE users SET
              email = COALESCE(?, email),
              full_name = COALESCE(?, full_name),
+             name = COALESCE(?, name),
              phone = ?,
              assigned_area = COALESCE(?, assigned_area),
              is_active = COALESCE(?, is_active)
            WHERE id = ? AND role = 'staff'`,
-          [email ? email.trim().toLowerCase() : null, full_name ? full_name.trim() : null, phone ? phone.trim() : null, assigned_area || null, is_active != null ? is_active : 1, staffId]
+          [email ? email.trim().toLowerCase() : null, full_name ? full_name.trim() : null, full_name ? full_name.trim() : null, phone ? phone.trim() : null, assigned_area || null, is_active != null ? is_active : 1, staffId]
         );
       }
 
       const [rows] = await db.query(
-        'SELECT id, email, full_name, phone, role, assigned_area, is_active, created_at FROM users WHERE id = ?',
+        'SELECT id, email, COALESCE(full_name, name) AS full_name, phone, role, assigned_area, is_active, created_at FROM users WHERE id = ?',
         [staffId]
       );
       if (rows.length) return res.json(rows[0]);

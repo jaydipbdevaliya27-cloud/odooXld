@@ -1,10 +1,6 @@
 /**
  * @file server/routes/courts.js
- * @description Court CRUD and slot-availability endpoint.
- * GET  /api/courts                    – list active courts
- * GET  /api/courts/:id/slots?date=    – available 30-min slots for a date
- * POST /api/courts                    – create court (owner/staff)
- * PUT  /api/courts/:id               – update court (owner/staff)
+ * @description Court CRUD and slot-availability endpoint using cc_courts.
  */
 
 const express = require('express');
@@ -18,50 +14,49 @@ const router = express.Router();
 router.get('/', async (req, res, next) => {
   try {
     const [rows] = await db.query(
-      'SELECT * FROM courts WHERE is_active = 1 ORDER BY sport, name'
+      'SELECT * FROM cc_courts WHERE is_active = 1 ORDER BY sport, name'
     );
     res.json(rows);
   } catch (err) { next(err); }
 });
 
+// ── GET /api/courts/all ─────────────────────────────────────────────────────
+router.get('/all', requireLogin, requireRole('owner', 'staff'), async (req, res, next) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM cc_courts ORDER BY sport, name');
+    res.json(rows);
+  } catch (err) { next(err); }
+});
+
 // ── GET /api/courts/:id/slots?date=YYYY-MM-DD ───────────────────────────────
-// Returns list of 30-min slot objects {slot_start, slot_end, available}
 router.get('/:id/slots', requireLogin, async (req, res, next) => {
   try {
     const { date } = req.query;
     if (!date) return res.status(400).json({ error: 'date query param required (YYYY-MM-DD)' });
 
-    // Build all possible slots for the day based on config hours
-    const slots = [];
-    const openH  = cfg.OPENING_HOUR;
-    const closeH = cfg.CLOSING_HOUR;
-    const stepM  = cfg.SLOT_LENGTH_MINUTES;   // 30 minutes per slot
+    const openH  = cfg.OPENING_HOUR || 6;
+    const closeH = cfg.CLOSING_HOUR || 22;
 
+    const slots = [];
     for (let h = openH; h < closeH; h++) {
-      for (let m = 0; m < 60; m += stepM) {
-        const startDt = `${date} ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:00`;
-        const endMin  = m + stepM;
-        const endH    = endMin >= 60 ? h + 1 : h;
-        const endMMin = endMin >= 60 ? endMin - 60 : endMin;
-        const endDt   = `${date} ${String(endH).padStart(2,'0')}:${String(endMMin).padStart(2,'0')}:00`;
-        slots.push({ slot_start: startDt, slot_end: endDt });
-      }
+      const startDt = `${String(h).padStart(2,'0')}:00:00`;
+      const endDt   = `${String(h+1).padStart(2,'0')}:00:00`;
+      slots.push({ start_time: startDt, end_time: endDt });
     }
 
-    // Fetch already-booked slots for this court + date
     const [booked] = await db.query(
-      `SELECT slot_start FROM booking_slots bs
-         JOIN bookings b ON bs.booking_id = b.id
-       WHERE bs.court_id = ? AND bs.slot_date = ? AND b.status != 'cancelled'`,
+      `SELECT start_time, end_time FROM cc_bookings
+        WHERE court_id = ? AND booking_date = ? AND status != 'cancelled'`,
       [req.params.id, date]
     );
-    const bookedSet = new Set(booked.map(r => String(r.slot_start).slice(0, 19)));
 
-    // Mark each slot as available or not
-    const result = slots.map(s => ({
-      ...s,
-      available: !bookedSet.has(s.slot_start)
-    }));
+    const result = slots.map(s => {
+      const isBooked = booked.some(b => b.start_time.slice(0,5) <= s.start_time.slice(0,5) && b.end_time.slice(0,5) > s.start_time.slice(0,5));
+      return {
+        ...s,
+        available: !isBooked
+      };
+    });
 
     res.json(result);
   } catch (err) { next(err); }
@@ -70,14 +65,14 @@ router.get('/:id/slots', requireLogin, async (req, res, next) => {
 // ── POST /api/courts ────────────────────────────────────────────────────────
 router.post('/', requireLogin, requireRole('owner', 'staff'), async (req, res, next) => {
   try {
-    const { name, sport, surface_type, base_price_per_hour } = req.body;
+    const { name, sport, surface_type, base_price_per_hour, is_active } = req.body;
     if (!name || !sport) return res.status(400).json({ error: 'name and sport required' });
 
     const [result] = await db.query(
-      'INSERT INTO courts (name, sport, surface_type, base_price_per_hour) VALUES (?,?,?,?)',
-      [name, sport, surface_type || null, base_price_per_hour || 500]
+      'INSERT INTO cc_courts (name, sport, surface_type, base_price_per_hour, is_active) VALUES (?,?,?,?,?)',
+      [name, sport, surface_type || null, base_price_per_hour || 500, is_active ?? 1]
     );
-    const [rows] = await db.query('SELECT * FROM courts WHERE id = ?', [result.insertId]);
+    const [rows] = await db.query('SELECT * FROM cc_courts WHERE id = ?', [result.insertId]);
     res.status(201).json(rows[0]);
   } catch (err) { next(err); }
 });
@@ -87,11 +82,19 @@ router.put('/:id', requireLogin, requireRole('owner', 'staff'), async (req, res,
   try {
     const { name, sport, surface_type, base_price_per_hour, is_active } = req.body;
     await db.query(
-      'UPDATE courts SET name=?, sport=?, surface_type=?, base_price_per_hour=?, is_active=? WHERE id=?',
+      'UPDATE cc_courts SET name=?, sport=?, surface_type=?, base_price_per_hour=?, is_active=? WHERE id=?',
       [name, sport, surface_type || null, base_price_per_hour, is_active ?? 1, req.params.id]
     );
-    const [rows] = await db.query('SELECT * FROM courts WHERE id = ?', [req.params.id]);
+    const [rows] = await db.query('SELECT * FROM cc_courts WHERE id = ?', [req.params.id]);
     res.json(rows[0]);
+  } catch (err) { next(err); }
+});
+
+// ── DELETE /api/courts/:id ───────────────────────────────────────────────────
+router.delete('/:id', requireLogin, requireRole('owner'), async (req, res, next) => {
+  try {
+    await db.query('UPDATE cc_courts SET is_active=0 WHERE id=?', [req.params.id]);
+    res.json({ message: 'Court deactivated' });
   } catch (err) { next(err); }
 });
 
