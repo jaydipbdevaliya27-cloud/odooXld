@@ -53,6 +53,11 @@ app.use('/api/plans',    planRoutes);
 // Serve the client/ folder at the web root
 app.use(express.static(path.join(__dirname, '..', 'client')));
 
+// Public Landing Page entry point
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'client', 'index.html'));
+});
+
 // SPA-style catch-all: for any unknown GET, serve the login page
 // (deep links are handled by each page's own JS)
 app.get('*', (req, res) => {

@@ -1,0 +1,291 @@
+/* ==========================================================================
+   client/landing/landing.css  –  Champions Club Public Landing Page Styles
+   Reuses brand tokens and utilities from client/css/main.css & Bootstrap 5.3
+   ========================================================================== */
+
+/* ── Public Navbar ──────────────────────────────────────────────────────────── */
+.landing-navbar {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+  transition: all .2s ease;
+}
+.landing-navbar .navbar-brand {
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: .3px;
+  color: var(--cc-sidebar);
+}
+.landing-navbar .nav-link {
+  color: #334155;
+  font-weight: 500;
+  font-size: 0.95rem;
+  padding: 0.5rem 0.9rem;
+  transition: color .2s ease;
+}
+.landing-navbar .nav-link:hover,
+.landing-navbar .nav-link.active {
+  color: var(--cc-green);
+}
+
+/* ── Hero Section ───────────────────────────────────────────────────────────── */
+.landing-hero {
+  background: linear-gradient(135deg, var(--cc-sidebar) 0%, #135533 55%, var(--cc-green) 100%);
+  color: #fff;
+  padding: 5rem 0 4rem;
+  position: relative;
+  overflow: hidden;
+}
+.landing-hero::after {
+  content: '';
+  position: absolute;
+  top: -20%;
+  right: -10%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(200, 150, 42, 0.18) 0%, rgba(200, 150, 42, 0) 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 50px;
+  padding: 0.4rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+.hero-title {
+  font-size: 2.75rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+}
+.hero-desc {
+  font-size: 1.15rem;
+  line-height: 1.6;
+  opacity: 0.9;
+  max-width: 620px;
+}
+
+/* ── Stats Highlight Bar ────────────────────────────────────────────────────── */
+.stats-bar {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  margin-top: -2.5rem;
+  position: relative;
+  z-index: 10;
+  padding: 1.5rem 1.75rem;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+.stat-item {
+  border-right: 1px solid #e2e8f0;
+}
+.stat-item:last-child {
+  border-right: none;
+}
+.stat-num {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--cc-green);
+  line-height: 1.1;
+}
+.stat-label {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* ── Section Titles ─────────────────────────────────────────────────────────── */
+.section-tag {
+  color: var(--cc-green);
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 1px;
+  font-size: 0.82rem;
+  display: inline-block;
+  margin-bottom: 0.35rem;
+}
+.section-heading {
+  font-weight: 800;
+  font-size: 2rem;
+  color: #0f172a;
+  letter-spacing: -0.5px;
+}
+.section-subtitle {
+  color: #64748b;
+  font-size: 1rem;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* ── Facilities & Experience Cards ──────────────────────────────────────────── */
+.facility-card {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: var(--cc-card-shadow);
+  padding: 1.5rem;
+  transition: transform .2s ease, box-shadow .2s ease;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.facility-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
+  border-color: #cbd5e1;
+}
+.facility-icon-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+.icon-tennis    { background: #dcfce7; color: #15803d; }
+.icon-cricket   { background: #fee2e2; color: #b91c1c; }
+.icon-badminton { background: #e0f2fe; color: #0369a1; }
+.icon-cafe      { background: #fef3c7; color: #b45309; }
+.icon-shop      { background: #f3e8ff; color: #7e22ce; }
+
+/* ── Booking Steps ──────────────────────────────────────────────────────────── */
+.step-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: var(--cc-card-shadow);
+  height: 100%;
+  position: relative;
+}
+.step-num-badge {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--cc-green);
+  color: #fff;
+  font-weight: 700;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+/* ── Tier Cards on Landing ──────────────────────────────────────────────────── */
+.landing-tier-card {
+  border-radius: 14px;
+  background: #fff;
+  border: 2px solid transparent;
+  box-shadow: var(--cc-card-shadow);
+  padding: 2rem 1.75rem;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  transition: transform .2s ease, box-shadow .2s ease;
+  position: relative;
+}
+.landing-tier-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.1);
+}
+.landing-tier-card.tier-gold {
+  border-color: #ffc107;
+}
+.landing-tier-card.tier-silver {
+  border-color: #cbd5e1;
+}
+.landing-tier-card.tier-junior {
+  border-color: #0dcaf0;
+}
+.landing-tier-card .popular-badge {
+  position: absolute;
+  top: -12px;
+  right: 24px;
+  background: #ffc107;
+  color: #000;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  padding: 0.25rem 0.75rem;
+  border-radius: 50px;
+}
+.tier-price {
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+.tier-per-year {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+/* ── Contact Section ────────────────────────────────────────────────────────── */
+.landing-contact-card {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+  padding: 2.5rem;
+}
+
+/* ── Footer ─────────────────────────────────────────────────────────────────── */
+.landing-footer {
+  background: var(--cc-sidebar);
+  color: var(--cc-sidebar-txt);
+  padding: 4.5rem 0 2rem;
+  font-size: 0.92rem;
+}
+.landing-footer a {
+  color: var(--cc-sidebar-txt);
+  text-decoration: none;
+  transition: color .2s ease;
+}
+.landing-footer a:hover {
+  color: #fff;
+}
+.footer-heading {
+  color: #fff;
+  font-weight: 700;
+  font-size: 1rem;
+  margin-bottom: 1.25rem;
+}
+.footer-divider {
+  border-color: rgba(255, 255, 255, 0.12);
+  margin: 2.5rem 0 1.5rem;
+}
+
+/* ── Responsive tweaks ──────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .hero-title {
+    font-size: 2.1rem;
+  }
+  .stat-item {
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+  }
+  .stat-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 0;
+  }
+  .stats-bar {
+    margin-top: -1.5rem;
+    padding: 1.25rem;
+  }
+}

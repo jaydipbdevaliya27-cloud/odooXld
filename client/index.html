@@ -3,12 +3,759 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Champions Club Management System</title>
-  <meta http-equiv="refresh" content="0; url=/shared/login.html">
+  <title>Champions Club – Premier Sports & Social Destination</title>
+  <meta name="description" content="Welcome to Champions Club. Championship tennis, cricket nets, and badminton courts. Exclusive Gold, Silver, and Junior memberships, seamless online court booking, gear shop, and cafeteria.">
+  
+  <!-- Bootstrap 5.3 & Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  
+  <!-- Project Core Styles & Landing Page Styles -->
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/landing/landing.css">
 </head>
 <body>
-  <script>
-    window.location.href = '/shared/login.html';
-  </script>
+
+  <!-- ── 1. Public Navigation Bar ─────────────────────────────────────────── -->
+  <nav class="navbar navbar-expand-lg landing-navbar sticky-top">
+    <div class="container">
+      <a class="navbar-brand d-flex align-items-center" href="/">
+        <i class="bi bi-trophy-fill text-warning me-2 fs-4"></i>
+        <span>Champions Club</span>
+      </a>
+
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#landingNavCollapse"
+              aria-controls="landingNavCollapse" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="landingNavCollapse">
+        <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
+          <li class="nav-item">
+            <a class="nav-link" href="#facilities">Facilities</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#membership">Membership</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#booking">Court Booking</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#experience">Cafe & Shop</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#contact">Contact</a>
+          </li>
+        </ul>
+
+        <div class="d-flex align-items-center gap-2">
+          <a href="#contact" class="btn btn-sm btn-outline-secondary px-3 py-2 fw-semibold">
+            Inquire
+          </a>
+          <a href="/shared/login.html" class="btn btn-sm btn-cc px-3 py-2 fw-semibold">
+            <i class="bi bi-box-arrow-in-right me-1"></i> Member Login
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ── 2. Hero Section ────────────────────────────────────────────────── -->
+  <header class="landing-hero">
+    <div class="container py-4">
+      <div class="row align-items-center g-5">
+        <div class="col-lg-7">
+          <div class="hero-badge mb-3">
+            <i class="bi bi-trophy-fill text-warning"></i>
+            <span>Premier Sports & Social Destination</span>
+          </div>
+
+          <h1 class="hero-title mb-3">
+            Elevate Your Game at Champions Club
+          </h1>
+
+          <p class="hero-desc mb-4">
+            Tournament-grade tennis, cricket training nets, and badminton halls. 
+            Enjoy tailored membership tiers, fast 1-hour court bookings, pro shop gear, and chef-curated cafeteria refreshments.
+          </p>
+
+          <div class="d-flex flex-wrap gap-3">
+            <a href="#membership" class="btn btn-warning px-4 py-2 fw-bold text-dark shadow-sm">
+              <i class="bi bi-stars me-1"></i> Explore Memberships
+            </a>
+            <a href="/shared/login.html" class="btn btn-outline-light px-4 py-2 fw-semibold">
+              <i class="bi bi-calendar-check me-1"></i> Book a Court (Login)
+            </a>
+          </div>
+        </div>
+
+        <div class="col-lg-5">
+          <div class="card border-0 shadow-lg p-3 bg-white text-dark rounded-4">
+            <div class="p-3 bg-light rounded-3 mb-3 border">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="badge bg-cc px-3 py-1">Live Club Schedule</span>
+                <span class="small text-muted"><i class="bi bi-clock me-1 text-cc"></i>06:00 AM – 10:00 PM</span>
+              </div>
+              <h5 class="fw-bold mb-1">Reserve Your 1-Hour Court Session</h5>
+              <p class="small text-muted mb-0">New slots available every 30 minutes up to 14 days in advance.</p>
+            </div>
+
+            <ul class="list-unstyled mb-3 small">
+              <li class="d-flex align-items-center mb-2">
+                <i class="bi bi-check-circle-fill text-cc me-2 fs-6"></i>
+                <span><strong>Court A & B (Tennis)</strong> – Clay & Hard Tournament Surfaces</span>
+              </li>
+              <li class="d-flex align-items-center mb-2">
+                <i class="bi bi-check-circle-fill text-cc me-2 fs-6"></i>
+                <span><strong>Cricket Net 1</strong> – Professional Turf Pitch & Netting</span>
+              </li>
+              <li class="d-flex align-items-center mb-2">
+                <i class="bi bi-check-circle-fill text-cc me-2 fs-6"></i>
+                <span><strong>Badminton Hall 1</strong> – Indoor Synthetic Shock-Absorption Mat</span>
+              </li>
+              <li class="d-flex align-items-center">
+                <i class="bi bi-check-circle-fill text-cc me-2 fs-6"></i>
+                <span><strong>Automatic Discounts</strong> – Gold 20%, Junior 15%, Silver 10%</span>
+              </li>
+            </ul>
+
+            <a href="/shared/login.html" class="btn btn-cc w-100 py-2 fw-semibold">
+              Sign In to Reserve Now
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── 3. Quick Stats Highlight Strip ─────────────────────────────────── -->
+  <div class="container">
+    <div class="stats-bar">
+      <div class="row text-center g-3">
+        <div class="col-6 col-md-3 stat-item">
+          <div class="stat-num">4</div>
+          <div class="stat-label">Championship Courts</div>
+        </div>
+        <div class="col-6 col-md-3 stat-item">
+          <div class="stat-num">3</div>
+          <div class="stat-label">Membership Tiers</div>
+        </div>
+        <div class="col-6 col-md-3 stat-item">
+          <div class="stat-num">60m</div>
+          <div class="stat-label">Fixed Sessions (Every 30m)</div>
+        </div>
+        <div class="col-6 col-md-3 stat-item">
+          <div class="stat-num">14d</div>
+          <div class="stat-label">Advance Booking Window</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 4. Facilities & Courts Section ─────────────────────────────────── -->
+  <section class="py-5 mt-4" id="facilities">
+    <div class="container py-3">
+      <div class="text-center mb-5">
+        <span class="section-tag">Facilities</span>
+        <h2 class="section-heading">Championship Courts & Training Grounds</h2>
+        <p class="section-subtitle">
+          Engineered for players of all levels. Maintained daily with high-clarity floodlighting and premium surfaces.
+        </p>
+      </div>
+
+      <div class="row g-4">
+        <!-- Court A: Tennis Hard -->
+        <div class="col-md-6 col-lg-3">
+          <div class="facility-card">
+            <div class="facility-icon-wrap icon-tennis">
+              <i class="bi bi-trophy"></i>
+            </div>
+            <h5 class="fw-bold mb-1">Court A – Tennis</h5>
+            <span class="badge bg-light text-dark border align-self-start mb-2">Hard Court Surface</span>
+            <p class="small text-muted flex-grow-1">
+              Championship hard court with true-pace bounce, anti-glare baseline marks, and perimeter floodlighting.
+            </p>
+            <div class="pt-3 border-top d-flex justify-content-between align-items-center">
+              <div>
+                <span class="small text-muted d-block">Hourly Rate</span>
+                <span class="fw-bold text-cc fs-5">₹600 <span class="small text-muted fw-normal">/ hr</span></span>
+              </div>
+              <span class="badge bg-warning-subtle text-warning-emphasis">Gold: ₹480</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Court B: Tennis Clay -->
+        <div class="col-md-6 col-lg-3">
+          <div class="facility-card">
+            <div class="facility-icon-wrap icon-tennis">
+              <i class="bi bi-activity"></i>
+            </div>
+            <h5 class="fw-bold mb-1">Court B – Tennis</h5>
+            <span class="badge bg-light text-dark border align-self-start mb-2">Clay Court Surface</span>
+            <p class="small text-muted flex-grow-1">
+              Authentic crushed red clay delivering sliding comfort, joint-friendly cushioning, and thrilling extended rallies.
+            </p>
+            <div class="pt-3 border-top d-flex justify-content-between align-items-center">
+              <div>
+                <span class="small text-muted d-block">Hourly Rate</span>
+                <span class="fw-bold text-cc fs-5">₹500 <span class="small text-muted fw-normal">/ hr</span></span>
+              </div>
+              <span class="badge bg-warning-subtle text-warning-emphasis">Gold: ₹400</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cricket Net 1 -->
+        <div class="col-md-6 col-lg-3">
+          <div class="facility-card">
+            <div class="facility-icon-wrap icon-cricket">
+              <i class="bi bi-shield-shaded"></i>
+            </div>
+            <h5 class="fw-bold mb-1">Cricket Net 1</h5>
+            <span class="badge bg-light text-dark border align-self-start mb-2">Natural Turf Pitch</span>
+            <p class="small text-muted flex-grow-1">
+              Full-length natural turf practice net with high protective netting and extended bowler run-up strip.
+            </p>
+            <div class="pt-3 border-top d-flex justify-content-between align-items-center">
+              <div>
+                <span class="small text-muted d-block">Hourly Rate</span>
+                <span class="fw-bold text-cc fs-5">₹800 <span class="small text-muted fw-normal">/ hr</span></span>
+              </div>
+              <span class="badge bg-warning-subtle text-warning-emphasis">Gold: ₹640</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Badminton Hall 1 -->
+        <div class="col-md-6 col-lg-3">
+          <div class="facility-card">
+            <div class="facility-icon-wrap icon-badminton">
+              <i class="bi bi-feather"></i>
+            </div>
+            <h5 class="fw-bold mb-1">Badminton Hall 1</h5>
+            <span class="badge bg-light text-dark border align-self-start mb-2">Synthetic Mat Surface</span>
+            <p class="small text-muted flex-grow-1">
+              Indoor climate-controlled synthetic court with shock absorption underlay and professional non-dazzle fixtures.
+            </p>
+            <div class="pt-3 border-top d-flex justify-content-between align-items-center">
+              <div>
+                <span class="small text-muted d-block">Hourly Rate</span>
+                <span class="fw-bold text-cc fs-5">₹400 <span class="small text-muted fw-normal">/ hr</span></span>
+              </div>
+              <span class="badge bg-warning-subtle text-warning-emphasis">Gold: ₹320</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 5. Membership Tiers Section ────────────────────────────────────── -->
+  <section class="py-5 bg-white" id="membership">
+    <div class="container py-3">
+      <div class="text-center mb-5">
+        <span class="section-tag">Memberships</span>
+        <h2 class="section-heading">Designed For Every Competitor</h2>
+        <p class="section-subtitle">
+          Choose the right plan for your frequency and ambition. Members enjoy guaranteed discounts on courts, gear, and cafeteria.
+        </p>
+      </div>
+
+      <div class="row g-4 justify-content-center">
+        <!-- Gold Tier -->
+        <div class="col-lg-4 col-md-6">
+          <div class="landing-tier-card tier-gold">
+            <span class="popular-badge"><i class="bi bi-star-fill me-1"></i> Most Popular</span>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h4 class="fw-bold mb-0">Gold Tier</h4>
+              <i class="bi bi-trophy-fill text-warning fs-3"></i>
+            </div>
+            <p class="text-muted small mb-3">Premium full-access membership with maximum court discounts</p>
+
+            <div class="mb-4">
+              <span class="tier-price">₹24,000</span>
+              <span class="tier-per-year">/ year (₹2,000 / mo)</span>
+            </div>
+
+            <ul class="list-unstyled mb-4 small flex-grow-1">
+              <li class="d-flex align-items-center mb-2">
+                <i class="bi bi-check2 text-cc me-2 fw-bold fs-6"></i>
+                <span><strong>20% Court Discount</strong> on all bookings</span>
+              </li>
+              <li class="d-flex align-items-center mb-2">
+                <i class="bi bi-check2 text-cc me-2 fw-bold fs-6"></i>
+                <span><strong>15% Off</strong> Pro Shop & Gear purchases</span>
+              </li>
+              <li class="d-flex align-items-center mb-2">
+                <i class="bi bi-check2 text-cc me-2 fw-bold fs-6"></i>
+                <span><strong>15% Off</strong> Cafeteria & Lounge tab</span>
+              </li>
+              <li class="d-flex align-items-center mb-2">
+                <i class="bi bi-check2 text-cc me-2 fw-bold fs-6"></i>
+                <span><strong>2 Court Bookings</strong> per day allowance</span>
+              </li>
+              <li class="d-flex align-items-center">
+                <i class="bi bi-check2 text-cc me-2 fw-bold fs-6"></i>
+                <span><strong>14-Day Priority</strong> advance window</span>
+              </li>
+            </ul>
+
+            <a href="#contact" class="btn btn-cc w-100 py-2 fw-semibold">
+              Inquire for Gold
+            </a>
+          </div>
+        </div>
+
+        <!-- Silver Tier -->
+        <div class="col-lg-4 col-md-6">
+          <div class="landing-tier-card tier-silver">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h4 class="fw-bold mb-0">Silver Tier</h4>
+              <i class="bi bi-award-fill text-secondary fs-3"></i>
+            </div>
+            <p class="text-muted small mb-3">Standard club membership with court and cafe discounts</p>
+
+            <div class="mb-4">
+              <span class="tier-price">₹12,000</span>
+              <span class="tier-per-year">/ year (₹1,000 / mo)</span>
+            </div>
+
+            <ul class="list-unstyled mb-4 small flex-grow-1">
+              <li class="d-flex align-items-center mb-2">
+                <i class="bi bi-check2 text-cc me-2 fw-bold fs-6"></i>
+                <span><strong>10% Court Discount</strong> on all bookings</span>
+              </li>
+              <li class="d-flex align-items-center mb-2">
+                <i class="bi bi-check2 text-cc me-2 fw-bold fs-6"></i>
+                <span><strong>5% Off</strong> Pro Shop equipment</span>
+              </li>
+              <li class="d-flex align-items-center mb-2">
+                <i class="bi bi-check2 text-cc me-2 fw-bold fs-6"></i>
+                <span><strong>5% Off</strong> Cafeteria refreshments</span>
+              </li>
+              <li class="d-flex align-items-center mb-2">
+                <i class="bi bi-check2 text-cc me-2 fw-bold fs-6"></i>
+                <span><strong>2 Court Bookings</strong> per day allowance</span>
+              </li>
+              <li class="d-flex align-items-center">
+                <i class="bi bi-check2 text-cc me-2 fw-bold fs-6"></i>
+                <span><strong>14-Day Advance</strong> online reservation</span>
+              </li>
+            </ul>
+
+            <a href="#contact" class="btn btn-outline-secondary w-100 py-2 fw-semibold">
+              Inquire for Silver
+            </a>
+          </div>
+        </div>
+
+        <!-- Junior Tier -->
+        <div class="col-lg-4 col-md-6">
+          <div class="landing-tier-card tier-junior">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h4 class="fw-bold mb-0">Junior Tier</h4>
+              <i class="bi bi-person-arms-up text-info fs-3"></i>
+            </div>
+            <p class="text-muted small mb-3">Under 18 discounted membership for young student & junior athletes</p>
+
+            <div class="mb-4">
+              <span class="tier-price">₹6,000</span>
+              <span class="tier-per-year">/ year (₹500 / mo)</span>
+            </div>
+
+            <ul class="list-unstyled mb-4 small flex-grow-1">
+              <li class="d-flex align-items-center mb-2">
+                <i class="bi bi-check2 text-cc me-2 fw-bold fs-6"></i>
+                <span><strong>15% Court Discount</strong> for developing athletes</span>
+              </li>
+              <li class="d-flex align-items-center mb-2">
+                <i class="bi bi-check2 text-cc me-2 fw-bold fs-6"></i>
+                <span><strong>10% Off</strong> Pro Shop coaching gear</span>
+              </li>
+              <li class="d-flex align-items-center mb-2">
+                <i class="bi bi-check2 text-cc me-2 fw-bold fs-6"></i>
+                <span><strong>10% Off</strong> Cafeteria healthy snacks</span>
+              </li>
+              <li class="d-flex align-items-center mb-2">
+                <i class="bi bi-check2 text-cc me-2 fw-bold fs-6"></i>
+                <span><strong>2 Court Bookings</strong> per day allowance</span>
+              </li>
+              <li class="d-flex align-items-center">
+                <i class="bi bi-check2 text-cc me-2 fw-bold fs-6"></i>
+                <span><strong>Under 18 Athletes</strong> eligibility</span>
+              </li>
+            </ul>
+
+            <a href="#contact" class="btn btn-outline-info w-100 py-2 fw-semibold">
+              Inquire for Junior
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Member Portal Link -->
+      <div class="text-center mt-4">
+        <p class="small text-muted mb-0">
+          Already an enrolled member? 
+          <a href="/shared/login.html" class="text-cc fw-bold">Sign in to your member portal</a>
+          to view active plan status, renewal dates, and digital membership card.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 6. Court Booking Flow Overview ─────────────────────────────────── -->
+  <section class="py-5" id="booking">
+    <div class="container py-3">
+      <div class="text-center mb-5">
+        <span class="section-tag">Reservation System</span>
+        <h2 class="section-heading">Fast & Transparent Online Booking</h2>
+        <p class="section-subtitle">
+          Our automated court scheduler ensures conflict-free court reservations with live availability updates.
+        </p>
+      </div>
+
+      <div class="row g-4 mb-4">
+        <div class="col-md-6 col-lg-3">
+          <div class="step-card">
+            <div class="step-num-badge">1</div>
+            <h6 class="fw-bold mb-2">Pick Sport & Court</h6>
+            <p class="small text-muted mb-0">
+              Select your preferred surface—tournament hard court, authentic clay, turf cricket nets, or indoor badminton.
+            </p>
+          </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3">
+          <div class="step-card">
+            <div class="step-num-badge">2</div>
+            <h6 class="fw-bold mb-2">1-Hour Session Slots</h6>
+            <p class="small text-muted mb-0">
+              Every court reservation lasts exactly 60 minutes, with new sessions starting every 30 minutes from 06:00 to 22:00.
+            </p>
+          </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3">
+          <div class="step-card">
+            <div class="step-num-badge">3</div>
+            <h6 class="fw-bold mb-2">14-Day Advance Window</h6>
+            <p class="small text-muted mb-0">
+              Reserve up to two weeks in advance. Built-in concurrency locks guarantee your confirmed slot is exclusively yours.
+            </p>
+          </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3">
+          <div class="step-card">
+            <div class="step-num-badge">4</div>
+            <h6 class="fw-bold mb-2">Instant Tier Discounts</h6>
+            <p class="small text-muted mb-0">
+              Your member discount (Gold 20%, Junior 15%, Silver 10%) applies automatically with an instant reference confirmation.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4 bg-white rounded-3 border text-center">
+        <h5 class="fw-bold mb-2">Ready to hit the court?</h5>
+        <p class="text-muted small mb-3">Members can reserve courts directly with instant confirmation and quota tracking.</p>
+        <a href="/shared/login.html" class="btn btn-cc px-4 py-2 fw-semibold">
+          <i class="bi bi-calendar-plus me-1"></i> Member Court Booking Portal
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 7. Cafeteria & Pro Shop Experience ─────────────────────────────── -->
+  <section class="py-5 bg-white" id="experience">
+    <div class="container py-3">
+      <div class="text-center mb-5">
+        <span class="section-tag">Club Life</span>
+        <h2 class="section-heading">Cafeteria & Pro Gear Shop</h2>
+        <p class="section-subtitle">
+          Everything you need before and after the game, located right inside the clubhouse.
+        </p>
+      </div>
+
+      <div class="row g-4">
+        <!-- Cafeteria & Lounge -->
+        <div class="col-lg-6">
+          <div class="card h-100 border p-4 rounded-4 shadow-sm">
+            <div class="d-flex align-items-center mb-3">
+              <div class="facility-icon-wrap icon-cafe me-3 mb-0">
+                <i class="bi bi-cup-hot-fill"></i>
+              </div>
+              <div>
+                <h4 class="fw-bold mb-0">Club Cafeteria & Lounge</h4>
+                <span class="small text-muted">Hydration, Nutrition & Post-Match Refreshment</span>
+              </div>
+            </div>
+
+            <p class="text-muted small mb-3">
+              Crafted specifically for active players. From rapid electrolyte hydration to high-protein snacks and wholesome meals, our cafe fuels your peak performance.
+            </p>
+
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <div class="p-2 bg-light rounded border small">
+                  <span class="fw-bold d-block">Electrolyte Drinks</span>
+                  <span class="text-muted">₹120 • Rapid rehydration</span>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="p-2 bg-light rounded border small">
+                  <span class="fw-bold d-block">Fresh Lime Soda</span>
+                  <span class="text-muted">₹80 • Cooling citrus blend</span>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="p-2 bg-light rounded border small">
+                  <span class="fw-bold d-block">Protein Snack Bars</span>
+                  <span class="text-muted">₹150 • Post-workout fuel</span>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="p-2 bg-light rounded border small">
+                  <span class="fw-bold d-block">Veg & Grill Sandwiches</span>
+                  <span class="text-muted">₹200 • Fresh wholesome meals</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-auto p-2 bg-success-subtle text-success rounded-3 small">
+              <i class="bi bi-check-circle-fill me-1"></i>
+              <strong>Member Benefit:</strong> Gold members get 15% off, Juniors 10%, and Silver 5% off all cafe orders.
+            </div>
+          </div>
+        </div>
+
+        <!-- Pro Gear Shop -->
+        <div class="col-lg-6">
+          <div class="card h-100 border p-4 rounded-4 shadow-sm">
+            <div class="d-flex align-items-center mb-3">
+              <div class="facility-icon-wrap icon-shop me-3 mb-0">
+                <i class="bi bi-bag-check-fill"></i>
+              </div>
+              <div>
+                <h4 class="fw-bold mb-0">Pro Gear & Sports Shop</h4>
+                <span class="small text-muted">Premium Equipment, Rackets, Balls & Accessories</span>
+              </div>
+            </div>
+
+            <p class="text-muted small mb-3">
+              Stock up on top-tier equipment without leaving the complex. Featuring tournament-spec tennis rackets, cricket protective gear, and match balls.
+            </p>
+
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <div class="p-2 bg-light rounded border small">
+                  <span class="fw-bold d-block">Pro Tennis Rackets</span>
+                  <span class="text-muted">₹4,500 • High-modulus graphite</span>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="p-2 bg-light rounded border small">
+                  <span class="fw-bold d-block">Tennis Balls (3 Pack)</span>
+                  <span class="text-muted">₹350 • High-durability felt</span>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="p-2 bg-light rounded border small">
+                  <span class="fw-bold d-block">Cricket Batting Pads</span>
+                  <span class="text-muted">₹3,200 • Premium protection</span>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="p-2 bg-light rounded border small">
+                  <span class="fw-bold d-block">Cricket Balls (Match Red)</span>
+                  <span class="text-muted">₹450 • Genuine leather core</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-auto p-2 bg-primary-subtle text-primary rounded-3 small">
+              <i class="bi bi-check-circle-fill me-1"></i>
+              <strong>Instant POS Billing:</strong> Managed directly at the club shop counter with automatic stock synchronization.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 8. Public Contact & Membership Inquiry ─────────────────────────── -->
+  <section class="py-5" id="contact">
+    <div class="container py-3">
+      <div class="row g-5 align-items-center">
+        <div class="col-lg-5">
+          <span class="section-tag">Inquiries</span>
+          <h2 class="section-heading mb-3">Join Champions Club</h2>
+          <p class="text-muted mb-4">
+            Have questions about membership enrollment, court availability, or junior coaching programs? 
+            Send us an inquiry and our membership team will assist you.
+          </p>
+
+          <div class="mb-3 d-flex align-items-start gap-3">
+            <div class="facility-icon-wrap icon-tennis" style="width:42px;height:42px;font-size:1.1rem">
+              <i class="bi bi-geo-alt-fill"></i>
+            </div>
+            <div>
+              <h6 class="fw-bold mb-0">Sports Complex Location</h6>
+              <span class="small text-muted">Champions Club Grounds & Arena</span>
+            </div>
+          </div>
+
+          <div class="mb-3 d-flex align-items-start gap-3">
+            <div class="facility-icon-wrap icon-badminton" style="width:42px;height:42px;font-size:1.1rem">
+              <i class="bi bi-clock-fill"></i>
+            </div>
+            <div>
+              <h6 class="fw-bold mb-0">Operating Hours</h6>
+              <span class="small text-muted">Monday – Sunday: 06:00 AM – 10:00 PM</span>
+            </div>
+          </div>
+
+          <div class="d-flex align-items-start gap-3">
+            <div class="facility-icon-wrap icon-shop" style="width:42px;height:42px;font-size:1.1rem">
+              <i class="bi bi-person-badge-fill"></i>
+            </div>
+            <div>
+              <h6 class="fw-bold mb-0">Membership Administration</h6>
+              <span class="small text-muted">Gold, Silver, and Junior enrollments processed daily</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-7">
+          <div class="landing-contact-card">
+            <h4 class="fw-bold mb-1">Express Membership Interest</h4>
+            <p class="text-muted small mb-4">Fill out this quick form and our membership desk will follow up promptly.</p>
+
+            <div id="contactSuccess" class="alert alert-success d-none py-2 small mb-3">
+              <i class="bi bi-check-circle-fill me-1"></i>
+              Thank you for your interest! A Champions Club officer will reach out to you shortly.
+            </div>
+
+            <div id="contactError" class="alert alert-danger d-none py-2 small mb-3"></div>
+
+            <form id="landingContactForm" novalidate>
+              <div class="mb-3">
+                <label for="contactName" class="form-label fw-semibold small">Full Name *</label>
+                <input type="text" id="contactName" class="form-control" placeholder="e.g. Rahul Sharma" required>
+              </div>
+
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <label for="contactEmail" class="form-label fw-semibold small">Email Address</label>
+                  <input type="email" id="contactEmail" class="form-control" placeholder="rahul@example.com">
+                </div>
+                <div class="col-md-6">
+                  <label for="contactPhone" class="form-label fw-semibold small">Phone Number</label>
+                  <input type="tel" id="contactPhone" class="form-control" placeholder="9876543210">
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="contactPlanSelect" class="form-label fw-semibold small">Interested Tier</label>
+                <select id="contactPlanSelect" class="form-select">
+                  <option value="">-- Select a Plan (Optional) --</option>
+                  <option value="2">Gold (₹24,000/yr • 20% Court Discount)</option>
+                  <option value="1">Silver (₹12,000/yr • 10% Court Discount)</option>
+                  <option value="3">Junior (₹6,000/yr • Under 18 Athletes)</option>
+                </select>
+              </div>
+
+              <div class="mb-4">
+                <label for="contactMessage" class="form-label fw-semibold small">Message or Specific Requirements</label>
+                <textarea id="contactMessage" class="form-control" rows="3" placeholder="Tell us which sports you play or any questions you have..."></textarea>
+              </div>
+
+              <button type="submit" id="contactSubmitBtn" class="btn btn-cc w-100 py-2 fw-semibold">
+                <span id="contactSpinner" class="spinner-border spinner-sm d-none me-1" role="status"></span>
+                Submit Membership Inquiry
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 9. Public Footer ───────────────────────────────────────────────── -->
+  <footer class="landing-footer">
+    <div class="container">
+      <div class="row g-4">
+        <!-- Column 1: Brand & Identity -->
+        <div class="col-lg-4 col-md-6">
+          <div class="d-flex align-items-center mb-3">
+            <i class="bi bi-trophy-fill text-warning me-2 fs-3"></i>
+            <h4 class="text-white fw-bold mb-0">Champions Club</h4>
+          </div>
+          <p class="small opacity-75 mb-3">
+            Premier sports club management system offering court reservations, comprehensive membership tiers, equipment shop, and cafeteria service.
+          </p>
+          <div class="small opacity-75">
+            <i class="bi bi-clock me-1 text-warning"></i> Open Daily: 06:00 AM – 10:00 PM
+          </div>
+        </div>
+
+        <!-- Column 2: Facilities & Sports -->
+        <div class="col-lg-2 col-md-3 col-6">
+          <h6 class="footer-heading">Sports & Courts</h6>
+          <ul class="list-unstyled small mb-0">
+            <li class="mb-2"><a href="#facilities">Tennis Hard Court</a></li>
+            <li class="mb-2"><a href="#facilities">Tennis Clay Court</a></li>
+            <li class="mb-2"><a href="#facilities">Cricket Turf Net</a></li>
+            <li class="mb-2"><a href="#facilities">Badminton Hall</a></li>
+            <li><a href="#booking">Court Schedule</a></li>
+          </ul>
+        </div>
+
+        <!-- Column 3: Memberships -->
+        <div class="col-lg-2 col-md-3 col-6">
+          <h6 class="footer-heading">Memberships</h6>
+          <ul class="list-unstyled small mb-0">
+            <li class="mb-2"><a href="#membership">Gold Tier (₹24k)</a></li>
+            <li class="mb-2"><a href="#membership">Silver Tier (₹12k)</a></li>
+            <li class="mb-2"><a href="#membership">Junior Tier (₹6k)</a></li>
+            <li class="mb-2"><a href="#experience">Club Discounts</a></li>
+            <li><a href="#contact">Inquire to Join</a></li>
+          </ul>
+        </div>
+
+        <!-- Column 4: Portals & Access -->
+        <div class="col-lg-4 col-md-6">
+          <h6 class="footer-heading">Club Portals</h6>
+          <p class="small opacity-75 mb-3">
+            Sign in to access your personal dashboard, check availability, or manage bookings.
+          </p>
+          <div class="d-flex flex-column gap-2">
+            <a href="/shared/login.html" class="btn btn-sm btn-outline-light text-start py-2 px-3">
+              <i class="bi bi-person-fill text-warning me-2"></i> Member Portal Login
+            </a>
+            <a href="/shared/login.html" class="btn btn-sm btn-outline-secondary text-start py-2 px-3 text-white border-secondary">
+              <i class="bi bi-shield-lock-fill text-info me-2"></i> Staff & Owner Access
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <hr class="footer-divider">
+
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-center small opacity-75">
+        <p class="mb-2 mb-md-0">© 2026 Champions Club. All rights reserved.</p>
+        <div>
+          <span class="me-3">Sports Club Management System</span>
+          <a href="/shared/login.html" class="text-warning">Sign In</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Bootstrap 5.3 Bundle JS & Landing Page JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/landing/landing.js"></script>
 </body>
 </html>
