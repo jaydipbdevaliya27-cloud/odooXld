@@ -44,6 +44,19 @@
         <span id="loginSpinner" class="spinner-border spinner-sm d-none me-1" role="status"></span>
         Sign In
       </button>
+
+      <button type="button" id="quickShopDemoBtn" class="btn btn-outline-success w-100 py-2 fw-semibold mt-2">
+        <i class="bi bi-shop me-1"></i> Quick Shop Dashboard Demo (1-Click)
+      </button>
+
+      <div class="mt-3 p-2 bg-light rounded text-center small">
+        <span class="text-muted d-block mb-1">1-Click Test Credentials:</span>
+        <button type="button" class="badge bg-success border-0 me-1" onclick="fillDemo('shop@championsclub.com')">Shop Staff</button>
+        <button type="button" class="badge bg-warning text-dark border-0 me-1" onclick="fillDemo('bar@championsclub.com')">Bar Staff</button>
+        <button type="button" class="badge bg-info text-dark border-0 me-1" onclick="fillDemo('booking@championsclub.com')">Booking Staff</button>
+        <button type="button" class="badge bg-primary border-0 me-1" onclick="fillDemo('owner@championsclub.com')">Owner</button>
+        <button type="button" class="badge bg-secondary border-0" onclick="fillDemo('member@championsclub.com')">Member</button>
+      </div>
     </form>
 
     <hr class="my-3">
@@ -55,6 +68,24 @@
 
   <script src="/js/api.js"></script>
   <script>
+    function fillDemo(email) {
+      document.getElementById('email').value = email;
+      document.getElementById('password').value = 'password123';
+    }
+
+    // ── 1-Click Quick Demo Login ─────────────────────────────────────────────
+    document.getElementById('quickShopDemoBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('quickShopDemoBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Launching Shop...';
+      try {
+        await api.post('/api/auth/demo-login', { role: 'staff', assigned_area: 'shop' });
+        window.location.href = '/staff/shop-dashboard.html';
+      } catch {
+        window.location.href = '/staff/shop-dashboard.html';
+      }
+    });
+
     // ── Toggle password visibility ──────────────────────────────────────────
     document.getElementById('togglePw').addEventListener('click', () => {
       const pw  = document.getElementById('password');
@@ -85,11 +116,22 @@
           password: document.getElementById('password').value
         });
 
-        // Redirect based on role
+        // Redirect based on role and assigned operational area
         const role = data.user.role;
-        if      (role === 'owner')  window.location.href = '/owner/dashboard.html';
-        else if (role === 'staff')  window.location.href = '/staff/dashboard.html';
-        else                        window.location.href = '/member/dashboard.html';
+        if (role === 'owner') {
+          window.location.href = '/owner/dashboard.html';
+        } else if (role === 'staff') {
+          const area = data.user.assigned_area || 'shop';
+          if (area === 'shop') {
+            window.location.href = '/staff/shop-dashboard.html';
+          } else if (area === 'bar') {
+            window.location.href = '/staff/bar-dashboard.html';
+          } else {
+            window.location.href = '/staff/dashboard.html';
+          }
+        } else {
+          window.location.href = '/member/dashboard.html';
+        }
       } catch (err) {
         errEl.textContent = err.message || 'Login failed. Please try again.';
         errEl.classList.remove('d-none');

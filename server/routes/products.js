@@ -17,14 +17,41 @@ const router = express.Router();
 // ── GET /api/products ────────────────────────────────────────────────────────
 router.get('/', async (req, res, next) => {
   try {
-    const { dept, category } = req.query;
+    const { dept, category, low_stock } = req.query;
     let sql    = 'SELECT * FROM products WHERE is_active = 1';
     const params = [];
-    if (dept)     { sql += ' AND department = ?'; params.push(dept); }
-    if (category) { sql += ' AND category = ?';   params.push(category); }
+    if (dept)      { sql += ' AND department = ?'; params.push(dept); }
+    if (category)  { sql += ' AND category = ?';   params.push(category); }
+    if (low_stock === 'true' || low_stock === '1') {
+      sql += ' AND stock_qty <= reorder_level';
+    }
     sql += ' ORDER BY department, category, name';
     const [rows] = await db.query(sql, params);
-    res.json(rows);
+    
+    // Parse images array and add low_stock flag
+    const formatted = rows.map(r => {
+      let images = [];
+      if (r.image_url) {
+        try {
+          if (r.image_url.startsWith('[') && r.image_url.endsWith(']')) {
+            images = JSON.parse(r.image_url);
+          } else if (r.image_url.includes(',')) {
+            images = r.image_url.split(',').map(u => u.trim()).filter(Boolean);
+          } else {
+            images = [r.image_url];
+          }
+        } catch {
+          images = [r.image_url];
+        }
+      }
+      return {
+        ...r,
+        images,
+        is_low_stock: r.track_stock ? (r.stock_qty <= (r.reorder_level || 5)) : false
+      };
+    });
+
+    res.json(formatted);
   } catch (err) { next(err); }
 });
 
@@ -33,18 +60,43 @@ router.get('/:id', async (req, res, next) => {
   try {
     const [rows] = await db.query('SELECT * FROM products WHERE id = ?', [req.params.id]);
     if (!rows.length) return res.status(404).json({ error: 'Product not found' });
-    res.json(rows[0]);
+    const r = rows[0];
+    let images = [];
+    if (r.image_url) {
+      try {
+        if (r.image_url.startsWith('[') && r.image_url.endsWith(']')) {
+          images = JSON.parse(r.image_url);
+        } else if (r.image_url.includes(',')) {
+          images = r.image_url.split(',').map(u => u.trim()).filter(Boolean);
+        } else {
+          images = [r.image_url];
+        }
+      } catch {
+        images = [r.image_url];
+      }
+    }
+    res.json({
+      ...r,
+      images,
+      is_low_stock: r.track_stock ? (r.stock_qty <= (r.reorder_level || 5)) : false
+    });
   } catch (err) { next(err); }
 });
 
 // ── POST /api/products ───────────────────────────────────────────────────────
 router.post('/', requireLogin, requireRole('owner', 'staff'), async (req, res, next) => {
   try {
-    const { sku, name, department, category, price, cost_price,
-            track_stock, stock_qty, reorder_level, image_url, description } = req.body;
+    let { sku, name, department, category, price, cost_price,
+          track_stock, stock_qty, reorder_level, image_url, images, description } = req.body;
     if (!sku || !name || !department || !category || price == null) {
       return res.status(400).json({ error: 'sku, name, department, category, price required' });
     }
+
+    // Support multiple images array
+    if (Array.isArray(images) && images.length > 0) {
+      image_url = JSON.stringify(images);
+    }
+
     const [result] = await db.query(
       `INSERT INTO products
          (sku, name, department, category, price, cost_price,
@@ -61,8 +113,13 @@ router.post('/', requireLogin, requireRole('owner', 'staff'), async (req, res, n
 // ── PUT /api/products/:id ────────────────────────────────────────────────────
 router.put('/:id', requireLogin, requireRole('owner', 'staff'), async (req, res, next) => {
   try {
-    const { sku, name, department, category, price, cost_price,
-            track_stock, stock_qty, reorder_level, image_url, description, is_active } = req.body;
+    let { sku, name, department, category, price, cost_price,
+          track_stock, stock_qty, reorder_level, image_url, images, description, is_active } = req.body;
+
+    if (Array.isArray(images) && images.length > 0) {
+      image_url = JSON.stringify(images);
+    }
+
     await db.query(
       `UPDATE products SET
          sku=?, name=?, department=?, category=?, price=?, cost_price=?,
