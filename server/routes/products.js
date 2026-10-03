@@ -205,7 +205,7 @@ router.post('/:id/variant', requireLogin, requireRole('owner', 'staff'), async (
 });
 
 // ── DELETE /api/products/:id ─────────────────────────────────────────────────
-router.delete('/:id', requireLogin, requireRole('owner'), async (req, res, next) => {
+router.delete('/:id', requireLogin, requireRole('owner', 'staff'), async (req, res, next) => {
   try {
     await db.query('UPDATE cc_products SET is_active=0 WHERE id=?', [req.params.id]);
     res.json({ message: 'Product deactivated' });
@@ -213,7 +213,7 @@ router.delete('/:id', requireLogin, requireRole('owner'), async (req, res, next)
 });
 
 // ── DELETE /api/products/:id/variant/:vid ────────────────────────────────────
-router.delete('/:id/variant/:vid', requireLogin, requireRole('owner'), async (req, res, next) => {
+router.delete('/:id/variant/:vid', requireLogin, requireRole('owner', 'staff'), async (req, res, next) => {
   try {
     await db.query('UPDATE cc_product_variants SET is_active=0 WHERE id=? AND product_id=?', [req.params.vid, req.params.id]);
     res.json({ message: 'Variant removed' });
