@@ -1,46 +1,48 @@
 -- ==========================================================================
 -- The Champions Club Management System - Database Schema
--- 11 Tables: users, plans, members, courts, bookings, booking_slots,
---            products, orders, order_items, payments, leads
--- Run once: mysql -u root -p < server/sql/schema.sql
+-- 12 Tables: users, plans, members, courts, bookings, booking_slots,
+--            products, orders, order_items, payments, leads, payroll
 -- ==========================================================================
 
 CREATE DATABASE IF NOT EXISTS champions_club;
 USE champions_club;
 
--- 1. USERS  (one row per human: member, staff, or owner)
+-- 1. USERS (one row per human: member, staff, or owner)
 CREATE TABLE IF NOT EXISTS users (
-    id            INT AUTO_INCREMENT PRIMARY KEY,
-    email         VARCHAR(255) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
-    role          ENUM('visitor','member','staff','owner') NOT NULL DEFAULT 'member',
-    full_name     VARCHAR(255) NOT NULL,
-    phone         VARCHAR(50),
-    is_active     TINYINT(1)  NOT NULL DEFAULT 1,
-    created_at    DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at    DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    id             INT AUTO_INCREMENT PRIMARY KEY,
+    name           VARCHAR(255) NULL,
+    full_name      VARCHAR(255) NOT NULL,
+    email          VARCHAR(255) NOT NULL UNIQUE,
+    password_hash  VARCHAR(255) NOT NULL,
+    role           ENUM('visitor','member','staff','owner') NOT NULL DEFAULT 'member',
+    assigned_area  VARCHAR(50)  NOT NULL DEFAULT 'shop',
+    monthly_salary DECIMAL(10,2) NOT NULL DEFAULT 30000.00,
+    phone          VARCHAR(50),
+    is_active      TINYINT(1)   NOT NULL DEFAULT 1,
+    created_at     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_users_email (email),
     INDEX idx_users_role  (role)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 2. PLANS  (membership tiers; discounts stored as percentages)
+-- 2. PLANS (membership tiers: Gold, Silver, Junior; discounts stored as percentages)
 CREATE TABLE IF NOT EXISTS plans (
-    id                  INT AUTO_INCREMENT PRIMARY KEY,
-    code                VARCHAR(50)    NOT NULL UNIQUE,
-    name                VARCHAR(100)   NOT NULL,
-    description         TEXT,
-    annual_fee          DECIMAL(10,2)  NOT NULL DEFAULT 0.00,
-    duration_months     INT            NOT NULL DEFAULT 12,
-    court_discount_pct  DECIMAL(5,2)  NOT NULL DEFAULT 0.00,
-    shop_discount_pct   DECIMAL(5,2)  NOT NULL DEFAULT 0.00,
-    bar_discount_pct    DECIMAL(5,2)  NOT NULL DEFAULT 0.00,
-    max_bookings_per_day INT           NOT NULL DEFAULT 2,
-    is_active           TINYINT(1)    NOT NULL DEFAULT 1,
-    created_at          DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at          DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    id                   INT AUTO_INCREMENT PRIMARY KEY,
+    code                 VARCHAR(50)    NOT NULL UNIQUE,
+    name                 VARCHAR(100)   NOT NULL,
+    description          TEXT,
+    annual_fee           DECIMAL(10,2)  NOT NULL DEFAULT 0.00,
+    duration_months      INT            NOT NULL DEFAULT 12,
+    court_discount_pct   DECIMAL(5,2)   NOT NULL DEFAULT 0.00,
+    shop_discount_pct    DECIMAL(5,2)   NOT NULL DEFAULT 0.00,
+    bar_discount_pct     DECIMAL(5,2)   NOT NULL DEFAULT 0.00,
+    max_bookings_per_day INT            NOT NULL DEFAULT 2,
+    is_active            TINYINT(1)     NOT NULL DEFAULT 1,
+    created_at           DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at           DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 3. MEMBERS  (extends users for paid members)
+-- 3. MEMBERS (extends users for paid members)
 CREATE TABLE IF NOT EXISTS members (
     id                      INT AUTO_INCREMENT PRIMARY KEY,
     user_id                 INT          NOT NULL UNIQUE,
@@ -61,11 +63,11 @@ CREATE TABLE IF NOT EXISTS members (
     INDEX idx_members_status_expiry (status, expiry_date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 4. COURTS
+-- 4. COURTS (Tennis, Cricket, Badminton, Padel)
 CREATE TABLE IF NOT EXISTS courts (
     id                  INT AUTO_INCREMENT PRIMARY KEY,
     name                VARCHAR(100) NOT NULL,
-    sport               ENUM('tennis','cricket','badminton','pickleball') NOT NULL,
+    sport               ENUM('tennis','cricket','badminton','pickleball','padel') NOT NULL,
     surface_type        VARCHAR(50),
     base_price_per_hour DECIMAL(10,2) NOT NULL DEFAULT 500.00,
     is_active           TINYINT(1)   NOT NULL DEFAULT 1,
@@ -74,7 +76,7 @@ CREATE TABLE IF NOT EXISTS courts (
     INDEX idx_courts_sport (sport, is_active)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 5. BOOKINGS  (one row per booking session)
+-- 5. BOOKINGS (one row per booking session)
 CREATE TABLE IF NOT EXISTS bookings (
     id                   INT AUTO_INCREMENT PRIMARY KEY,
     booking_code         VARCHAR(50)  NOT NULL UNIQUE,
@@ -103,7 +105,7 @@ CREATE TABLE IF NOT EXISTS bookings (
     INDEX idx_bookings_member_date  (member_id, booking_date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 6. BOOKING_SLOTS  (one row per 30-min slot; UNIQUE key prevents double-booking)
+-- 6. BOOKING_SLOTS (one row per 30-min slot; UNIQUE key prevents double-booking)
 CREATE TABLE IF NOT EXISTS booking_slots (
     id         INT      AUTO_INCREMENT PRIMARY KEY,
     booking_id INT      NOT NULL,
@@ -117,7 +119,7 @@ CREATE TABLE IF NOT EXISTS booking_slots (
     INDEX idx_slot_date (slot_date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 7. PRODUCTS  (shop gear and bar food/drinks)
+-- 7. PRODUCTS (shop gear and bar food/drinks)
 CREATE TABLE IF NOT EXISTS products (
     id            INT AUTO_INCREMENT PRIMARY KEY,
     sku           VARCHAR(50)  NOT NULL UNIQUE,
@@ -139,7 +141,7 @@ CREATE TABLE IF NOT EXISTS products (
     INDEX idx_products_category (category)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 8. ORDERS  (shop or bar sale header)
+-- 8. ORDERS (shop or bar sale header)
 CREATE TABLE IF NOT EXISTS orders (
     id                INT AUTO_INCREMENT PRIMARY KEY,
     order_code        VARCHAR(50)  NOT NULL UNIQUE,
@@ -167,7 +169,7 @@ CREATE TABLE IF NOT EXISTS orders (
     INDEX idx_orders_member      (member_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 9. ORDER_ITEMS  (line items for each order)
+-- 9. ORDER_ITEMS (line items for each order)
 CREATE TABLE IF NOT EXISTS order_items (
     id         INT AUTO_INCREMENT PRIMARY KEY,
     order_id   INT           NOT NULL,
@@ -182,15 +184,15 @@ CREATE TABLE IF NOT EXISTS order_items (
     INDEX idx_order_items_order (order_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 10. PAYMENTS  (central payment ledger for all revenue streams)
+-- 10. PAYMENTS (central payment ledger for all revenue streams & salary disbursements)
 CREATE TABLE IF NOT EXISTS payments (
     id            INT AUTO_INCREMENT PRIMARY KEY,
     payment_code  VARCHAR(50)  NOT NULL UNIQUE,
-    source        ENUM('membership','court','shop','bar') NOT NULL,
-    reference_id  INT          NOT NULL,   -- FK to the relevant table (not enforced at DB level for flexibility)
+    source        ENUM('membership','court','shop','bar','salary') NOT NULL,
+    reference_id  INT          NOT NULL,
     user_id       INT          NULL,
     amount        DECIMAL(10,2) NOT NULL,
-    method        ENUM('cash','card','upi','online') NOT NULL,
+    method        ENUM('cash','card','upi','online','bank_transfer','cheque') NOT NULL,
     status        ENUM('paid','refunded','failed') NOT NULL DEFAULT 'paid',
     notes         VARCHAR(255) NULL,
     paid_at       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -202,7 +204,7 @@ CREATE TABLE IF NOT EXISTS payments (
     INDEX idx_payments_method  (method)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 11. LEADS  (prospective members; staff follow up and convert)
+-- 11. LEADS (prospective members; staff follow up and convert)
 CREATE TABLE IF NOT EXISTS leads (
     id                  INT AUTO_INCREMENT PRIMARY KEY,
     name                VARCHAR(255) NOT NULL,
@@ -220,4 +222,24 @@ CREATE TABLE IF NOT EXISTS leads (
     FOREIGN KEY (assigned_to_user_id) REFERENCES users(id)   ON DELETE SET NULL,
     FOREIGN KEY (converted_member_id) REFERENCES members(id) ON DELETE SET NULL,
     INDEX idx_leads_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 12. PAYROLL (Staff monthly salary generation, bonuses, deductions, and payout status)
+CREATE TABLE IF NOT EXISTS payroll (
+    id             INT AUTO_INCREMENT PRIMARY KEY,
+    payroll_code   VARCHAR(50)   NOT NULL UNIQUE,
+    staff_user_id  INT           NOT NULL,
+    month_year     VARCHAR(20)   NOT NULL,
+    base_salary    DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    bonus          DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    deductions     DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    net_salary     DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    status         ENUM('pending','paid') NOT NULL DEFAULT 'pending',
+    payment_method ENUM('bank_transfer','cash','upi','cheque') NOT NULL DEFAULT 'bank_transfer',
+    paid_at        DATETIME      NULL,
+    notes          VARCHAR(255)  NULL,
+    created_at     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (staff_user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_payroll_staff (staff_user_id),
+    INDEX idx_payroll_month (month_year)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

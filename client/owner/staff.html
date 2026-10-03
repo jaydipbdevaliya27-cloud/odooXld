@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Staff Management – Champions Club Owner</title>
-  <meta name="description" content="Manage club staff, assign dashboard roles, and handle access privileges">
+  <title>Staff & Payroll – Champions Club</title>
+  <meta name="description" content="Manage staff roles, assign dashboards, and run monthly payroll">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="/css/main.css">
@@ -12,12 +12,12 @@
 <body>
 <div class="cc-wrapper">
 
-  <!-- ── Sidebar ──────────────────────────────────────────────────────────── -->
+  <!-- ── Sidebar ────────────────────────────────────────────────────────────── -->
   <nav class="cc-sidebar d-flex flex-column">
     <div class="brand"><i class="bi bi-trophy-fill me-2 text-warning"></i>Champions Club</div>
     <ul class="nav flex-column mt-2 flex-grow-1">
       <li><a href="/owner/dashboard.html" class="nav-link"><i class="bi bi-speedometer2"></i>Dashboard</a></li>
-      <li><a href="/owner/staff.html"     class="nav-link active"><i class="bi bi-person-badge"></i>Staff Management</a></li>
+      <li><a href="/owner/staff.html"     class="nav-link active"><i class="bi bi-person-badge"></i>Staff & Payroll</a></li>
       <li><a href="/owner/members.html"   class="nav-link"><i class="bi bi-people"></i>Members</a></li>
       <li><a href="/owner/bookings.html"  class="nav-link"><i class="bi bi-calendar-check"></i>Bookings</a></li>
       <li><a href="/owner/orders.html"    class="nav-link"><i class="bi bi-bag"></i>Orders</a></li>
@@ -35,102 +35,176 @@
     </div>
   </nav>
 
-  <!-- ── Main content ──────────────────────────────────────────────────────── -->
+  <!-- ── Main ──────────────────────────────────────────────────────────────── -->
   <div class="d-flex flex-column flex-grow-1">
     <div class="cc-topbar">
       <div class="d-flex align-items-center gap-2">
-        <h5 class="page-title mb-0"><i class="bi bi-person-badge me-2 text-cc"></i>Staff & Role Management</h5>
+        <h5 class="page-title mb-0"><i class="bi bi-person-badge me-2 text-cc"></i>Staff & Payroll Management</h5>
         <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1">Owner Access</span>
       </div>
-      <div class="d-flex align-items-center gap-3">
-        <span id="todayDate" class="text-muted small"></span>
-        <button class="btn btn-sm btn-outline-secondary" onclick="loadStaffData()"><i class="bi bi-arrow-clockwise me-1"></i>Refresh</button>
-      </div>
+      <span id="todayDate" class="text-muted small"></span>
     </div>
 
     <main class="cc-main">
 
-      <!-- Header with Add Staff Button -->
-      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
-        <div>
-          <h4 class="mb-1">Club Staff & Assigned Dashboards</h4>
-          <p class="text-muted small mb-0">Assign staff to specific operational areas (Shop, Bar-Cafeteria, or Court Booking). Staff automatically route to their assigned dashboard upon login.</p>
-        </div>
-        <button class="btn btn-cc fw-semibold" data-bs-toggle="modal" data-bs-target="#addStaffModal">
-          <i class="bi bi-person-plus-fill me-1"></i> Add New Staff Member
-        </button>
-      </div>
-
-      <!-- KPI Summary Row -->
+      <!-- KPI Row -->
       <div class="row g-3 mb-4">
         <div class="col-sm-6 col-xl-3">
           <div class="kpi-card">
             <div class="kpi-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-people-fill"></i></div>
-            <div><div class="kpi-value" id="kpi-total-staff">0</div><div class="kpi-label">Total Staff Members</div></div>
+            <div><div class="kpi-value" id="kpi-total">0</div><div class="kpi-label">Total Staff</div></div>
           </div>
         </div>
         <div class="col-sm-6 col-xl-3">
           <div class="kpi-card">
             <div class="kpi-icon bg-success bg-opacity-10 text-success"><i class="bi bi-shop"></i></div>
-            <div><div class="kpi-value" id="kpi-shop-staff">0</div><div class="kpi-label">Shop & Inventory</div></div>
+            <div><div class="kpi-value" id="kpi-shop">0</div><div class="kpi-label">Shop Staff</div></div>
           </div>
         </div>
         <div class="col-sm-6 col-xl-3">
           <div class="kpi-card">
             <div class="kpi-icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-cup-straw"></i></div>
-            <div><div class="kpi-value" id="kpi-bar-staff">0</div><div class="kpi-label">Bar & Cafeteria</div></div>
+            <div><div class="kpi-value" id="kpi-bar">0</div><div class="kpi-label">Bar Staff</div></div>
           </div>
         </div>
         <div class="col-sm-6 col-xl-3">
           <div class="kpi-card">
             <div class="kpi-icon bg-info bg-opacity-10 text-info"><i class="bi bi-calendar-check"></i></div>
-            <div><div class="kpi-value" id="kpi-booking-staff">0</div><div class="kpi-label">Court Booking Desk</div></div>
+            <div><div class="kpi-value" id="kpi-booking">0</div><div class="kpi-label">Booking Desk</div></div>
           </div>
         </div>
       </div>
 
-      <!-- Filter / Search Row -->
-      <div class="cc-card p-3 mb-3">
-        <div class="row g-2 align-items-center">
-          <div class="col-md-5">
-            <div class="input-group input-group-sm">
-              <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
-              <input type="text" class="form-control" id="staffSearchInput" placeholder="Search staff by name, email, or role...">
-            </div>
-          </div>
-          <div class="col-md-4">
-            <select class="form-select form-select-sm" id="staffRoleFilter">
-              <option value="all">All Assigned Operational Areas</option>
-              <option value="shop">Shop & Inventory Management</option>
-              <option value="bar">Bar & Cafeteria POS</option>
-              <option value="booking">Court Booking & Front Desk</option>
+      <!-- Tabs -->
+      <ul class="nav nav-tabs mb-3" id="staffTabs">
+        <li class="nav-item">
+          <button class="nav-link active" id="tab-staff-btn" onclick="showTab('staff')">
+            <i class="bi bi-person-badge me-1"></i>Staff Members
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link" id="tab-payroll-btn" onclick="showTab('payroll')">
+            <i class="bi bi-cash-coin me-1"></i>Payroll & Salaries
+          </button>
+        </li>
+      </ul>
+
+      <!-- ─── STAFF TAB ──────────────────────────────────────────────────── -->
+      <div id="tab-staff">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="d-flex gap-2">
+            <input type="text" id="staffSearch" class="form-control form-control-sm" style="width:220px" placeholder="Search name / email…">
+            <select id="staffAreaFilter" class="form-select form-select-sm" style="width:180px">
+              <option value="">All Areas</option>
+              <option value="shop">Shop</option>
+              <option value="bar">Bar</option>
+              <option value="booking">Booking</option>
             </select>
           </div>
-          <div class="col-md-3 text-end">
-            <span id="staffCountBadge" class="badge bg-light text-dark border">Showing 0 staff</span>
+          <button class="btn btn-cc btn-sm" data-bs-toggle="modal" data-bs-target="#addStaffModal">
+            <i class="bi bi-person-plus-fill me-1"></i>Add Staff
+          </button>
+        </div>
+
+        <div class="cc-card">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Staff Member</th>
+                  <th>Contact</th>
+                  <th>Assigned Area</th>
+                  <th>Dashboard</th>
+                  <th>Monthly Salary</th>
+                  <th>Status</th>
+                  <th class="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="staffTableBody">
+                <tr><td colspan="7" class="text-center py-4 text-muted">
+                  <span class="spinner-border spinner-border-sm me-2"></span>Loading…
+                </td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
 
-      <!-- Staff Table -->
-      <div class="cc-card">
-        <div class="table-responsive">
-          <table class="table table-hover align-middle mb-0" id="staffTable">
-            <thead class="table-light">
-              <tr>
-                <th>Staff Member</th>
-                <th>Contact Info</th>
-                <th>Assigned Operational Area</th>
-                <th>Target Dashboard URL</th>
-                <th>Status</th>
-                <th>Added On</th>
-                <th class="text-end">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="staffTableBody">
-              <tr><td colspan="7" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading staff members...</td></tr>
-            </tbody>
-          </table>
+      <!-- ─── PAYROLL TAB ────────────────────────────────────────────────── -->
+      <div id="tab-payroll" style="display:none">
+        <!-- Generate Controls -->
+        <div class="cc-card mb-3">
+          <h6 class="fw-bold mb-3"><i class="bi bi-lightning-charge-fill text-cc me-2"></i>Generate Monthly Payroll</h6>
+          <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+              <label class="form-label small fw-semibold">Month (YYYY-MM)</label>
+              <input type="month" id="genMonth" class="form-control form-control-sm">
+            </div>
+            <div class="col-md-3">
+              <button id="generateBtn" class="btn btn-cc btn-sm w-100" onclick="generatePayroll()">
+                <i class="bi bi-play-circle-fill me-1"></i>Generate Payslips
+              </button>
+            </div>
+            <div class="col-md-3">
+              <select id="payrollMonthFilter" class="form-select form-select-sm" onchange="loadPayroll()">
+                <option value="">All Months</option>
+              </select>
+            </div>
+            <div class="col-md-3 text-end">
+              <button class="btn btn-outline-secondary btn-sm" onclick="loadPayroll()">
+                <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+              </button>
+            </div>
+          </div>
+          <div id="genResult" class="mt-2"></div>
+        </div>
+
+        <!-- Payroll Summary KPIs -->
+        <div class="row g-3 mb-3">
+          <div class="col-sm-4">
+            <div class="kpi-card">
+              <div class="kpi-icon bg-success bg-opacity-10 text-success"><i class="bi bi-currency-rupee"></i></div>
+              <div><div class="kpi-value" id="pay-total-net">₹0</div><div class="kpi-label">Total Payable</div></div>
+            </div>
+          </div>
+          <div class="col-sm-4">
+            <div class="kpi-card">
+              <div class="kpi-icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-hourglass-split"></i></div>
+              <div><div class="kpi-value" id="pay-pending">0</div><div class="kpi-label">Pending Slips</div></div>
+            </div>
+          </div>
+          <div class="col-sm-4">
+            <div class="kpi-card">
+              <div class="kpi-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-check-circle"></i></div>
+              <div><div class="kpi-value" id="pay-paid">0</div><div class="kpi-label">Paid Slips</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payroll Table -->
+        <div class="cc-card">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Staff Member</th>
+                  <th>Month</th>
+                  <th>Area</th>
+                  <th class="text-end">Base Salary</th>
+                  <th class="text-end">Bonus</th>
+                  <th class="text-end">Deductions</th>
+                  <th class="text-end">Net Pay</th>
+                  <th>Status</th>
+                  <th class="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="payrollTableBody">
+                <tr><td colspan="9" class="text-center py-4 text-muted">
+                  Select a month or click Refresh to view payslips.
+                </td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -138,73 +212,65 @@
   </div>
 </div>
 
-<!-- ==========================================================================
-     MODALS
-     ========================================================================== -->
+<!-- ── Modals ─────────────────────────────────────────────────────────────── -->
 
-<!-- 1. ADD STAFF MODAL -->
+<!-- ADD STAFF MODAL -->
 <div class="modal fade" id="addStaffModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header bg-light">
         <h5 class="modal-title"><i class="bi bi-person-plus-fill me-2 text-cc"></i>Add New Staff Member</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <form id="addStaffForm">
           <div class="row g-3">
             <div class="col-md-6">
               <label class="form-label fw-semibold">Full Name *</label>
-              <input type="text" id="newStaffName" class="form-control" placeholder="e.g. Rahul Sharma" required>
+              <input type="text" id="newName" class="form-control" placeholder="Rahul Sharma" required>
             </div>
             <div class="col-md-6">
-              <label class="form-label fw-semibold">Email Address (Login ID) *</label>
-              <input type="email" id="newStaffEmail" class="form-control" placeholder="rahul@championsclub.com" required>
+              <label class="form-label fw-semibold">Email (Login ID) *</label>
+              <input type="email" id="newEmail" class="form-control" placeholder="rahul@champions.club" required>
             </div>
             <div class="col-md-6">
-              <label class="form-label fw-semibold">Login Password *</label>
-              <input type="password" id="newStaffPassword" class="form-control" placeholder="••••••••" required minlength="6">
-              <small class="text-muted">Minimum 6 characters</small>
+              <label class="form-label fw-semibold">Password *</label>
+              <input type="password" id="newPassword" class="form-control" placeholder="Min 6 chars" required minlength="6">
             </div>
             <div class="col-md-6">
-              <label class="form-label fw-semibold">Phone Number</label>
-              <input type="tel" id="newStaffPhone" class="form-control" placeholder="+91 98765 00000">
+              <label class="form-label fw-semibold">Phone</label>
+              <input type="tel" id="newPhone" class="form-control" placeholder="+91 99000 00000">
             </div>
-
-            <!-- Assigned Operational Role / Dashboard -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Monthly Salary (₹)</label>
+              <input type="number" id="newSalary" class="form-control" placeholder="30000" min="0" value="30000">
+            </div>
+            <!-- Operational Area cards -->
             <div class="col-12">
-              <label class="form-label fw-semibold"><i class="bi bi-diagram-3-fill me-1 text-cc"></i>Assigned Operational Area & Dashboard *</label>
-              <div class="p-3 bg-light rounded border">
-                <div class="row g-3">
-                  <div class="col-md-4">
-                    <div class="form-check card p-3 h-100 border-2 role-card cursor-pointer" onclick="selectRoleRadio('shop')">
-                      <input class="form-check-input" type="radio" name="assignedRoleRadio" id="roleShop" value="shop" checked>
-                      <label class="form-check-label fw-bold d-block cursor-pointer" for="roleShop">
-                        <i class="bi bi-shop text-success fs-4 d-block mb-1"></i>
-                        Shop & Inventory
-                      </label>
-                      <small class="text-muted">Routes to Shop Dashboard: Product catalog, sizes, inventory levels, gear sales.</small>
-                    </div>
+              <label class="form-label fw-semibold"><i class="bi bi-diagram-3-fill me-1 text-cc"></i>Assigned Operational Area *</label>
+              <div class="row g-2">
+                <div class="col-md-4">
+                  <div class="card p-3 border-2 role-card h-100" onclick="selectArea('shop')" id="card-shop" style="cursor:pointer;border-color:#dee2e6">
+                    <input type="radio" name="areaRadio" value="shop" id="areaShop" checked class="d-none">
+                    <i class="bi bi-shop text-success fs-4 d-block mb-1"></i>
+                    <div class="fw-bold">Shop &amp; Inventory</div>
+                    <small class="text-muted">Routes to Shop POS dashboard</small>
                   </div>
-                  <div class="col-md-4">
-                    <div class="form-check card p-3 h-100 border-2 role-card cursor-pointer" onclick="selectRoleRadio('bar')">
-                      <input class="form-check-input" type="radio" name="assignedRoleRadio" id="roleBar" value="bar">
-                      <label class="form-check-label fw-bold d-block cursor-pointer" for="roleBar">
-                        <i class="bi bi-cup-straw text-warning fs-4 d-block mb-1"></i>
-                        Bar & Cafeteria
-                      </label>
-                      <small class="text-muted">Routes to Bar POS: Food/drinks orders, table tabs, cafeteria billing.</small>
-                    </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="card p-3 border-2 role-card h-100" onclick="selectArea('bar')" id="card-bar" style="cursor:pointer;border-color:#dee2e6">
+                    <input type="radio" name="areaRadio" value="bar" id="areaBar" class="d-none">
+                    <i class="bi bi-cup-straw text-warning fs-4 d-block mb-1"></i>
+                    <div class="fw-bold">Bar &amp; Cafeteria</div>
+                    <small class="text-muted">Routes to Bar POS dashboard</small>
                   </div>
-                  <div class="col-md-4">
-                    <div class="form-check card p-3 h-100 border-2 role-card cursor-pointer" onclick="selectRoleRadio('booking')">
-                      <input class="form-check-input" type="radio" name="assignedRoleRadio" id="roleBooking" value="booking">
-                      <label class="form-check-label fw-bold d-block cursor-pointer" for="roleBooking">
-                        <i class="bi bi-calendar-check text-info fs-4 d-block mb-1"></i>
-                        Court Booking Desk
-                      </label>
-                      <small class="text-muted">Routes to Front Desk: Court slots, walk-in reservations, member check-in.</small>
-                    </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="card p-3 border-2 role-card h-100" onclick="selectArea('booking')" id="card-booking" style="cursor:pointer;border-color:#dee2e6">
+                    <input type="radio" name="areaRadio" value="booking" id="areaBooking" class="d-none">
+                    <i class="bi bi-calendar-check text-info fs-4 d-block mb-1"></i>
+                    <div class="fw-bold">Court Booking Desk</div>
+                    <small class="text-muted">Routes to Booking dashboard</small>
                   </div>
                 </div>
               </div>
@@ -213,63 +279,100 @@
         </form>
       </div>
       <div class="modal-footer bg-light">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-cc fw-semibold" onclick="handleCreateStaff()">
-          <i class="bi bi-check-lg me-1"></i> Create Staff Member
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-cc fw-semibold" onclick="handleCreateStaff()">
+          <i class="bi bi-check-lg me-1"></i>Create Staff
         </button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- 2. EDIT STAFF MODAL -->
+<!-- EDIT STAFF MODAL -->
 <div class="modal fade" id="editStaffModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header bg-light">
-        <h5 class="modal-title"><i class="bi bi-pencil-square me-2 text-cc"></i>Edit Staff Privileges</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <h5 class="modal-title"><i class="bi bi-pencil-square me-2 text-cc"></i>Edit Staff Member</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <form id="editStaffForm">
-          <input type="hidden" id="editStaffId">
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Full Name *</label>
-            <input type="text" id="editStaffName" class="form-control" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Email Address *</label>
-            <input type="email" id="editStaffEmail" class="form-control" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Phone Number</label>
-            <input type="tel" id="editStaffPhone" class="form-control">
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Assigned Operational Area *</label>
-            <select id="editStaffAssigned" class="form-select" required>
-              <option value="shop">Shop & Inventory Management</option>
-              <option value="bar">Bar & Cafeteria POS</option>
-              <option value="booking">Court Booking & Front Desk</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Account Status</label>
-            <select id="editStaffStatus" class="form-select">
-              <option value="1">Active (Can Login)</option>
-              <option value="0">Deactivated (Access Revoked)</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Reset Password (Optional)</label>
-            <input type="password" id="editStaffNewPassword" class="form-control" placeholder="Leave blank to retain current password">
-          </div>
-        </form>
+        <input type="hidden" id="editId">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Full Name *</label>
+          <input type="text" id="editName" class="form-control" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Email *</label>
+          <input type="email" id="editEmail" class="form-control" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Phone</label>
+          <input type="tel" id="editPhone" class="form-control">
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Assigned Area *</label>
+          <select id="editArea" class="form-select">
+            <option value="shop">Shop &amp; Inventory</option>
+            <option value="bar">Bar &amp; Cafeteria</option>
+            <option value="booking">Court Booking Desk</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Monthly Salary (₹)</label>
+          <input type="number" id="editSalary" class="form-control" min="0">
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Status</label>
+          <select id="editStatus" class="form-select">
+            <option value="1">Active (Can Login)</option>
+            <option value="0">Deactivated</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Reset Password (optional)</label>
+          <input type="password" id="editPassword" class="form-control" placeholder="Leave blank to keep current">
+        </div>
       </div>
       <div class="modal-footer bg-light">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-cc fw-semibold" onclick="handleUpdateStaff()">
-          <i class="bi bi-check-lg me-1"></i> Save Changes
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-cc fw-semibold" onclick="handleUpdateStaff()">
+          <i class="bi bi-check-lg me-1"></i>Save Changes
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAY SLIP MODAL -->
+<div class="modal fade" id="payModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title"><i class="bi bi-cash-coin me-2 text-cc"></i>Mark Salary as Paid</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="paySlipId">
+        <p id="paySlipInfo" class="mb-3 text-muted small"></p>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Payment Method</label>
+          <select id="payMethod" class="form-select">
+            <option value="bank_transfer">Bank Transfer</option>
+            <option value="cash">Cash</option>
+            <option value="upi">UPI</option>
+            <option value="cheque">Cheque</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Notes (optional)</label>
+          <input type="text" id="payNotes" class="form-control" placeholder="e.g. NEFT Ref: 123456">
+        </div>
+      </div>
+      <div class="modal-footer bg-light">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-success fw-semibold" onclick="markPaid()">
+          <i class="bi bi-check-circle me-1"></i>Confirm Payment
         </button>
       </div>
     </div>
@@ -283,233 +386,307 @@
 <script src="/js/utils.js"></script>
 
 <script>
-let STAFF_CACHE = [];
+/* ─── State ──────────────────────────────────────────────────────────────── */
+let STAFF  = [];
+let PAYROLL = [];
 
+/* ─── Init ───────────────────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', async () => {
-  // Session check (Owner only)
   try {
     const user = await loadSession(true);
-    if (!user || user.role !== 'owner') {
-      window.location.href = '/shared/login.html';
-      return;
-    }
+    if (!user || user.role !== 'owner') { window.location.href = '/shared/login.html'; return; }
     document.getElementById('userNameSidebar').textContent = user.full_name || 'Club Owner';
-  } catch {
-    window.location.href = '/shared/login.html';
-    return;
-  }
+  } catch { window.location.href = '/shared/login.html'; return; }
 
   document.getElementById('todayDate').textContent = new Date().toLocaleDateString('en-IN', {
     weekday: 'long', year: 'numeric', month: 'short', day: 'numeric'
   });
 
-  document.getElementById('staffSearchInput').addEventListener('input', applyStaffFilters);
-  document.getElementById('staffRoleFilter').addEventListener('change', applyStaffFilters);
+  // Default payroll month = current month
+  const now = new Date();
+  document.getElementById('genMonth').value =
+    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
+  document.getElementById('staffSearch').addEventListener('input', renderStaff);
+  document.getElementById('staffAreaFilter').addEventListener('change', renderStaff);
   document.getElementById('logoutBtn').addEventListener('click', async () => {
     await api.post('/api/auth/logout');
     window.location.href = '/shared/login.html';
   });
 
-  await loadStaffData();
+  // Highlight first area card
+  selectArea('shop');
+  await loadStaff();
 });
 
-function selectRoleRadio(role) {
-  const radio = document.querySelector(`input[name="assignedRoleRadio"][value="${role}"]`);
+/* ─── Tabs ───────────────────────────────────────────────────────────────── */
+function showTab(tab) {
+  document.getElementById('tab-staff').style.display    = tab === 'staff'   ? '' : 'none';
+  document.getElementById('tab-payroll').style.display  = tab === 'payroll' ? '' : 'none';
+  document.getElementById('tab-staff-btn').classList.toggle('active',   tab === 'staff');
+  document.getElementById('tab-payroll-btn').classList.toggle('active', tab === 'payroll');
+  if (tab === 'payroll') loadPayroll();
+}
+
+/* ─── Area card selector ─────────────────────────────────────────────────── */
+function selectArea(area) {
+  ['shop','bar','booking'].forEach(a => {
+    const card = document.getElementById(`card-${a}`);
+    if (card) card.style.borderColor = a === area ? 'var(--cc-green)' : '#dee2e6';
+  });
+  const radio = document.querySelector(`input[name="areaRadio"][value="${area}"]`);
   if (radio) radio.checked = true;
 }
 
-// ── Fetch Staff Data ────────────────────────────────────────────────────────
-async function loadStaffData() {
-  try {
-    const staff = await api.get('/api/staff');
-    STAFF_CACHE = Array.isArray(staff) ? staff : [];
-  } catch (err) {
-    STAFF_CACHE = [
-      { id: 2, email: 'shop@championsclub.com', full_name: 'Alex Carter', phone: '+91 98765 43210', role: 'staff', assigned_area: 'shop', is_active: 1, created_at: new Date().toISOString() },
-      { id: 4, email: 'bar@championsclub.com', full_name: 'Elena Rostova', phone: '+91 98765 43211', role: 'staff', assigned_area: 'bar', is_active: 1, created_at: new Date().toISOString() },
-      { id: 5, email: 'booking@championsclub.com', full_name: 'David Chen', phone: '+91 98765 43212', role: 'staff', assigned_area: 'booking', is_active: 1, created_at: new Date().toISOString() }
-    ];
-  }
+/* ─── Staff: load & render ───────────────────────────────────────────────── */
+async function loadStaff() {
+  try { STAFF = await api.get('/api/staff'); }
+  catch { STAFF = []; }
   updateKpis();
-  applyStaffFilters();
+  renderStaff();
 }
 
 function updateKpis() {
-  const total = STAFF_CACHE.length;
-  const shopCount = STAFF_CACHE.filter(s => s.assigned_area === 'shop').length;
-  const barCount = STAFF_CACHE.filter(s => s.assigned_area === 'bar').length;
-  const bookingCount = STAFF_CACHE.filter(s => s.assigned_area === 'booking').length;
-
-  document.getElementById('kpi-total-staff').textContent = total;
-  document.getElementById('kpi-shop-staff').textContent = shopCount;
-  document.getElementById('kpi-bar-staff').textContent = barCount;
-  document.getElementById('kpi-booking-staff').textContent = bookingCount;
+  document.getElementById('kpi-total').textContent   = STAFF.length;
+  document.getElementById('kpi-shop').textContent    = STAFF.filter(s => s.assigned_area === 'shop').length;
+  document.getElementById('kpi-bar').textContent     = STAFF.filter(s => s.assigned_area === 'bar').length;
+  document.getElementById('kpi-booking').textContent = STAFF.filter(s => s.assigned_area === 'booking').length;
 }
 
-function applyStaffFilters() {
-  const query = document.getElementById('staffSearchInput').value.toLowerCase().trim();
-  const roleFilter = document.getElementById('staffRoleFilter').value;
+function renderStaff() {
+  const q    = document.getElementById('staffSearch').value.toLowerCase();
+  const area = document.getElementById('staffAreaFilter').value;
+  const list = STAFF.filter(s =>
+    (!q || s.full_name?.toLowerCase().includes(q) || s.email?.toLowerCase().includes(q)) &&
+    (!area || s.assigned_area === area)
+  );
 
-  const filtered = STAFF_CACHE.filter(s => {
-    const matchesSearch = !query ||
-      (s.full_name && s.full_name.toLowerCase().includes(query)) ||
-      (s.email && s.email.toLowerCase().includes(query)) ||
-      (s.phone && s.phone.includes(query));
-
-    const matchesRole = roleFilter === 'all' || (s.assigned_area === roleFilter);
-    return matchesSearch && matchesRole;
-  });
-
-  document.getElementById('staffCountBadge').textContent = `Showing ${filtered.length} of ${STAFF_CACHE.length} staff`;
-  renderStaffTable(filtered);
-}
-
-function renderStaffTable(staffList) {
   const tbody = document.getElementById('staffTableBody');
-  if (!staffList.length) {
-    tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted"><i class="bi bi-people fs-4 d-block mb-1"></i>No staff members found matching criteria.</td></tr>`;
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">No staff members found.</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = staffList.map(s => {
-    let areaBadge = '';
-    let dashboardUrl = '';
-    if (s.assigned_area === 'shop') {
-      areaBadge = '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25"><i class="bi bi-shop me-1"></i>Shop & Pro Store</span>';
-      dashboardUrl = '<code>/staff/shop-dashboard.html</code>';
-    } else if (s.assigned_area === 'bar') {
-      areaBadge = '<span class="badge bg-warning bg-opacity-10 text-dark border border-warning border-opacity-50"><i class="bi bi-cup-straw me-1"></i>Bar & Cafeteria</span>';
-      dashboardUrl = '<code>/staff/bar-dashboard.html</code>';
-    } else {
-      areaBadge = '<span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25"><i class="bi bi-calendar-check me-1"></i>Court Booking Desk</span>';
-      dashboardUrl = '<code>/staff/dashboard.html</code>';
-    }
-
-    const statusBadge = s.is_active ?
-      '<span class="badge bg-success">Active</span>' :
-      '<span class="badge bg-danger">Deactivated</span>';
-
+  tbody.innerHTML = list.map(s => {
+    const areaBadge   = areaLabel(s.assigned_area);
+    const dashboardUrl = s.assigned_area === 'shop'    ? '/staff/shop-dashboard.html'
+                       : s.assigned_area === 'bar'     ? '/staff/bar-dashboard.html'
+                       : '/staff/dashboard.html';
+    const salary = s.monthly_salary != null ? `₹${Number(s.monthly_salary).toLocaleString('en-IN')}` : '—';
     return `
       <tr>
         <td>
           <div class="d-flex align-items-center">
-            <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-2 fw-bold" style="width:36px; height:36px;">
-              ${escHtml((s.full_name || 'S').charAt(0))}
-            </div>
+            <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-2 fw-bold"
+                 style="width:36px;height:36px">${escHtml((s.full_name||'S').charAt(0))}</div>
             <div>
-              <div class="fw-bold text-dark">${escHtml(s.full_name)}</div>
-              <small class="text-muted">Staff ID: #${s.id}</small>
+              <div class="fw-bold">${escHtml(s.full_name)}</div>
+              <small class="text-muted">#${s.id}</small>
             </div>
           </div>
         </td>
         <td>
-          <div class="fw-semibold">${escHtml(s.email)}</div>
-          <small class="text-muted">${escHtml(s.phone || 'No phone')}</small>
+          <div>${escHtml(s.email)}</div>
+          <small class="text-muted">${escHtml(s.phone||'—')}</small>
         </td>
         <td>${areaBadge}</td>
-        <td>${dashboardUrl}</td>
-        <td>${statusBadge}</td>
-        <td class="text-muted small">${fmtDate(s.created_at)}</td>
+        <td><code class="small">${dashboardUrl}</code></td>
+        <td class="fw-semibold text-success">${salary}</td>
+        <td>${s.is_active ? '<span class="badge bg-success">Active</span>' : '<span class="badge bg-danger">Inactive</span>'}</td>
         <td class="text-end">
-          <button class="btn btn-sm btn-outline-primary me-1" onclick="openEditStaff(${s.id})">
-            <i class="bi bi-pencil"></i> Edit
+          <button class="btn btn-sm btn-outline-primary me-1" onclick="openEdit(${s.id})">
+            <i class="bi bi-pencil"></i>
           </button>
-          <button class="btn btn-sm ${s.is_active ? 'btn-outline-danger' : 'btn-outline-success'}" onclick="toggleStaffStatus(${s.id}, ${s.is_active ? 0 : 1})">
+          <button class="btn btn-sm ${s.is_active ? 'btn-outline-danger' : 'btn-outline-success'}"
+                  onclick="toggleStatus(${s.id}, ${s.is_active ? 0 : 1})" title="${s.is_active ? 'Deactivate' : 'Activate'}">
             <i class="bi ${s.is_active ? 'bi-person-x' : 'bi-person-check'}"></i>
           </button>
         </td>
-      </tr>
-    `;
+      </tr>`;
   }).join('');
 }
 
-// ── Create Staff ────────────────────────────────────────────────────────────
-async function handleCreateStaff() {
-  const name = document.getElementById('newStaffName').value.trim();
-  const email = document.getElementById('newStaffEmail').value.trim();
-  const password = document.getElementById('newStaffPassword').value;
-  const phone = document.getElementById('newStaffPhone').value.trim();
-  const assigned = document.querySelector('input[name="assignedRoleRadio"]:checked')?.value || 'shop';
-
-  if (!name || !email || !password) {
-    showAlert('Please provide Name, Email, and Password.', 'danger');
-    return;
-  }
-
-  try {
-    const res = await api.post('/api/staff', {
-      full_name: name,
-      email,
-      password,
-      phone,
-      assigned_area: assigned
-    });
-    showAlert(`Staff member "${name}" registered successfully! Assigned to ${assigned.toUpperCase()}.`, 'success');
-  } catch (err) {
-    showAlert(err.message || 'Staff created in local session', 'success');
-  }
-
-  bootstrap.Modal.getInstance(document.getElementById('addStaffModal')).hide();
-  document.getElementById('addStaffForm').reset();
-  await loadStaffData();
+function areaLabel(area) {
+  if (area === 'shop')    return '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25"><i class="bi bi-shop me-1"></i>Shop</span>';
+  if (area === 'bar')     return '<span class="badge bg-warning bg-opacity-10 text-dark border border-warning border-opacity-50"><i class="bi bi-cup-straw me-1"></i>Bar</span>';
+  return '<span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25"><i class="bi bi-calendar-check me-1"></i>Booking</span>';
 }
 
-// ── Edit Staff ──────────────────────────────────────────────────────────────
-function openEditStaff(staffId) {
-  const s = STAFF_CACHE.find(item => item.id === staffId);
+/* ─── Create Staff ───────────────────────────────────────────────────────── */
+async function handleCreateStaff() {
+  const name  = document.getElementById('newName').value.trim();
+  const email = document.getElementById('newEmail').value.trim();
+  const pass  = document.getElementById('newPassword').value;
+  const phone = document.getElementById('newPhone').value.trim();
+  const salary= document.getElementById('newSalary').value || 30000;
+  const area  = document.querySelector('input[name="areaRadio"]:checked')?.value || 'shop';
+
+  if (!name || !email || !pass) { showAlert('Name, Email and Password are required.', 'danger'); return; }
+
+  try {
+    await api.post('/api/staff', { full_name: name, email, password: pass, phone, assigned_area: area, monthly_salary: salary });
+    showAlert(`Staff "${name}" added successfully (${area} area).`, 'success');
+    bootstrap.Modal.getInstance(document.getElementById('addStaffModal')).hide();
+    document.getElementById('addStaffForm').reset();
+    selectArea('shop');
+    await loadStaff();
+  } catch (err) { showAlert(err.message || 'Failed to create staff.', 'danger'); }
+}
+
+/* ─── Edit Staff ─────────────────────────────────────────────────────────── */
+function openEdit(id) {
+  const s = STAFF.find(x => x.id === id);
   if (!s) return;
-
-  document.getElementById('editStaffId').value = s.id;
-  document.getElementById('editStaffName').value = s.full_name || '';
-  document.getElementById('editStaffEmail').value = s.email || '';
-  document.getElementById('editStaffPhone').value = s.phone || '';
-  document.getElementById('editStaffAssigned').value = s.assigned_area || 'shop';
-  document.getElementById('editStaffStatus').value = s.is_active ? '1' : '0';
-  document.getElementById('editStaffNewPassword').value = '';
-
+  document.getElementById('editId').value    = s.id;
+  document.getElementById('editName').value  = s.full_name || '';
+  document.getElementById('editEmail').value = s.email || '';
+  document.getElementById('editPhone').value = s.phone || '';
+  document.getElementById('editArea').value  = s.assigned_area || 'shop';
+  document.getElementById('editSalary').value= s.monthly_salary || 30000;
+  document.getElementById('editStatus').value= s.is_active ? '1' : '0';
+  document.getElementById('editPassword').value = '';
   new bootstrap.Modal(document.getElementById('editStaffModal')).show();
 }
 
 async function handleUpdateStaff() {
-  const staffId = document.getElementById('editStaffId').value;
-  const name = document.getElementById('editStaffName').value.trim();
-  const email = document.getElementById('editStaffEmail').value.trim();
-  const phone = document.getElementById('editStaffPhone').value.trim();
-  const assigned = document.getElementById('editStaffAssigned').value;
-  const isActive = parseInt(document.getElementById('editStaffStatus').value, 10);
-  const newPassword = document.getElementById('editStaffNewPassword').value;
+  const id   = document.getElementById('editId').value;
+  const body = {
+    full_name:     document.getElementById('editName').value.trim(),
+    email:         document.getElementById('editEmail').value.trim(),
+    phone:         document.getElementById('editPhone').value.trim(),
+    assigned_area: document.getElementById('editArea').value,
+    monthly_salary:document.getElementById('editSalary').value,
+    is_active:     parseInt(document.getElementById('editStatus').value, 10),
+  };
+  const pw = document.getElementById('editPassword').value;
+  if (pw) body.password = pw;
 
   try {
-    await api.put(`/api/staff/${staffId}`, {
-      full_name: name,
-      email,
-      phone,
-      assigned_area: assigned,
-      is_active: isActive,
-      password: newPassword || undefined
-    });
-    showAlert('Staff member updated successfully!', 'success');
-  } catch (err) {
-    showAlert('Staff updated!', 'success');
-  }
-
-  bootstrap.Modal.getInstance(document.getElementById('editStaffModal')).hide();
-  await loadStaffData();
+    await api.put(`/api/staff/${id}`, body);
+    showAlert('Staff updated successfully!', 'success');
+    bootstrap.Modal.getInstance(document.getElementById('editStaffModal')).hide();
+    await loadStaff();
+  } catch (err) { showAlert(err.message || 'Update failed.', 'danger'); }
 }
 
-async function toggleStaffStatus(staffId, newStatus) {
+async function toggleStatus(id, newStatus) {
   try {
-    if (newStatus === 0) {
-      await api.del(`/api/staff/${staffId}`);
-    } else {
-      await api.put(`/api/staff/${staffId}`, { is_active: 1 });
-    }
-    showAlert('Staff status updated!', 'success');
-  } catch (err) {
+    if (newStatus === 0) await api.del(`/api/staff/${id}`);
+    else await api.put(`/api/staff/${id}`, { is_active: 1 });
     showAlert('Status updated!', 'success');
+    await loadStaff();
+  } catch (err) { showAlert('Failed to change status.', 'danger'); }
+}
+
+/* ─── Payroll ────────────────────────────────────────────────────────────── */
+async function loadPayroll() {
+  const monthFilter = document.getElementById('payrollMonthFilter').value;
+  try {
+    const url = monthFilter ? `/api/payroll?month=${monthFilter}` : '/api/payroll';
+    PAYROLL = await api.get(url);
+  } catch { PAYROLL = []; }
+  renderPayroll();
+  populateMonthFilter();
+}
+
+function populateMonthFilter() {
+  const months  = [...new Set(PAYROLL.map(p => p.month_year))].sort().reverse();
+  const sel     = document.getElementById('payrollMonthFilter');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">All Months</option>' +
+    months.map(m => `<option value="${m}" ${m === current ? 'selected' : ''}>${m}</option>`).join('');
+}
+
+function renderPayroll() {
+  const tbody = document.getElementById('payrollTableBody');
+
+  // KPIs
+  const totalNet = PAYROLL.reduce((s, p) => s + Number(p.net_salary), 0);
+  const pending  = PAYROLL.filter(p => p.status === 'pending').length;
+  const paid     = PAYROLL.filter(p => p.status === 'paid').length;
+  document.getElementById('pay-total-net').textContent = `₹${totalNet.toLocaleString('en-IN')}`;
+  document.getElementById('pay-pending').textContent   = pending;
+  document.getElementById('pay-paid').textContent      = paid;
+
+  if (!PAYROLL.length) {
+    tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-muted">
+      No payroll records. Click "Generate Payslips" to create them for a month.
+    </td></tr>`;
+    return;
   }
-  await loadStaffData();
+
+  tbody.innerHTML = PAYROLL.map(p => {
+    const statusBadge = p.status === 'paid'
+      ? `<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Paid</span>`
+      : `<span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i>Pending</span>`;
+
+    const payBtn = p.status === 'pending'
+      ? `<button class="btn btn-sm btn-success" onclick="openPayModal(${p.id}, '${escHtml(p.full_name)}', ${p.net_salary})">
+           <i class="bi bi-cash-coin me-1"></i>Pay
+         </button>`
+      : `<small class="text-muted">${fmtDate(p.paid_at)}</small>`;
+
+    return `
+      <tr>
+        <td>
+          <div class="fw-bold">${escHtml(p.full_name)}</div>
+          <small class="text-muted">${escHtml(p.email || '')}</small>
+        </td>
+        <td class="fw-semibold">${p.month_year}</td>
+        <td>${areaLabel(p.assigned_area)}</td>
+        <td class="text-end">₹${Number(p.base_salary).toLocaleString('en-IN')}</td>
+        <td class="text-end text-success">₹${Number(p.bonus).toLocaleString('en-IN')}</td>
+        <td class="text-end text-danger">–₹${Number(p.deductions).toLocaleString('en-IN')}</td>
+        <td class="text-end fw-bold">₹${Number(p.net_salary).toLocaleString('en-IN')}</td>
+        <td>${statusBadge}</td>
+        <td class="text-end">${payBtn}</td>
+      </tr>`;
+  }).join('');
+}
+
+async function generatePayroll() {
+  const month = document.getElementById('genMonth').value;
+  if (!month) { showAlert('Please select a month.', 'warning'); return; }
+
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Generating…';
+
+  try {
+    const res = await api.post('/api/payroll/generate', { month_year: month });
+    const msg = `✅ Generated ${res.created} payslip(s) for ${res.month_year}` +
+                (res.skipped ? ` (${res.skipped} already existed)` : '');
+    document.getElementById('genResult').innerHTML =
+      `<div class="alert alert-success alert-sm py-2 mb-0 mt-2">${msg}</div>`;
+    await loadPayroll();
+    showTab('payroll');  // Stay on payroll tab
+  } catch (err) {
+    document.getElementById('genResult').innerHTML =
+      `<div class="alert alert-danger alert-sm py-2 mb-0 mt-2">${err.message}</div>`;
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-play-circle-fill me-1"></i>Generate Payslips';
+}
+
+function openPayModal(slipId, staffName, netSalary) {
+  document.getElementById('paySlipId').value = slipId;
+  document.getElementById('paySlipInfo').textContent =
+    `Marking ₹${Number(netSalary).toLocaleString('en-IN')} as paid to ${staffName}`;
+  document.getElementById('payNotes').value  = '';
+  new bootstrap.Modal(document.getElementById('payModal')).show();
+}
+
+async function markPaid() {
+  const id     = document.getElementById('paySlipId').value;
+  const method = document.getElementById('payMethod').value;
+  const notes  = document.getElementById('payNotes').value.trim();
+  try {
+    await api.put(`/api/payroll/${id}/pay`, { payment_method: method, notes });
+    showAlert('Salary marked as paid successfully!', 'success');
+    bootstrap.Modal.getInstance(document.getElementById('payModal')).hide();
+    await loadPayroll();
+  } catch (err) { showAlert(err.message || 'Failed to mark as paid.', 'danger'); }
 }
 </script>
 </body>

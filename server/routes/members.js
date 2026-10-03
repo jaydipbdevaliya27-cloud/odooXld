@@ -14,6 +14,28 @@ const { requireLogin, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 
+// ── GET /api/members/me ─────────────────────────────────────────────────────
+// Any logged-in member can call this to get their own membership record + plan
+router.get('/me', requireLogin, async (req, res, next) => {
+  try {
+    const userId = req.session.user.id;
+    const [rows] = await require('../db').query(
+      `SELECT m.*, u.full_name, u.email, u.phone,
+              p.name AS plan_name, p.code AS plan_code,
+              p.court_discount_pct, p.shop_discount_pct,
+              p.bar_discount_pct, p.max_bookings_per_day
+       FROM   members m
+       JOIN   users   u ON u.id = m.user_id
+       JOIN   plans   p ON p.id = m.plan_id
+       WHERE  m.user_id = ?
+       LIMIT  1`,
+      [userId]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Membership not found' });
+    res.json(rows[0]);
+  } catch (err) { next(err); }
+});
+
 // ── GET /api/members ────────────────────────────────────────────────────────
 router.get('/', requireLogin, requireRole('staff', 'owner'), async (req, res, next) => {
   try {

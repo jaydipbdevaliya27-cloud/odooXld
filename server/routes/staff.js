@@ -44,7 +44,9 @@ router.get('/', requireLogin, requireRole('owner'), async (req, res, next) => {
     try {
       const [rows] = await db.query(
         `SELECT id, email, COALESCE(full_name, name) AS full_name, phone, role,
-                COALESCE(assigned_area,'shop') AS assigned_area, is_active, created_at
+                COALESCE(assigned_area,'shop') AS assigned_area,
+                COALESCE(monthly_salary, 30000) AS monthly_salary,
+                is_active, created_at
          FROM users
          WHERE role = 'staff'
          ORDER BY created_at DESC`
@@ -81,11 +83,11 @@ router.post('/', requireLogin, requireRole('owner'), async (req, res, next) => {
         return res.status(409).json({ error: 'A user with this email address already exists.' });
       }
 
-      // Insert into both 'name' and 'full_name' columns for schema compatibility
+      // Insert new staff member into users table
       const [result] = await db.query(
-        `INSERT INTO users (name, full_name, email, password_hash, role, phone, assigned_area, is_active)
-         VALUES (?, ?, ?, 'staff', ?, ?, ?, 1)`,
-        [full_name.trim(), full_name.trim(), cleanEmail, hashedPassword, phone ? phone.trim() : null, assigned]
+        `INSERT INTO users (full_name, email, password_hash, role, phone, assigned_area, is_active)
+         VALUES (?, ?, ?, 'staff', ?, ?, 1)`,
+        [full_name.trim(), cleanEmail, hashedPassword, phone ? phone.trim() : null, assigned]
       );
 
       const [rows] = await db.query(
@@ -118,7 +120,7 @@ router.post('/', requireLogin, requireRole('owner'), async (req, res, next) => {
 router.put('/:id', requireLogin, requireRole('owner'), async (req, res, next) => {
   try {
     await ensureSchema();
-    const { email, full_name, phone, assigned_area, is_active, password } = req.body;
+    const { email, full_name, phone, assigned_area, is_active, password, monthly_salary } = req.body;
     const staffId = req.params.id;
 
     try {
@@ -131,9 +133,10 @@ router.put('/:id', requireLogin, requireRole('owner'), async (req, res, next) =>
              phone = ?,
              assigned_area = COALESCE(?, assigned_area),
              is_active = COALESCE(?, is_active),
+             monthly_salary = COALESCE(?, monthly_salary),
              password_hash = ?
            WHERE id = ? AND role = 'staff'`,
-          [email ? email.trim().toLowerCase() : null, full_name ? full_name.trim() : null, phone ? phone.trim() : null, assigned_area || null, is_active != null ? is_active : 1, hashedPassword, staffId]
+          [email ? email.trim().toLowerCase() : null, full_name ? full_name.trim() : null, phone ? phone.trim() : null, assigned_area || null, is_active != null ? is_active : null, monthly_salary != null ? monthly_salary : null, hashedPassword, staffId]
         );
       } else {
         await db.query(
@@ -142,14 +145,15 @@ router.put('/:id', requireLogin, requireRole('owner'), async (req, res, next) =>
              full_name = COALESCE(?, full_name),
              phone = ?,
              assigned_area = COALESCE(?, assigned_area),
-             is_active = COALESCE(?, is_active)
+             is_active = COALESCE(?, is_active),
+             monthly_salary = COALESCE(?, monthly_salary)
            WHERE id = ? AND role = 'staff'`,
-          [email ? email.trim().toLowerCase() : null, full_name ? full_name.trim() : null, phone ? phone.trim() : null, assigned_area || null, is_active != null ? is_active : 1, staffId]
+          [email ? email.trim().toLowerCase() : null, full_name ? full_name.trim() : null, phone ? phone.trim() : null, assigned_area || null, is_active != null ? is_active : null, monthly_salary != null ? monthly_salary : null, staffId]
         );
       }
 
       const [rows] = await db.query(
-        'SELECT id, email, full_name, phone, role, assigned_area, is_active, created_at FROM users WHERE id = ?',
+        'SELECT id, email, full_name, phone, role, assigned_area, monthly_salary, is_active, created_at FROM users WHERE id = ?',
         [staffId]
       );
       if (rows.length) return res.json(rows[0]);

@@ -21,6 +21,7 @@ const leadRoutes     = require('./routes/leads');
 const reportRoutes   = require('./routes/reports');
 const planRoutes     = require('./routes/plans');
 const staffRoutes    = require('./routes/staff');
+const payrollRoutes  = require('./routes/payroll');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -50,6 +51,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/leads',    leadRoutes);
 app.use('/api/reports',  reportRoutes);
 app.use('/api/plans',    planRoutes);
+app.use('/api/payroll',  payrollRoutes);
 
 // ── Static files (HTML/CSS/JS pages) ───────────────────────────────────────
 // Serve the client/ folder at the web root
