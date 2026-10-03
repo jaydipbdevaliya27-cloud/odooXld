@@ -79,7 +79,7 @@ async function listMembers({ search = '', status = '', plan_id = '', page = 1 } 
 async function getMemberById(id) {
   const [rows] = await db.query(
     `SELECT m.*, u.full_name, u.email, u.phone,
-            p.name AS plan_name,
+            p.name AS plan_name, p.code AS plan_code,
             p.court_discount_pct, p.shop_discount_pct, p.bar_discount_pct,
             p.max_bookings_per_day
        FROM members m
@@ -87,6 +87,22 @@ async function getMemberById(id) {
        JOIN plans p ON m.plan_id = p.id
       WHERE m.id = ?`,
     [id]
+  );
+  return rows[0] || null;
+}
+
+// ── getMemberByUserId ─────────────────────────────────────────────────────────
+async function getMemberByUserId(userId) {
+  const [rows] = await db.query(
+    `SELECT m.*, u.full_name, u.email, u.phone,
+            p.name AS plan_name, p.code AS plan_code,
+            p.court_discount_pct, p.shop_discount_pct, p.bar_discount_pct,
+            p.max_bookings_per_day
+       FROM members m
+       JOIN users u ON m.user_id = u.id
+       JOIN plans p ON m.plan_id = p.id
+      WHERE m.user_id = ?`,
+    [userId]
   );
   return rows[0] || null;
 }
@@ -216,4 +232,4 @@ async function renewMember(memberId, planId, paymentMethod = 'cash') {
   return { message: 'Membership renewed', new_expiry: newExpiry, plan: plan.name };
 }
 
-module.exports = { listMembers, getMemberById, enrollMember, updateMember, renewMember };
+module.exports = { listMembers, getMemberById, getMemberByUserId, enrollMember, updateMember, renewMember };

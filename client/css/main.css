@@ -24,7 +24,7 @@ body {
 }
 
 /* ── Sidebar layout ─────────────────────────────────────────────────────────── */
-.cc-wrapper    { display: flex; min-height: 100vh; }
+.cc-wrapper    { display: flex; min-height: 100vh; position: relative; overflow-x: hidden; }
 .cc-sidebar    {
   width: 230px;
   min-height: 100vh;
@@ -35,6 +35,39 @@ body {
   top: 0;
   height: 100vh;
   overflow-y: auto;
+  transition: margin-left .25s ease;
+  z-index: 1040;
+}
+.cc-sidebar.collapsed {
+  margin-left: -230px;
+}
+
+@media (max-width: 768px) {
+  .cc-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    margin-left: -230px;
+    z-index: 1050;
+  }
+  .cc-sidebar.show {
+    margin-left: 0;
+    box-shadow: 4px 0 16px rgba(0,0,0,.35);
+  }
+  .cc-sidebar-backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,.45);
+    z-index: 1045;
+  }
+  .cc-sidebar-backdrop.show {
+    display: block;
+  }
 }
 .cc-sidebar .brand {
   padding: 1.25rem 1rem;
@@ -168,3 +201,70 @@ body {
 .text-cc   { color: var(--cc-green) !important; }
 .bg-cc     { background: var(--cc-green) !important; }
 .spinner-sm { width: 1.2rem; height: 1.2rem; }
+
+/* ── 1-Hour Slot Cards ──────────────────────────────────────────────────────── */
+.slot-pill {
+  border: 1.5px solid #dee2e6;
+  border-radius: 8px;
+  padding: .65rem .85rem;
+  background: #fff;
+  transition: all .2s ease-in-out;
+  cursor: pointer;
+  text-align: left;
+}
+.slot-pill:hover:not(.booked) {
+  border-color: var(--cc-green);
+  box-shadow: 0 2px 8px rgba(26,122,74,.15);
+  transform: translateY(-1px);
+}
+.slot-pill.booked {
+  background: #f8f9fa;
+  border-color: #e9ecef;
+  color: #adb5bd;
+  cursor: not-allowed;
+  opacity: .75;
+}
+.slot-pill.mine {
+  background: #e7f3ff;
+  border-color: #0d6efd;
+  color: #0d6efd;
+}
+.slot-pill.selected {
+  background: var(--cc-green) !important;
+  border-color: var(--cc-green-dark) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 12px rgba(26,122,74,.3);
+}
+.slot-pill.selected .badge {
+  background: #fff !important;
+  color: var(--cc-green) !important;
+}
+
+/* ── Membership Tier Cards ─────────────────────────────────────────────────── */
+.tier-card {
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: var(--cc-card-shadow);
+  transition: transform .2s ease, box-shadow .2s ease;
+  border: 2px solid transparent;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.tier-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0,0,0,.12);
+}
+.tier-card.tier-gold {
+  border-color: #ffc107;
+}
+.tier-card.tier-silver {
+  border-color: #adb5bd;
+}
+.tier-card.tier-junior {
+  border-color: #0dcaf0;
+}
+.tier-card.current-plan {
+  box-shadow: 0 0 0 3px var(--cc-green);
+}
+

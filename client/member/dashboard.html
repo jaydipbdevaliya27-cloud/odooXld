@@ -15,9 +15,12 @@
   <nav class="cc-sidebar d-flex flex-column">
     <div class="brand"><i class="bi bi-trophy-fill me-2 text-warning"></i>Champions Club</div>
     <ul class="nav flex-column mt-2 flex-grow-1">
-      <li><a href="/member/dashboard.html" class="nav-link active"><i class="bi bi-house"></i>My Dashboard</a></li>
-      <li><a href="/member/book.html"      class="nav-link"><i class="bi bi-calendar-plus"></i>Book a Court</a></li>
-      <li><a href="/member/bookings.html"  class="nav-link"><i class="bi bi-calendar-check"></i>My Bookings</a></li>
+      <li><a href="/member/dashboard.html"  class="nav-link active"><i class="bi bi-house"></i>My Dashboard</a></li>
+      <li><a href="/member/membership.html" class="nav-link"><i class="bi bi-stars"></i>Membership Plans</a></li>
+      <li><a href="/member/book.html"       class="nav-link"><i class="bi bi-calendar-plus"></i>Book a Court</a></li>
+      <li><a href="/member/bookings.html"   class="nav-link"><i class="bi bi-calendar-check"></i>My Bookings</a></li>
+      <li><a href="#" class="nav-link" id="navCafeteria"><i class="bi bi-cup-hot"></i>Cafeteria</a></li>
+      <li><a href="#" class="nav-link" id="navMerch"><i class="bi bi-bag"></i>Merch</a></li>
     </ul>
     <div class="p-3">
       <span id="userNameSidebar" class="small text-muted d-block mb-2"></span>
@@ -29,8 +32,12 @@
 
   <div class="d-flex flex-column flex-grow-1">
     <div class="cc-topbar">
-      <h5 class="page-title" id="welcomeTitle">Welcome!</h5>
-      <span id="todayDate" class="text-muted small"></span>
+      <div class="d-flex align-items-center">
+        <button id="sidebarToggle" class="btn btn-sm btn-outline-secondary me-2 py-0 px-2" aria-label="Toggle Navigation">
+          <i class="bi bi-list fs-5"></i>
+        </button>
+        <h5 class="page-title" id="welcomeTitle">Welcome!</h5>
+      </div>
     </div>
 
     <main class="cc-main">
@@ -131,57 +138,56 @@
 
   document.getElementById('userNameSidebar').textContent = user.full_name;
   document.getElementById('welcomeTitle').textContent    = `Welcome back, ${user.full_name.split(' ')[0]}!`;
-  document.getElementById('todayDate').textContent       = new Date().toLocaleDateString('en-IN', {
-    weekday: 'long', year: 'numeric', month: 'short', day: 'numeric'
+
+  // Nav link handlers for Cafeteria and Merch
+  document.getElementById('navCafeteria').addEventListener('click', (e) => {
+    e.preventDefault();
+    showAlert('Cafeteria module is coming soon!', 'info');
+  });
+  document.getElementById('navMerch').addEventListener('click', (e) => {
+    e.preventDefault();
+    showAlert('Merchandise shop module is coming soon!', 'info');
   });
 
-  // ── Membership profile ─────────────────────────────────────────────────────
+  // Load member profile
   try {
-    const m = await api.get('/api/members/me');  // Uses the new /me endpoint
+    const member = await api.get('/api/members/profile');
+    if (member) {
+      document.getElementById('memberCode').textContent   = member.member_code;
+      document.getElementById('memberName').textContent   = member.full_name || user.full_name;
+      document.getElementById('planName').textContent     = `${member.plan_name} Membership`;
+      document.getElementById('joinDate').textContent     = fmtDate(member.join_date);
+      document.getElementById('expiryDate').textContent   = fmtDate(member.expiry_date);
+      document.getElementById('memberStatus').textContent = member.status.toUpperCase();
 
-    document.getElementById('memberCode').textContent   = m.member_code || '—';
-    document.getElementById('memberName').textContent   = m.full_name   || user.full_name;
-    document.getElementById('planName').textContent     = (m.plan_name  || '—') + ' Plan';
-    document.getElementById('joinDate').textContent     = fmtDate(m.join_date);
-    document.getElementById('expiryDate').textContent   = fmtDate(m.expiry_date);
-    document.getElementById('memberStatus').textContent = (m.status || '—').toUpperCase();
-
-    // Colour card red if expired/suspended
-    if (m.status !== 'active') {
-      document.getElementById('memberCard').style.background =
-        'linear-gradient(135deg,#c62828 0%,#7f0000 100%)';
+      // Benefits
+      document.getElementById('benefitsRow').innerHTML = `
+        <div class="col-md-4">
+          <div class="text-center p-3 rounded" style="background:#f5f7f5">
+            <div class="fs-2 fw-bold text-cc">${member.court_discount_pct}%</div>
+            <div class="small text-muted">Court Discount</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="text-center p-3 rounded" style="background:#f5f7f5">
+            <div class="fs-2 fw-bold text-cc">${member.shop_discount_pct}%</div>
+            <div class="small text-muted">Shop Discount</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="text-center p-3 rounded" style="background:#f5f7f5">
+            <div class="fs-2 fw-bold text-cc">${member.bar_discount_pct}%</div>
+            <div class="small text-muted">Bar Discount</div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="p-3 rounded" style="background:#f5f7f5">
+            <i class="bi bi-calendar-check text-cc me-2"></i>
+            Up to <strong>${member.max_bookings_per_day}</strong> court bookings per day
+          </div>
+        </div>`;
     }
-
-    // Benefits grid
-    document.getElementById('benefitsRow').innerHTML = `
-      <div class="col-md-4">
-        <div class="text-center p-3 rounded" style="background:#f5f7f5">
-          <div class="fs-2 fw-bold text-cc">${m.court_discount_pct}%</div>
-          <div class="small text-muted">Court Discount</div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="text-center p-3 rounded" style="background:#f5f7f5">
-          <div class="fs-2 fw-bold text-cc">${m.shop_discount_pct}%</div>
-          <div class="small text-muted">Shop Discount</div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="text-center p-3 rounded" style="background:#f5f7f5">
-          <div class="fs-2 fw-bold text-cc">${m.bar_discount_pct}%</div>
-          <div class="small text-muted">Bar Discount</div>
-        </div>
-      </div>
-      <div class="col-12">
-        <div class="p-3 rounded" style="background:#f5f7f5">
-          <i class="bi bi-calendar-check text-cc me-2"></i>
-          Up to <strong>${m.max_bookings_per_day}</strong> court bookings per day
-        </div>
-      </div>`;
-  } catch (e) {
-    document.getElementById('benefitsRow').innerHTML =
-      '<div class="col-12 text-muted">Membership data not available. Please contact the club.</div>';
-  }
+  } catch(e) { /* non-member or error */ }
 
   // ── Recent bookings ────────────────────────────────────────────────────────
   try {

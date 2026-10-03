@@ -20,6 +20,7 @@ const express = require('express');
 
 // We will test against the running server or mount express app in memory for test
 const { query } = require('../db');
+const config = require('../config');
 const authService = require('../routes/auth');
 const memberService = require('../services/memberService');
 const bookingService = require('../services/bookingService');
@@ -63,7 +64,7 @@ async function runTests() {
   assert(users.length >= 5, `Found ${users.length} seeded users`);
   
   const [plans] = await query('SELECT id, code, name, court_discount_pct, shop_discount_pct, bar_discount_pct, max_bookings_per_day FROM plans');
-  assert(plans.length >= 3, `Found ${plans.length} plans (Silver, Gold, Platinum)`);
+  assert(plans.length >= 3, `Found ${plans.length} plans (Silver, Gold, Junior)`);
 
   const { members } = await memberService.listMembers();
   assert(members.length >= 3, `Found ${members.length} members in system`);
@@ -96,9 +97,17 @@ async function runTests() {
   const [courts] = await query('SELECT id, name, sport, base_price_per_hour FROM courts WHERE is_active = 1');
   assert(courts.length >= 4, `Found ${courts.length} active courts`);
 
-  // Generate a random test date to ensure clean slots on every run
-  const randomDay = String(Math.floor(Math.random() * 25 + 1)).padStart(2, '0');
-  const dateStr = `2026-12-${randomDay}`;
+  // Generate a test date within the allowed 14-day window (today + 3 to 10 days)
+  const offsetDays = Math.floor(Math.random() * 8 + 3);
+  const testD = new Date();
+  testD.setDate(testD.getDate() + offsetDays);
+  const tf = new Intl.DateTimeFormat('en-CA', {
+    timeZone: config.TIMEZONE || 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+  const dateStr = tf.format(testD);
 
   const availBefore = await bookingService.getAvailability(dateStr);
   assert(availBefore.slots.length > 0, `Generated ${availBefore.slots.length} time slots for date ${dateStr}`);
@@ -152,7 +161,7 @@ async function runTests() {
 
   // Test 7: Daily Booking Limit Check
   console.log('\n--- Test 7: Daily Booking Limit Check ---');
-  // Gold plan has limit of 3 bookings per day. newMember has 1 booking so far.
+  // Daily limit is 2 bookings per day. newMember has 1 booking so far.
   const booking2 = await bookingService.createBooking({
     courtId: courts[0].id,
     bookingDate: dateStr,
@@ -162,29 +171,20 @@ async function runTests() {
   });
   assert(booking2.bookingCode, `Booking 2 created: ${booking2.bookingCode}`);
 
-  const booking3 = await bookingService.createBooking({
-    courtId: courts[0].id,
-    bookingDate: dateStr,
-    startTime: '14:00',
-    memberId: memberId,
-    bookedByUserId: userId
-  });
-  assert(booking3.bookingCode, `Booking 3 created: ${booking3.bookingCode}`);
-
   let limitFailed = false;
   try {
     await bookingService.createBooking({
       courtId: courts[0].id,
       bookingDate: dateStr,
-      startTime: '16:00',
+      startTime: '14:00',
       memberId: memberId,
       bookedByUserId: userId
     });
   } catch (err) {
     limitFailed = true;
-    assert(err.status === 400 && err.message.includes('limit'), `4th booking rejected by daily limit check: ${err.message}`);
+    assert(err.status === 400 && err.message.includes('limit'), `3rd booking rejected by daily limit check: ${err.message}`);
   }
-  assert(limitFailed, 'Successfully enforced max daily booking limit');
+  assert(limitFailed, 'Successfully enforced max daily booking limit (max 2 per day)');
 
   // Test 8: Booking Cancellation & Slot Release
   console.log('\n--- Test 8: Booking Cancellation & Slot Release ---');

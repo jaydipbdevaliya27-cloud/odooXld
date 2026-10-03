@@ -14,6 +14,19 @@ const { requireLogin, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 
+// ── GET /api/bookings/availability ──────────────────────────────────────────
+// Returns 60-min slots starting every 30 mins with availability status
+router.get('/availability', requireLogin, async (req, res, next) => {
+  try {
+    const { date, sport, currentTime } = req.query;
+    if (!date) return res.status(400).json({ error: 'date query param required (YYYY-MM-DD)' });
+    const availability = await bookingService.getAvailability(date, sport || null, req.session.user.id, currentTime || null);
+    res.json(availability);
+  } catch (err) {
+    res.status(err.status || 400).json({ error: err.message });
+  }
+});
+
 // ── GET /api/bookings ────────────────────────────────────────────────────────
 router.get('/', requireLogin, async (req, res, next) => {
   try {
@@ -72,35 +85,30 @@ router.post('/', requireLogin, async (req, res, next) => {
   try {
     const booking = await bookingService.createBooking({
       ...req.body,
+      currentTimeOverride: req.body.currentTimeOverride || req.query.currentTime || null,
       booked_by_user_id: req.session.user.id
     });
     res.status(201).json(booking);
   } catch (err) {
     if (!err.status) err.status = 400;
-    next(err);
+    res.status(err.status).json({ error: err.message });
   }
 });
 
 // ── POST /api/bookings/:id/cancel ────────────────────────────────────────────
 router.post('/:id/cancel', requireLogin, async (req, res, next) => {
   try {
-    const [rows] = await db.query('SELECT * FROM bookings WHERE id = ?', [req.params.id]);
-    if (!rows.length) return res.status(404).json({ error: 'Booking not found' });
-
-    const booking = rows[0];
-    const u = req.session.user;
-    // Only the booker or staff/owner can cancel
-    if (u.role === 'member' && booking.booked_by_user_id !== u.id) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
-
-    await db.query(
-      `UPDATE bookings SET status='cancelled', cancelled_at=NOW(), cancellation_reason=?
-        WHERE id = ?`,
-      [req.body.reason || null, req.params.id]
+    const result = await bookingService.cancelBooking(
+      req.params.id,
+      req.session.user.id,
+      req.session.user.role,
+      req.body.reason || 'Cancelled by member'
     );
-    res.json({ message: 'Booking cancelled' });
-  } catch (err) { next(err); }
+    res.json(result);
+  } catch (err) {
+    if (!err.status) err.status = 400;
+    next(err);
+  }
 });
 
 module.exports = router;

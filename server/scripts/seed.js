@@ -66,17 +66,18 @@ async function seed() {
     INSERT INTO plans (code, name, description, annual_fee, duration_months,
                        court_discount_pct, shop_discount_pct, bar_discount_pct, max_bookings_per_day)
     VALUES
-      ('SILVER', 'Silver', 'Entry-level membership with basic benefits',      12000, 12, 10, 5,  5,  2),
-      ('GOLD',   'Gold',   'Popular choice with great discounts',             24000, 12, 20, 15, 15, 3),
-      ('JUNIOR', 'Junior', 'Budget membership for students & young players',   6000, 12,  5, 5,  5,  1)
-    ON DUPLICATE KEY UPDATE name=VALUES(name), description=VALUES(description),
-      annual_fee=VALUES(annual_fee), court_discount_pct=VALUES(court_discount_pct),
-      shop_discount_pct=VALUES(shop_discount_pct), bar_discount_pct=VALUES(bar_discount_pct),
+      ('SILVER',   'Silver',   'Standard club membership with court and cafe discounts',             12000, 12, 10,  5,  5,  2),
+      ('GOLD',     'Gold',     'Premium full-access membership with maximum court discounts',        24000, 12, 20, 15, 15,  2),
+      ('JUNIOR',   'Junior',   'Under 18 discounted membership for young student & junior athletes',  6000, 12, 15, 10, 10,  2)
+    ON DUPLICATE KEY UPDATE
+      name=VALUES(name),
+      description=VALUES(description),
+      annual_fee=VALUES(annual_fee),
+      court_discount_pct=VALUES(court_discount_pct),
+      shop_discount_pct=VALUES(shop_discount_pct),
+      bar_discount_pct=VALUES(bar_discount_pct),
       max_bookings_per_day=VALUES(max_bookings_per_day)
   `);
-
-  // Remove old Platinum plan if it exists (rename to Junior)
-  await db.query(`UPDATE plans SET name='Junior', code='JUNIOR' WHERE code='PLATINUM'`).catch(() => {});
 
   // ── 2. Users ───────────────────────────────────────────────────────────────
   console.log('  → Users');
@@ -121,9 +122,9 @@ async function seed() {
   const expiryDate  = new Date(now.getFullYear() + 1, now.getMonth() - 2, 1).toISOString().slice(0, 10);
 
   const memberRecords = [
-    { email: 'ravi@example.com',   code: 'CC-0001', plan: 'GOLD' },
-    { email: 'priya@example.com',  code: 'CC-0002', plan: 'SILVER' },
-    { email: 'carlos@example.com', code: 'CC-0003', plan: 'JUNIOR' },
+    { email: 'ravi@example.com',   code: 'CC-001', plan: 'GOLD',     join: joinDateStr, expiry: expiryDateStr },
+    { email: 'priya@example.com',  code: 'CC-002', plan: 'JUNIOR',   join: joinDateStr, expiry: expiryDateStr },
+    { email: 'carlos@example.com', code: 'CC-003', plan: 'SILVER',   join: joinDateStr, expiry: expiryDateStr }
   ];
   for (const r of memberRecords) {
     const uid = userMap[r.email];
