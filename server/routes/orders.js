@@ -127,15 +127,17 @@ router.post('/', requireLogin, async (req, res, next) => {
     const validatedItems = [];
 
     for (const item of items) {
-      const [products] = await db.query('SELECT * FROM cc_products WHERE id=?', [item.product_id]);
-      if (!products.length) return res.status(400).json({ error: `Product not found (ID: ${item.product_id})` });
+      const prodId = item.product_id || item.productId;
+      const [products] = await db.query('SELECT * FROM cc_products WHERE id=?', [prodId]);
+      if (!products.length) return res.status(400).json({ error: `Product not found (ID: ${prodId})` });
       const prod = products[0];
 
       let price = Number(prod.price);
       let variantName = null;
+      const varId = item.variant_id || item.variantId || null;
 
-      if (item.variant_id) {
-        const [vr] = await db.query('SELECT * FROM cc_product_variants WHERE id=? AND product_id=?', [item.variant_id, item.product_id]);
+      if (varId) {
+        const [vr] = await db.query('SELECT * FROM cc_product_variants WHERE id=? AND product_id=?', [varId, prod.id]);
         if (vr.length) {
           price += Number(vr[0].price_offset || 0);
           variantName = vr[0].variant_name;
@@ -153,7 +155,7 @@ router.post('/', requireLogin, async (req, res, next) => {
 
       validatedItems.push({
         product_id: prod.id,
-        variant_id: item.variant_id || null,
+        variant_id: varId,
         variant_name: variantName,
         quantity: qty,
         unit_price: price,
