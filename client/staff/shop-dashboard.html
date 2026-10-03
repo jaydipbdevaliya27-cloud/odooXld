@@ -115,10 +115,10 @@
   <nav class="cc-sidebar d-flex flex-column">
     <div class="brand"><i class="bi bi-trophy-fill me-2 text-warning"></i>Champions Club</div>
     <ul class="nav flex-column mt-2 flex-grow-1" id="sidebarNav">
-      <li><a href="#" class="nav-link active" data-target="dashboard-section"><i class="bi bi-speedometer2"></i>Dashboard</a></li>
-      <li><a href="#" class="nav-link" data-target="catalog-section"><i class="bi bi-box-seam"></i>Product Catalog</a></li>
-      <li><a href="#" class="nav-link" data-target="orders-section"><i class="bi bi-bag"></i>Orders & Sales</a></li>
-      <li><a href="#" class="nav-link" data-target="profile-section"><i class="bi bi-person"></i>Staff Profile</a></li>
+      <li><a href="javascript:void(0)" class="nav-link active" data-target="dashboard-section" onclick="switchTab('dashboard-section', event)"><i class="bi bi-speedometer2"></i>Dashboard</a></li>
+      <li><a href="javascript:void(0)" class="nav-link" data-target="catalog-section" onclick="switchTab('catalog-section', event)"><i class="bi bi-box-seam"></i>Product Catalog</a></li>
+      <li><a href="javascript:void(0)" class="nav-link" data-target="orders-section" onclick="switchTab('orders-section', event)"><i class="bi bi-bag"></i>Orders & Sales</a></li>
+      <li><a href="javascript:void(0)" class="nav-link" data-target="profile-section" onclick="switchTab('profile-section', event)"><i class="bi bi-person"></i>Staff Profile</a></li>
     </ul>
     <div class="p-3 border-top border-secondary border-opacity-25">
       <div class="d-flex align-items-center gap-2 mb-2 p-2 rounded" style="background:rgba(255,255,255,0.08);">
@@ -1022,6 +1022,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     tbody.appendChild(tr);
   });
 
+  // Logout handler
+  document.getElementById('logoutBtn')?.addEventListener('click', async () => {
+    await api.post('/api/auth/logout');
+    window.location.href = '/shared/login.html';
+  });
+
   // Load backend data or fallback
   await loadAllData();
 });
@@ -1598,7 +1604,8 @@ async function markOrderCompleted(orderId) {
 // ============================================================================
 // PROFILE & TAB MANAGEMENT
 // ============================================================================
-function switchTab(tabId) {
+function switchTab(tabId, event) {
+  if (event) event.preventDefault();
   document.querySelectorAll('#sidebarNav .nav-link').forEach(nav => {
     if (nav.getAttribute('data-target') === tabId) nav.classList.add('active');
     else nav.classList.remove('active');
@@ -1625,12 +1632,10 @@ async function handleSaveProfile() {
   document.getElementById('profileNameDisplay').textContent = fullName;
   document.getElementById('profilePhoneDisplay').textContent = phone;
   document.getElementById('userNameSidebar').textContent = fullName;
+  if (document.getElementById('userInitial')) document.getElementById('userInitial').textContent = (fullName || 'S').charAt(0).toUpperCase();
 
-  document.getElementById('logoutBtn')?.addEventListener('click', async () => {
-    await api.post('/api/auth/logout');
-    window.location.href = '/shared/login.html';
-  });
-})();
+  bootstrap.Modal.getInstance(document.getElementById('editProfileModal')).hide();
+}
 </script>
 </body>
 </html>
