@@ -433,6 +433,26 @@
     </div>
   </div>
 
+  <!-- ── View Booking Modal ────────────────────────────────────────────────── -->
+  <div class="modal fade" id="viewBookingModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title d-flex align-items-center gap-2">
+            <i class="bi bi-calendar-event text-primary"></i> Booking Details &amp; Overview
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="viewBookingModalBody">
+          <div class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading booking details…</div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-custom" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="/js/api.js"></script>
   <script src="/js/utils.js"></script>
@@ -622,6 +642,9 @@
               <div class="d-flex justify-content-between align-items-center pt-2 border-top">
                 <span class="small text-muted text-capitalize" style="font-size:0.75rem;"><i class="bi bi-person-badge me-1"></i>${utils.escapeHtml(b?.source?.replace(/_/g, ' ') || 'direct')}</span>
                 <div class="d-flex gap-1">
+                  <button class="btn btn-xs btn-outline-primary py-0 px-2" style="font-size:0.75rem;" onclick="openViewBookingModal(${b?.id})" title="View Booking Details">
+                    <i class="bi bi-eye"></i> View
+                  </button>
                   ${!isComp ? `
                     <button class="btn btn-xs btn-outline-warning py-0 px-1" style="font-size:0.75rem;" onclick="cancelBookingAction(${b?.id}, '${utils.escapeHtml(b?.booking_code || '')}')" title="Cancel Booking">
                       <i class="bi bi-calendar-x"></i>
@@ -752,6 +775,9 @@
               <td>${utils.statusChip(b.status)}</td>
               <td class="text-end">
                 <div class="d-flex justify-content-end gap-1">
+                  <button class="btn btn-sm btn-outline-primary" onclick="openViewBookingModal(${b.id})" title="View Booking Details">
+                    <i class="bi bi-eye"></i> View
+                  </button>
                   ${canCancel ? `
                     <button class="btn btn-sm btn-outline-warning" onclick="cancelBookingAction(${b.id}, '${utils.escapeHtml(b.booking_code)}')" title="Cancel Booking">
                       <i class="bi bi-calendar-x"></i> Cancel
@@ -777,6 +803,117 @@
         if (err.name !== 'AbortError') {
           tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger">${utils.escapeHtml(err.message)}</td></tr>`;
         }
+      }
+    }
+
+    async function openViewBookingModal(id) {
+      const modalBody = document.getElementById('viewBookingModalBody');
+      modalBody.innerHTML = `<div class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading booking details…</div>`;
+      ui.openModal('viewBookingModal');
+
+      try {
+        const b = await api.get(`/api/bookings/${id}`);
+
+        const participantsHtml = (b.participants && b.participants.length) ? `
+          <div class="card bg-light border-0 p-3 mb-3">
+            <h6 class="fw-bold mb-2 text-dark"><i class="bi bi-people text-primary me-1"></i> Co-Players &amp; Participants (${b.participants.length})</h6>
+            <div class="row g-2 small">
+              ${b.participants.map((p, idx) => `
+                <div class="col-sm-6">
+                  <strong>Player ${idx + 1}:</strong> ${utils.escapeHtml(p.participant_name || 'Participant')} ${p.participant_phone ? `(${utils.escapeHtml(p.participant_phone)})` : ''}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : '';
+
+        const paymentsHtml = (b.payments && b.payments.length) ? `
+          <div class="table-responsive mb-2">
+            <table class="table table-sm align-middle small mb-0">
+              <thead class="table-light"><tr><th>Payment Code</th><th>Method</th><th>Amount</th><th>Status</th><th>Paid At</th></tr></thead>
+              <tbody>
+                ${b.payments.map(p => `
+                  <tr>
+                    <td class="mono fw-semibold">${utils.escapeHtml(p.payment_code)}</td>
+                    <td><span class="badge bg-secondary text-uppercase">${utils.escapeHtml(p.method || 'online')}</span></td>
+                    <td class="mono fw-bold text-success">${utils.formatINR(p.amount)}</td>
+                    <td>${utils.statusChip(p.status)}</td>
+                    <td>${utils.formatDateTime(p.paid_at)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        ` : `<p class="text-muted small mb-0">No separate payment log found.</p>`;
+
+        const isCompleted = b.status === 'completed';
+        const isCancelled = b.status === 'cancelled';
+        const canCancel = !isCompleted && !isCancelled;
+
+        modalBody.innerHTML = `
+          <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded-3 mb-3 border">
+            <div>
+              <div class="d-flex align-items-center gap-2">
+                <span class="fs-5 fw-bold mono text-dark">${utils.escapeHtml(b.booking_code)}</span>
+                ${utils.statusChip(b.status)}
+                <span class="badge bg-primary text-capitalize">${utils.escapeHtml(b.sport || '')}</span>
+              </div>
+              <div class="small text-muted mt-1">
+                Booked on ${utils.formatDateTime(b.created_at)} ${b.booked_by_name ? `by Staff: ${utils.escapeHtml(b.booked_by_name)}` : ''}
+              </div>
+            </div>
+            <div class="d-flex gap-2">
+              ${canCancel ? `
+                <button class="btn btn-sm btn-outline-warning" onclick="ui.closeModal('viewBookingModal'); cancelBookingAction(${b.id}, '${utils.escapeHtml(b.booking_code)}');"><i class="bi bi-calendar-x me-1"></i>Cancel</button>
+              ` : ''}
+              <button class="btn btn-sm btn-outline-danger" onclick="ui.closeModal('viewBookingModal'); deleteBookingAction(${b.id}, '${utils.escapeHtml(b.booking_code)}');"><i class="bi bi-trash me-1"></i>Delete</button>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <div class="card h-100 border p-3">
+                <h6 class="fw-bold text-dark mb-2 border-bottom pb-2"><i class="bi bi-person me-1 text-primary"></i> Player / Booker Details</h6>
+                <div class="small d-flex flex-column gap-1">
+                  <div><strong>Name:</strong> ${utils.escapeHtml(b.player_name || 'Guest Player')}</div>
+                  <div><strong>Phone:</strong> ${utils.escapeHtml(b.player_phone || '—')}</div>
+                  <div><strong>Email:</strong> ${b.player_email ? `<a href="mailto:${utils.escapeHtml(b.player_email)}">${utils.escapeHtml(b.player_email)}</a>` : '—'}</div>
+                  <div><strong>Account Type:</strong> ${b.member_code ? `<span class="badge bg-success bg-opacity-10 text-success">Club Member (${utils.escapeHtml(b.member_code)})</span>` : '<span class="badge bg-secondary">Guest Booker</span>'}</div>
+                  <div><strong>Booking Channel:</strong> <span class="text-capitalize">${utils.escapeHtml((b.source || 'direct').replace(/_/g, ' '))}</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="card h-100 border p-3">
+                <h6 class="fw-bold text-dark mb-2 border-bottom pb-2"><i class="bi bi-geo-alt me-1 text-primary"></i> Court &amp; Schedule Details</h6>
+                <div class="small d-flex flex-column gap-1">
+                  <div><strong>Court:</strong> ${utils.escapeHtml(b.court_name)} (${utils.escapeHtml(b.sport?.toUpperCase())})</div>
+                  <div><strong>Surface:</strong> ${utils.escapeHtml(b.surface_type || 'Synthetic')}</div>
+                  <div><strong>Date:</strong> <span class="fw-bold text-dark">${utils.formatDate(b.booking_date)}</span></div>
+                  <div><strong>Time Slot:</strong> <span class="mono fw-bold text-primary">${utils.formatTime(b.start_time)} – ${utils.formatTime(b.end_time)}</span></div>
+                  <div><strong>Standard Rate:</strong> ${utils.formatINR(b.base_price || b.base_price_per_hour)} / hr</div>
+                  <div><strong>Fee Charged:</strong> <span class="mono fw-bold fs-6 text-dark">${utils.formatINR(b.price_charged)}</span> ${b.discount_pct > 0 ? `<span class="badge bg-success ms-1">${b.discount_pct}% Member Discount</span>` : ''}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          ${participantsHtml}
+
+          ${b.cancellation_reason ? `
+            <div class="alert alert-warning py-2 mb-3 small">
+              <strong><i class="bi bi-info-circle me-1"></i> Cancellation Reason:</strong> ${utils.escapeHtml(b.cancellation_reason)}
+            </div>
+          ` : ''}
+
+          <div class="card border p-3">
+            <h6 class="fw-bold text-dark mb-2 border-bottom pb-2"><i class="bi bi-credit-card me-1 text-primary"></i> Payment Record</h6>
+            ${paymentsHtml}
+          </div>
+        `;
+      } catch (err) {
+        modalBody.innerHTML = `<div class="alert alert-danger py-3"><i class="bi bi-exclamation-triangle me-2"></i>Failed to load booking details: ${utils.escapeHtml(err.message)}</div>`;
       }
     }
 

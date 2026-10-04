@@ -961,6 +961,161 @@
     </div>
   </div>
 
+  <!-- View Staff Profile Modal -->
+  <div class="modal fade" id="viewStaffModal" tabindex="-1" aria-labelledby="viewStaffModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-dark text-white border-0 py-3">
+          <div class="d-flex align-items-center gap-3">
+            <div id="vStaffAvatar" class="rounded-circle d-flex align-items-center justify-content-center fw-bold bg-primary text-white fs-4 shadow-sm" style="width: 48px; height: 48px;">
+              S
+            </div>
+            <div>
+              <h5 class="modal-title fw-bold mb-0 text-white" id="vStaffName">Staff Profile</h5>
+              <div class="small text-white-50" id="vStaffMeta">Staff ID: #— | Joined —</div>
+            </div>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <!-- Quick Status & Badges -->
+          <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 p-3 bg-light rounded-3 mb-4 border">
+            <div class="d-flex align-items-center gap-2">
+              <span id="vStaffAreaBadge" class="badge bg-primary fs-6 px-3 py-2">—</span>
+              <span id="vStaffStatusBadge" class="badge bg-success fs-6 px-3 py-2">Active</span>
+            </div>
+            <div class="text-muted small">
+              <i class="bi bi-shield-lock me-1"></i> Role: <strong class="text-dark text-capitalize" id="vStaffRole">Staff</strong>
+            </div>
+          </div>
+
+          <!-- Contact & System Access Grid -->
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <div class="card border h-100 shadow-none">
+                <div class="card-header bg-light py-2 fw-bold text-dark small">
+                  <i class="bi bi-person-lines-fill text-primary me-1"></i> Contact Information
+                </div>
+                <div class="card-body small">
+                  <div class="mb-2">
+                    <span class="text-muted d-block">Email Address</span>
+                    <strong class="text-dark" id="vStaffEmail">—</strong>
+                  </div>
+                  <div class="mb-2">
+                    <span class="text-muted d-block">Phone Number</span>
+                    <strong class="text-dark" id="vStaffPhone">—</strong>
+                  </div>
+                  <div>
+                    <span class="text-muted d-block">Account Created</span>
+                    <span class="text-dark" id="vStaffCreated">—</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="card border h-100 shadow-none">
+                <div class="card-header bg-light py-2 fw-bold text-dark small">
+                  <i class="bi bi-laptop text-primary me-1"></i> Assigned Workspace &amp; Dashboard
+                </div>
+                <div class="card-body small">
+                  <div class="mb-2">
+                    <span class="text-muted d-block">Operational Area</span>
+                    <strong class="text-dark" id="vStaffAreaName">—</strong>
+                  </div>
+                  <div class="mb-2">
+                    <span class="text-muted d-block">Accessible Portal</span>
+                    <a href="#" id="vStaffPortalLink" class="text-primary fw-semibold" target="_blank">Open Assigned Dashboard <i class="bi bi-box-arrow-up-right small"></i></a>
+                  </div>
+                  <div>
+                    <span class="text-muted d-block">Permissions</span>
+                    <span class="badge bg-secondary bg-opacity-10 text-secondary">POS &amp; Module Operations</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Payroll Financials Summary -->
+          <div class="card border shadow-none mb-4">
+            <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+              <span class="fw-bold text-dark small"><i class="bi bi-cash-stack text-success me-1"></i> Payroll Summary</span>
+              <span class="badge bg-success bg-opacity-10 text-success" id="vStaffPayCount">0 Payslips</span>
+            </div>
+            <div class="card-body">
+              <div class="row g-2 text-center">
+                <div class="col-4 border-end">
+                  <div class="small text-muted">Total Gross</div>
+                  <div class="fw-bold text-dark fs-6" id="vStaffTotalGross">₹0</div>
+                </div>
+                <div class="col-4 border-end">
+                  <div class="small text-muted">Total Disbursed</div>
+                  <div class="fw-bold text-success fs-6" id="vStaffTotalPaid">₹0</div>
+                </div>
+                <div class="col-4">
+                  <div class="small text-muted">Last Issued Slip</div>
+                  <div class="fw-bold text-primary fs-6" id="vStaffLastSlip">—</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Payslips Table -->
+          <div class="mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="fw-bold text-dark mb-0 small"><i class="bi bi-receipt me-1"></i> Recent Payslips</h6>
+              <button class="btn btn-sm btn-outline-primary" id="vStaffCreatePayBtn" onclick="openCreatePayrollForStaff()"><i class="bi bi-plus-circle me-1"></i>Issue New Slip</button>
+            </div>
+            <div class="table-responsive border rounded">
+              <table class="table table-sm table-hover align-middle mb-0 small">
+                <thead class="table-light">
+                  <tr>
+                    <th>Slip Code</th>
+                    <th>Period</th>
+                    <th>Gross</th>
+                    <th>Net Pay</th>
+                    <th>Status</th>
+                    <th class="text-end">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="vStaffPayslipsBody">
+                  <tr><td colspan="6" class="text-center py-3 text-muted">No payslips found</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Recent Shift Assignments -->
+          <div>
+            <h6 class="fw-bold text-dark mb-2 small"><i class="bi bi-calendar-event me-1"></i> Recent Shift Assignments</h6>
+            <div class="table-responsive border rounded">
+              <table class="table table-sm table-hover align-middle mb-0 small">
+                <thead class="table-light">
+                  <tr>
+                    <th>Date</th>
+                    <th>Shift</th>
+                    <th>Timing</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody id="vStaffShiftsBody">
+                  <tr><td colspan="4" class="text-center py-3 text-muted">No shift assignments recorded</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" id="vStaffEditBtn">
+            <i class="bi bi-pencil me-1"></i> Edit Profile
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="alert-bar"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -1153,7 +1308,10 @@
             <td>${statusBadge}</td>
             <td class="text-muted small">${fmtDate(s.created_at)}</td>
             <td class="text-end">
-              <button class="btn btn-sm btn-outline-primary me-1" onclick="openEditStaff(${s.id})">
+              <button class="btn btn-sm btn-outline-primary me-1" onclick="openViewStaffModal(${s.id})" title="View Staff Profile">
+                <i class="bi bi-eye"></i> View
+              </button>
+              <button class="btn btn-sm btn-outline-secondary me-1" onclick="openEditStaff(${s.id})" title="Edit Staff">
                 <i class="bi bi-pencil"></i> Edit
               </button>
               <button class="btn btn-sm ${s.is_active ? 'btn-outline-warning' : 'btn-outline-success'} me-1" onclick="toggleStaffStatus(${s.id}, ${s.is_active ? 0 : 1})" title="${s.is_active ? 'Deactivate' : 'Activate'}">
@@ -1264,6 +1422,137 @@
       } catch (err) {
         ui.showToast(err.message || 'Failed to delete staff member', 'danger');
       }
+    }
+
+    let VIEWING_STAFF_ID = null;
+
+    async function openViewStaffModal(staffId) {
+      VIEWING_STAFF_ID = staffId;
+      try {
+        const s = await api.get(`/api/staff/${staffId}`);
+        if (!s) return;
+
+        document.getElementById('vStaffName').textContent = s.full_name || 'Staff Member';
+        document.getElementById('vStaffMeta').textContent = `Staff ID: #${s.id} | Joined ${fmtDate(s.created_at)}`;
+        document.getElementById('vStaffAvatar').textContent = (s.full_name || 'S').charAt(0).toUpperCase();
+
+        const areaLabels = {
+          shop: 'Pro Shop & Inventory',
+          bar: 'Bar & Cafeteria',
+          booking: 'Court Booking Desk',
+          general: 'General Operations'
+        };
+
+        const areaBadges = {
+          shop: 'bg-primary',
+          bar: 'bg-warning text-dark',
+          booking: 'bg-success',
+          general: 'bg-secondary'
+        };
+
+        const portalUrls = {
+          shop: '/staff/shop.html',
+          bar: '/staff/bar.html',
+          booking: '/staff/bookings.html',
+          general: '/staff/shop.html'
+        };
+
+        const areaKey = s.assigned_area || 'general';
+        const badgeEl = document.getElementById('vStaffAreaBadge');
+        badgeEl.className = `badge fs-6 px-3 py-2 ${areaBadges[areaKey] || 'bg-secondary'}`;
+        badgeEl.textContent = areaLabels[areaKey] || areaKey.toUpperCase();
+
+        const statusEl = document.getElementById('vStaffStatusBadge');
+        statusEl.className = `badge fs-6 px-3 py-2 ${s.is_active ? 'bg-success' : 'bg-danger'}`;
+        statusEl.textContent = s.is_active ? 'Active' : 'Inactive';
+
+        document.getElementById('vStaffRole').textContent = s.role || 'Staff';
+        document.getElementById('vStaffEmail').textContent = s.email || '—';
+        document.getElementById('vStaffPhone').textContent = s.phone || 'No phone registered';
+        document.getElementById('vStaffCreated').textContent = fmtDate(s.created_at);
+
+        document.getElementById('vStaffAreaName').textContent = areaLabels[areaKey] || 'General Staff';
+        const portalLink = document.getElementById('vStaffPortalLink');
+        portalLink.href = portalUrls[areaKey] || '/staff/shop.html';
+        portalLink.textContent = `Open ${areaLabels[areaKey]} Portal `;
+
+        // Financials summary
+        const summary = s.payroll_summary || {};
+        document.getElementById('vStaffPayCount').textContent = `${summary.total_payslips || 0} Payslips`;
+        document.getElementById('vStaffTotalGross').textContent = `₹${Number(summary.total_gross || 0).toLocaleString('en-IN')}`;
+        document.getElementById('vStaffTotalPaid').textContent = `₹${Number(summary.total_paid || 0).toLocaleString('en-IN')}`;
+
+        const recentPayslips = s.recent_payslips || [];
+        if (recentPayslips.length > 0) {
+          const latest = recentPayslips[0];
+          document.getElementById('vStaffLastSlip').textContent = `${latest.pay_period_month} ${latest.pay_period_year}`;
+        } else {
+          document.getElementById('vStaffLastSlip').textContent = 'None';
+        }
+
+        // Recent Payslips table
+        const payslipsTbody = document.getElementById('vStaffPayslipsBody');
+        if (!recentPayslips.length) {
+          payslipsTbody.innerHTML = `<tr><td colspan="6" class="text-center py-3 text-muted">No payslips issued for this staff member yet.</td></tr>`;
+        } else {
+          payslipsTbody.innerHTML = recentPayslips.map(p => `
+            <tr>
+              <td><span class="badge bg-light text-dark border font-monospace">${escHtml(p.payslip_code)}</span></td>
+              <td>${escHtml(p.pay_period_month)} ${p.pay_period_year}</td>
+              <td>₹${Number(p.gross_salary || 0).toLocaleString('en-IN')}</td>
+              <td class="fw-bold text-success">₹${Number(p.net_salary || 0).toLocaleString('en-IN')}</td>
+              <td><span class="badge ${p.payment_status === 'paid' ? 'bg-success' : 'bg-warning text-dark'}">${escHtml(p.payment_status)}</span></td>
+              <td class="text-end">
+                <button class="btn btn-sm btn-outline-primary py-0 px-2" onclick="bootstrap.Modal.getInstance(document.getElementById('viewStaffModal')).hide(); viewPayslipModal(${p.id});">
+                  <i class="bi bi-receipt"></i>
+                </button>
+              </td>
+            </tr>
+          `).join('');
+        }
+
+        // Recent Shifts table
+        const shiftsTbody = document.getElementById('vStaffShiftsBody');
+        const recentShifts = s.recent_shifts || [];
+        if (!recentShifts.length) {
+          shiftsTbody.innerHTML = `<tr><td colspan="4" class="text-center py-3 text-muted">No recent shifts assigned.</td></tr>`;
+        } else {
+          shiftsTbody.innerHTML = recentShifts.map(sh => `
+            <tr>
+              <td class="fw-semibold">${fmtDate(sh.assignment_date)}</td>
+              <td><span class="badge bg-light text-dark border">${escHtml(sh.shift_name)}</span></td>
+              <td><i class="bi bi-clock me-1 text-muted"></i>${escHtml(sh.start_time || '')} - ${escHtml(sh.end_time || '')}</td>
+              <td class="text-muted">${escHtml(sh.notes || '—')}</td>
+            </tr>
+          `).join('');
+        }
+
+        // Edit button handler
+        document.getElementById('vStaffEditBtn').onclick = () => {
+          bootstrap.Modal.getInstance(document.getElementById('viewStaffModal')).hide();
+          openEditStaff(staffId);
+        };
+
+        new bootstrap.Modal(document.getElementById('viewStaffModal')).show();
+      } catch (err) {
+        ui.showToast(err.message || 'Failed to load staff profile', 'danger');
+      }
+    }
+
+    function openCreatePayrollForStaff() {
+      if (!VIEWING_STAFF_ID) return;
+      const modalEl = document.getElementById('viewStaffModal');
+      const bsModal = bootstrap.Modal.getInstance(modalEl);
+      if (bsModal) bsModal.hide();
+
+      openCreatePayrollModal();
+      setTimeout(() => {
+        const select = document.getElementById('payrollStaffSelect');
+        if (select) {
+          select.value = VIEWING_STAFF_ID;
+          onPayrollStaffSelected();
+        }
+      }, 300);
     }
 
 

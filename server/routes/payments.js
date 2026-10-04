@@ -223,6 +223,50 @@ router.get('/', requireLogin, async (req, res, next) => {
   }
 });
 
+// ── GET /api/payments/:id ───────────────────────────────────────────────────
+router.get('/:id', requireLogin, async (req, res, next) => {
+  try {
+    const paymentId = parseInt(req.params.id, 10);
+    const [rows] = await db.query(
+      `SELECT p.*,
+              u.full_name AS payer_name, u.email AS payer_email, u.phone AS payer_phone
+       FROM payments p
+       LEFT JOIN users u ON p.user_id = u.id
+       WHERE p.id = ?`,
+      [paymentId]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({ error: 'Payment record not found', code: 'PAYMENT_NOT_FOUND' });
+    }
+
+    const payment = rows[0];
+    if (req.session.user.role === 'member' && payment.user_id !== req.session.user.id) {
+      return res.status(403).json({ error: 'Forbidden', code: 'FORBIDDEN' });
+    }
+
+    // Fetch any refunds tied to this payment
+    const [refunds] = await db.query(
+      'SELECT id, payment_code, amount, status, notes, paid_at, refunded_at FROM payments WHERE refund_of_id = ?',
+      [paymentId]
+    );
+    payment.refunds = refunds;
+
+    // Fetch parent payment if this is a refund
+    if (payment.refund_of_id) {
+      const [parent] = await db.query(
+        'SELECT id, payment_code, amount, source, method, paid_at FROM payments WHERE id = ?',
+        [payment.refund_of_id]
+      );
+      payment.parent_payment = parent[0] || null;
+    }
+
+    res.json(payment);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ── POST /api/payments/:id/refund ───────────────────────────────────────────
 router.post(
   '/:id/refund',

@@ -45,7 +45,31 @@ router.get('/:id', async (req, res, next) => {
   try {
     const [rows] = await db.query('SELECT * FROM plans WHERE id = ?', [req.params.id]);
     if (!rows.length) return res.status(404).json({ error: 'Plan not found' });
-    res.json(rows[0]);
+    const plan = rows[0];
+
+    // Enrolled members stats
+    const [[{ active_members }]] = await db.query(
+      'SELECT COUNT(*) AS active_members FROM members WHERE plan_id = ? AND status = "active"',
+      [plan.id]
+    );
+    const [[{ total_members }]] = await db.query(
+      'SELECT COUNT(*) AS total_members FROM members WHERE plan_id = ?',
+      [plan.id]
+    );
+    const [sampleMembers] = await db.query(
+      `SELECT m.id, m.member_code, m.status, m.expiry_date, u.full_name, u.email
+       FROM members m
+       JOIN users u ON m.user_id = u.id
+       WHERE m.plan_id = ?
+       ORDER BY m.id DESC LIMIT 5`,
+      [plan.id]
+    );
+
+    plan.active_members = active_members;
+    plan.total_members = total_members;
+    plan.sample_members = sampleMembers;
+
+    res.json(plan);
   } catch (err) {
     next(err);
   }

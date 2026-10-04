@@ -115,6 +115,26 @@
     </div>
   </div>
 
+  <!-- ── View Court Modal ──────────────────────────────────────────────────── -->
+  <div class="modal fade" id="viewCourtModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title d-flex align-items-center gap-2">
+            <i class="bi bi-geo-alt text-primary"></i> Court Overview &amp; Facility Details
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="viewCourtModalBody">
+          <div class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading court details…</div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-custom" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="/js/api.js"></script>
   <script src="/js/utils.js"></script>
@@ -153,6 +173,9 @@
             <td>${c.is_active ? utils.statusChip('active') : utils.statusChip('suspended')}</td>
             <td class="text-end">
               <div class="d-flex justify-content-end gap-1">
+                <button class="icon-btn text-primary" onclick="openViewCourtModal(${c.id})" title="View Court Details">
+                  <i class="bi bi-eye"></i>
+                </button>
                 <button class="icon-btn" onclick="openEditCourtModal(${c.id}, '${utils.escapeHtml(c.name)}', '${c.sport}', '${utils.escapeHtml(c.surface_type||'')}', ${c.base_price_per_hour}, ${c.is_active})" title="Edit Court">
                   <i class="bi bi-pencil"></i>
                 </button>
@@ -167,6 +190,96 @@
         if (err.name !== 'AbortError') {
           tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger">${utils.escapeHtml(err.message)}</td></tr>`;
         }
+      }
+    }
+
+    async function openViewCourtModal(id) {
+      const modalBody = document.getElementById('viewCourtModalBody');
+      modalBody.innerHTML = `<div class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading court details…</div>`;
+      ui.openModal('viewCourtModal');
+
+      try {
+        const c = await api.get(`/api/courts/${id}`);
+
+        const upcomingHtml = (c.upcoming_bookings && c.upcoming_bookings.length) ? `
+          <div class="table-responsive mb-3">
+            <table class="table table-sm align-middle small mb-0">
+              <thead class="table-light"><tr><th>Code</th><th>Player</th><th>Date</th><th>Slot</th><th>Status</th></tr></thead>
+              <tbody>
+                ${c.upcoming_bookings.map(b => `
+                  <tr>
+                    <td class="mono fw-semibold">${utils.escapeHtml(b.booking_code)}</td>
+                    <td>${utils.escapeHtml(b.player_name || 'Booked')}</td>
+                    <td>${utils.formatDate(b.booking_date)}</td>
+                    <td class="mono">${utils.formatTime(b.start_time)}–${utils.formatTime(b.end_time)}</td>
+                    <td>${utils.statusChip(b.status)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        ` : `<p class="text-muted small mb-3">No upcoming bookings scheduled.</p>`;
+
+        const blocksHtml = (c.recent_blocks && c.recent_blocks.length) ? `
+          <div class="table-responsive">
+            <table class="table table-sm align-middle small mb-0">
+              <thead class="table-light"><tr><th>Date</th><th>Time</th><th>Reason</th></tr></thead>
+              <tbody>
+                ${c.recent_blocks.map(blk => `
+                  <tr>
+                    <td>${utils.formatDate(blk.block_date)}</td>
+                    <td class="mono">${blk.start_time?.slice(0,5)}–${blk.end_time?.slice(0,5)}</td>
+                    <td class="text-muted">${utils.escapeHtml(blk.reason)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        ` : `<p class="text-muted small">No maintenance blocks scheduled.</p>`;
+
+        modalBody.innerHTML = `
+          <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded-3 mb-3 border">
+            <div>
+              <div class="d-flex align-items-center gap-2">
+                <h5 class="mb-0 fw-bold text-dark">${utils.escapeHtml(c.name)}</h5>
+                <span class="badge bg-primary text-capitalize">${utils.escapeHtml(c.sport)}</span>
+                ${c.is_active ? utils.statusChip('active') : utils.statusChip('suspended')}
+              </div>
+              <div class="small text-muted mt-1">Surface: <strong>${utils.escapeHtml(c.surface_type || 'Standard Synthetic')}</strong> · Hourly Base Rate: <strong class="mono text-dark">${utils.formatINR(c.base_price_per_hour)}</strong>/hr</div>
+            </div>
+            <div class="d-flex gap-2">
+              <a href="bookings.html?view=matrix&court_id=${c.id}" class="btn btn-sm btn-outline-primary"><i class="bi bi-grid-3x3-gap-fill me-1"></i>Live Matrix</a>
+              <button class="btn btn-sm btn-outline-custom" onclick="ui.closeModal('viewCourtModal'); openEditCourtModal(${c.id}, '${utils.escapeHtml(c.name)}', '${c.sport}', '${utils.escapeHtml(c.surface_type||'')}', ${c.base_price_per_hour}, ${c.is_active})"><i class="bi bi-pencil me-1"></i>Edit</button>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-sm-6">
+              <div class="p-3 border rounded-3 bg-light text-center">
+                <div class="text-muted small">Today's Active Bookings</div>
+                <div class="fs-4 fw-bold text-primary mono">${c.today_bookings || 0}</div>
+              </div>
+            </div>
+            <div class="col-sm-6">
+              <div class="p-3 border rounded-3 bg-light text-center">
+                <div class="text-muted small">All-Time Total Bookings</div>
+                <div class="fs-4 fw-bold text-dark mono">${c.total_bookings || 0}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card border p-3 mb-3">
+            <h6 class="fw-bold text-dark mb-2 border-bottom pb-2"><i class="bi bi-calendar-event me-1 text-primary"></i> Upcoming Bookings</h6>
+            ${upcomingHtml}
+          </div>
+
+          <div class="card border p-3">
+            <h6 class="fw-bold text-dark mb-2 border-bottom pb-2"><i class="bi bi-tools me-1 text-danger"></i> Maintenance Blocks</h6>
+            ${blocksHtml}
+          </div>
+        `;
+      } catch (err) {
+        modalBody.innerHTML = `<div class="alert alert-danger py-3"><i class="bi bi-exclamation-triangle me-2"></i>Failed to load court details: ${utils.escapeHtml(err.message)}</div>`;
       }
     }
 

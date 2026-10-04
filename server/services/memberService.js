@@ -156,10 +156,14 @@ async function enrollMember(data) {
 
     // Record membership payment
     const paymentCode = `PAY-MEM-${Date.now()}`;
+    const validMethods = ['cash', 'card', 'upi', 'online'];
+    const normalizedMethod = (payment_method && validMethods.includes(payment_method.toLowerCase()))
+      ? payment_method.toLowerCase()
+      : 'online';
     await conn.query(
       `INSERT INTO payments (payment_code, source, reference_id, user_id, amount, method)
        VALUES (?,?,?,?,?,?)`,
-      [paymentCode, 'membership', memberId, userId, plan.annual_fee, payment_method]
+      [paymentCode, 'membership', memberId, userId, plan.annual_fee, normalizedMethod]
     );
 
     // Return the created member
@@ -210,9 +214,13 @@ async function renewMember(memberId, planId, paymentMethod = 'cash') {
   );
 
   const paymentCode = `PAY-REN-${Date.now()}`;
+  const validMethods = ['cash', 'card', 'upi', 'online'];
+  const normalizedMethod = (paymentMethod && validMethods.includes(paymentMethod.toLowerCase()))
+    ? paymentMethod.toLowerCase()
+    : 'online';
   await db.query(
     "INSERT INTO payments (payment_code, source, reference_id, user_id, amount, method) VALUES (?,?,?,?,?,?)",
-    [paymentCode, 'membership', memberId, member.user_id, plan.annual_fee, paymentMethod]
+    [paymentCode, 'membership', memberId, member.user_id, plan.annual_fee, normalizedMethod]
   );
 
   return { message: 'Membership renewed', new_expiry: newExpiry, plan: plan.name };

@@ -134,6 +134,26 @@
     </div>
   </div>
 
+  <!-- ── View Plan Modal ──────────────────────────────────────────────────── -->
+  <div class="modal fade" id="viewPlanModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title d-flex align-items-center gap-2">
+            <i class="bi bi-award text-primary"></i> Membership Plan Details &amp; Privileges
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="viewPlanModalBody">
+          <div class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading plan details…</div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-custom" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="/js/api.js"></script>
   <script src="/js/utils.js"></script>
@@ -182,6 +202,9 @@
             <td>${p.is_active ? utils.statusChip('active') : utils.statusChip('suspended')}</td>
             <td class="text-end">
               <div class="d-flex justify-content-end gap-1">
+                <button class="icon-btn text-primary" onclick="openViewPlanModal(${p.id})" title="View Plan Details">
+                  <i class="bi bi-eye"></i>
+                </button>
                 <button class="icon-btn" onclick="openEditPlanModal(${p.id})" title="Edit Plan">
                   <i class="bi bi-pencil"></i>
                 </button>
@@ -196,6 +219,108 @@
         if (err.name !== 'AbortError') {
           tbody.innerHTML = `<tr><td colspan="10" class="text-center py-4 text-danger">${utils.escapeHtml(err.message)}</td></tr>`;
         }
+      }
+    }
+
+    async function openViewPlanModal(id) {
+      const modalBody = document.getElementById('viewPlanModalBody');
+      modalBody.innerHTML = `<div class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading plan details…</div>`;
+      ui.openModal('viewPlanModal');
+
+      try {
+        const p = await api.get(`/api/plans/${id}`);
+
+        const sampleMembersHtml = (p.sample_members && p.sample_members.length) ? `
+          <div class="table-responsive">
+            <table class="table table-sm align-middle small mb-0">
+              <thead class="table-light"><tr><th>Member</th><th>Code</th><th>Status</th><th>Expiry Date</th></tr></thead>
+              <tbody>
+                ${p.sample_members.map(m => `
+                  <tr>
+                    <td><strong>${utils.escapeHtml(m.full_name)}</strong></td>
+                    <td><code>${utils.escapeHtml(m.member_code)}</code></td>
+                    <td>${utils.statusChip(m.status)}</td>
+                    <td class="mono">${utils.formatDate(m.expiry_date)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        ` : `<p class="text-muted small">No members currently enrolled on this tier.</p>`;
+
+        modalBody.innerHTML = `
+          <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded-3 mb-3 border">
+            <div>
+              <div class="d-flex align-items-center gap-2">
+                <code class="fw-bold fs-5 text-dark">${utils.escapeHtml(p.code)}</code>
+                <h5 class="mb-0 fw-bold text-dark">${utils.escapeHtml(p.name)}</h5>
+                ${p.is_junior ? '<span class="badge bg-info text-white">Junior Tier</span>' : ''}
+                ${p.is_active ? utils.statusChip('active') : utils.statusChip('suspended')}
+              </div>
+              <div class="small text-muted mt-1">${utils.escapeHtml(p.description || 'No description provided')}</div>
+            </div>
+            <div class="d-flex gap-2">
+              <a href="members.html?plan_id=${p.id}" class="btn btn-sm btn-outline-primary"><i class="bi bi-people me-1"></i>View Members</a>
+              <button class="btn btn-sm btn-outline-custom" onclick="ui.closeModal('viewPlanModal'); openEditPlanModal(${p.id});"><i class="bi bi-pencil me-1"></i>Edit</button>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <div class="card h-100 border p-3">
+                <h6 class="fw-bold text-dark mb-2 border-bottom pb-2"><i class="bi bi-currency-rupee me-1 text-primary"></i> Pricing &amp; Validity</h6>
+                <div class="small d-flex flex-column gap-2">
+                  <div><strong>Annual / Tier Fee:</strong> <span class="fs-6 fw-bold mono text-dark">${utils.formatINR(p.annual_fee)}</span></div>
+                  <div><strong>Validity Duration:</strong> <span class="mono text-dark fw-semibold">${p.duration_months} Months</span></div>
+                  <div><strong>Max Bookings / Day:</strong> <span class="mono text-dark fw-semibold">${p.max_bookings_per_day} slot(s)</span></div>
+                  <div><strong>Target Audience:</strong> ${p.is_junior ? '<span class="badge bg-warning text-dark">Youth under 18 years</span>' : '<span class="badge bg-light text-dark border">General / Adults</span>'}</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="card h-100 border p-3">
+                <h6 class="fw-bold text-dark mb-2 border-bottom pb-2"><i class="bi bi-percent me-1 text-primary"></i> Member Discount Privileges</h6>
+                <div class="small d-flex flex-column gap-2">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span>Court Booking Discount:</span>
+                    <span class="badge bg-success bg-opacity-10 text-success fw-bold">${p.court_discount_pct}% OFF</span>
+                  </div>
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span>Pro Shop Retail Discount:</span>
+                    <span class="badge bg-info bg-opacity-10 text-info fw-bold">${p.shop_discount_pct}% OFF</span>
+                  </div>
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span>Cafe &amp; Bar Counter Discount:</span>
+                    <span class="badge bg-warning bg-opacity-10 text-dark fw-bold">${p.bar_discount_pct}% OFF</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-sm-6">
+              <div class="p-3 border rounded-3 bg-light text-center">
+                <div class="text-muted small">Active Enrolled Members</div>
+                <div class="fs-4 fw-bold text-success mono">${p.active_members || 0}</div>
+              </div>
+            </div>
+            <div class="col-sm-6">
+              <div class="p-3 border rounded-3 bg-light text-center">
+                <div class="text-muted small">Total Historical Members</div>
+                <div class="fs-4 fw-bold text-dark mono">${p.total_members || 0}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card border p-3">
+            <h6 class="fw-bold text-dark mb-2 border-bottom pb-2"><i class="bi bi-people me-1 text-primary"></i> Enrolled Members (Sample)</h6>
+            ${sampleMembersHtml}
+          </div>
+        `;
+      } catch (err) {
+        modalBody.innerHTML = `<div class="alert alert-danger py-3"><i class="bi bi-exclamation-triangle me-2"></i>Failed to load plan details: ${utils.escapeHtml(err.message)}</div>`;
       }
     }
 

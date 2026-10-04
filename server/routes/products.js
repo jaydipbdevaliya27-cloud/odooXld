@@ -182,8 +182,25 @@ router.get('/:id', async (req, res, next) => {
     if (!rows.length) return res.status(404).json({ error: 'Product not found' });
     const r = rows[0];
     const [vars] = await db.query('SELECT * FROM product_variants WHERE product_id=? AND is_active=1 ORDER BY variant_name', [r.id]);
+
+    let movements = [];
+    try {
+      const [movRows] = await db.query(
+        `SELECT sm.*, u.full_name AS created_by_name
+         FROM stock_movements sm
+         LEFT JOIN users u ON sm.created_by = u.id
+         WHERE sm.product_id = ?
+         ORDER BY sm.created_at DESC LIMIT 10`,
+        [r.id]
+      );
+      movements = movRows;
+    } catch (e) {}
+
     res.json({
-      ...r, images: parseImages(r.image_url), variants: vars,
+      ...r,
+      images: parseImages(r.image_url),
+      variants: vars,
+      stock_movements: movements,
       is_low_stock: r.track_stock ? (r.stock_qty <= (r.reorder_level || 5)) : false
     });
   } catch (err) { next(err); }
@@ -234,6 +251,10 @@ router.post('/', requireLogin, requireRole('owner', 'staff'), async (req, res, n
 // ── PUT /api/products/:id (Update Product & Variants) ─────────────────────────
 router.put('/:id', requireLogin, requireRole('owner', 'staff'), async (req, res, next) => {
   try {
+    const [existing] = await db.query('SELECT * FROM products WHERE id = ?', [req.params.id]);
+    if (!existing.length) return res.status(404).json({ error: 'Product not found' });
+    const current = existing[0];
+
     let { sku, name, department, category, price, cost_price,
       track_stock, stock_qty, reorder_level, image_url, images, description, is_active, variants } = req.body;
     if (Array.isArray(images) && images.length > 0) image_url = JSON.stringify(images);
@@ -251,19 +272,34 @@ router.put('/:id', requireLogin, requireRole('owner', 'staff'), async (req, res,
            VALUES (?,?,?,?,?,?,1)
            ON DUPLICATE KEY UPDATE variant_name=VALUES(variant_name), stock_qty=VALUES(stock_qty), reorder_level=VALUES(reorder_level), is_active=1`,
           [req.params.id, v.variant_name, v.sku_suffix || v.variant_name.replace(/\s+/g, '').slice(0, 10),
-          v.price_offset || 0, v.stock_qty || 0, v.reorder_level || 3]
+          v.price_offset || 0, v.stock_qty || 0, (v.reorder_level != null && v.reorder_level !== '') ? Number(v.reorder_level) : 3]
         );
       }
       if (variants.length > 0 && varTotal > 0) stock_qty = varTotal;
     }
 
+    const finalSku = sku !== undefined && sku !== null ? String(sku).trim() : current.sku;
+    const finalName = name !== undefined && name !== null ? String(name).trim() : current.name;
+    const finalDepartment = department !== undefined && department !== null ? department : current.department;
+    const finalCategory = category !== undefined && category !== null ? category : current.category;
+    const finalPrice = price !== undefined && price !== null && price !== '' ? Number(price) : current.price;
+    const finalCostPrice = cost_price !== undefined && cost_price !== null && cost_price !== '' ? Number(cost_price) : (current.cost_price || 0);
+    const finalTrackStock = track_stock !== undefined && track_stock !== null ? (track_stock ? 1 : 0) : (current.track_stock ?? 1);
+    const finalStockQty = stock_qty !== undefined && stock_qty !== null && stock_qty !== '' ? Number(stock_qty) : (current.stock_qty || 0);
+    const finalReorderLevel = (reorder_level !== undefined && reorder_level !== null && reorder_level !== '')
+      ? Number(reorder_level)
+      : (current.reorder_level != null ? current.reorder_level : 5);
+    const finalImageUrl = image_url !== undefined ? image_url : current.image_url;
+    const finalDescription = description !== undefined ? description : current.description;
+    const finalIsActive = is_active !== undefined && is_active !== null ? (is_active ? 1 : 0) : (current.is_active ?? 1);
+
     await db.query(
       `UPDATE products SET sku=?,name=?,department=?,category=?,price=?,cost_price=?,
               track_stock=?,stock_qty=?,reorder_level=?,image_url=?,description=?,is_active=?
         WHERE id=?`,
-      [sku, name, department, category, price, cost_price || 0,
-        track_stock ?? 1, stock_qty, reorder_level, image_url || null, description || null,
-        is_active ?? 1, req.params.id]
+      [finalSku, finalName, finalDepartment, finalCategory, finalPrice, finalCostPrice,
+        finalTrackStock, finalStockQty, finalReorderLevel, finalImageUrl || null, finalDescription || null,
+        finalIsActive, req.params.id]
     );
 
     const [rows] = await db.query('SELECT * FROM products WHERE id = ?', [req.params.id]);

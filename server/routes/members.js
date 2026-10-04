@@ -127,10 +127,14 @@ router.post('/me/renew', requireLogin, async (req, res, next) => {
 
       if (fee > 0) {
         const payCode = `PAY-RNW-${Date.now()}`;
+        const validMethods = ['cash', 'card', 'upi', 'online'];
+        const normalizedMethod = (payment_method && validMethods.includes(payment_method.toLowerCase()))
+          ? payment_method.toLowerCase()
+          : 'online';
         await conn.query(
           `INSERT INTO payments (payment_code, source, reference_id, user_id, amount, method, status, paid_at, notes)
            VALUES (?, 'membership', ?, ?, ?, ?, 'paid', NOW(), ?)`,
-          [payCode, member.id, userId, fee, payment_method, `Member plan renewal - ${plan.name}`]
+          [payCode, member.id, userId, fee, normalizedMethod, `Member plan renewal - ${plan.name}`]
         );
       }
     });
@@ -571,10 +575,14 @@ router.post(
         // 5. Record initial payment
         if (plan.annual_fee > 0) {
           const payCode = `PAY-MBR-${Date.now()}`;
+          const validMethods = ['cash', 'card', 'upi', 'online'];
+          const normalizedMethod = (payment_method && validMethods.includes(payment_method.toLowerCase()))
+            ? payment_method.toLowerCase()
+            : 'online';
           await conn.query(
             `INSERT INTO payments (payment_code, source, reference_id, user_id, amount, method, status, paid_at)
              VALUES (?, 'membership', ?, ?, ?, ?, 'paid', NOW())`,
-            [payCode, memberId, userId, plan.annual_fee, payment_method]
+            [payCode, memberId, userId, plan.annual_fee, normalizedMethod]
           );
         }
 
@@ -729,15 +737,85 @@ router.post('/:id/renew', requireLogin, requireRole('staff', 'owner'), async (re
 
       if (plan.annual_fee > 0) {
         const payCode = `PAY-RNW-${Date.now()}`;
+        const validMethods = ['cash', 'card', 'upi', 'online'];
+        const normalizedMethod = (payment_method && validMethods.includes(payment_method.toLowerCase()))
+          ? payment_method.toLowerCase()
+          : 'online';
         await conn.query(
           `INSERT INTO payments (payment_code, source, reference_id, user_id, amount, method, status, paid_at)
            VALUES (?, 'membership', ?, ?, ?, ?, 'paid', NOW())`,
-          [payCode, memberId, member.user_id, plan.annual_fee, payment_method]
+          [payCode, memberId, member.user_id, plan.annual_fee, normalizedMethod]
         );
       }
     });
 
     res.json({ ok: true, message: 'Membership renewed successfully', newExpiry });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── GET /api/members/:id ───────────────────────────────────────────────────
+router.get('/:id', requireLogin, requireRole('staff', 'owner'), async (req, res, next) => {
+  try {
+    const memberId = req.params.id;
+    const [rows] = await db.query(
+      `SELECT m.*, u.full_name, u.email, u.phone, u.role, u.is_active AS user_active,
+              p.code AS plan_code, p.name AS plan_name, p.description AS plan_description,
+              p.annual_fee AS plan_annual_fee, p.duration_months AS plan_duration_months,
+              p.court_discount_pct, p.shop_discount_pct, p.bar_discount_pct,
+              p.max_bookings_per_day, p.is_junior AS plan_is_junior
+       FROM members m
+       JOIN users u ON m.user_id = u.id
+       LEFT JOIN plans p ON m.plan_id = p.id
+       WHERE m.id = ? OR m.member_code = ?`,
+      [memberId, memberId]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({ error: 'Member not found', code: 'MEMBER_NOT_FOUND' });
+    }
+
+    const member = rows[0];
+
+    // Fetch Guardian Info if junior
+    const [guardians] = await db.query(
+      `SELECT * FROM member_guardians WHERE member_id = ?`,
+      [member.id]
+    );
+
+    // Fetch Recent Check-ins
+    const [checkins] = await db.query(
+      `SELECT mc.*, u.full_name AS staff_name
+       FROM member_checkins mc
+       LEFT JOIN users u ON mc.checked_in_by = u.id
+       WHERE mc.member_id = ?
+       ORDER BY mc.checkin_time DESC LIMIT 10`,
+      [member.id]
+    );
+
+    // Fetch Membership History / Renewals
+    const [history] = await db.query(
+      `SELECT mh.*, p.name AS plan_name
+       FROM membership_history mh
+       LEFT JOIN plans p ON mh.plan_id = p.id
+       WHERE mh.member_id = ?
+       ORDER BY mh.created_at DESC LIMIT 10`,
+      [member.id]
+    );
+
+    res.json({
+      data: {
+        ...member,
+        guardian: guardians.length ? guardians[0] : null,
+        recent_checkins: checkins,
+        history: history
+      },
+      ...member,
+      guardian: guardians.length ? guardians[0] : null,
+      recent_checkins: checkins,
+      history: history
+    });
   } catch (err) {
     next(err);
   }

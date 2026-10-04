@@ -389,11 +389,13 @@ router.get('/:id', requireLogin, async (req, res, next) => {
               COALESCE(u.full_name, b.guest_name) AS player_name,
               u.email AS player_email,
               COALESCE(u.phone, b.guest_phone) AS player_phone,
-              m.member_code
+              m.member_code,
+              uBooked.full_name AS booked_by_name
        FROM bookings b
        JOIN courts c ON b.court_id = c.id
        LEFT JOIN users u ON b.user_id = u.id
        LEFT JOIN members m ON b.member_id = m.id
+       LEFT JOIN users uBooked ON b.booked_by_user_id = uBooked.id
        WHERE b.id = ?`,
       [req.params.id]
     );
@@ -413,6 +415,17 @@ router.get('/:id', requireLogin, async (req, res, next) => {
       [booking.id]
     );
     booking.participants = participants;
+
+    // Get payments
+    const [payments] = await db.query(
+      `SELECT id, payment_code, amount, method, status, paid_at, notes
+       FROM payments
+       WHERE (source IN ('court', 'court_booking') AND reference_id = ?)
+          OR (source = 'court_booking' AND user_id = ? AND paid_at >= DATE_SUB(NOW(), INTERVAL 7 DAY))
+       ORDER BY id DESC LIMIT 5`,
+      [booking.id, booking.user_id || 0]
+    );
+    booking.payments = payments;
 
     res.json(booking);
   } catch (err) {
@@ -563,6 +576,62 @@ router.get('/my', requireLogin, async (req, res, next) => {
         total,
         totalPages: Math.ceil(total / limitNum) || 1
       }
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── GET /api/bookings/:id ───────────────────────────────────────────────────
+router.get('/:id', requireLogin, async (req, res, next) => {
+  try {
+    const bookingId = parseInt(req.params.id, 10);
+    const [rows] = await db.query(
+      `SELECT b.*,
+              c.name AS court_name, c.sport, c.surface_type, c.base_price_per_hour,
+              m.member_code,
+              COALESCE(u.full_name, m.full_name, b.guest_name) AS player_name,
+              COALESCE(u.email, m.email) AS player_email,
+              COALESCE(u.phone, m.phone, b.guest_phone) AS player_phone,
+              p.name AS member_plan_name,
+              booker.full_name AS booked_by_name, booker.email AS booked_by_email, booker.role AS booked_by_role
+       FROM bookings b
+       JOIN courts c ON b.court_id = c.id
+       LEFT JOIN members m ON b.member_id = m.id
+       LEFT JOIN users u ON b.user_id = u.id
+       LEFT JOIN plans p ON m.plan_id = p.id
+       LEFT JOIN users booker ON b.booked_by_user_id = booker.id
+       WHERE b.id = ?`,
+      [bookingId]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({ error: 'Booking not found', code: 'BOOKING_NOT_FOUND' });
+    }
+
+    const booking = rows[0];
+
+    // Fetch linked payment logs
+    const [payments] = await db.query(
+      `SELECT * FROM payments WHERE source = 'court' AND reference_id = ? ORDER BY id DESC`,
+      [bookingId]
+    );
+
+    // Fetch slot intervals
+    const [slots] = await db.query(
+      `SELECT * FROM booking_slots WHERE booking_id = ? ORDER BY slot_time ASC`,
+      [bookingId]
+    );
+
+    res.json({
+      data: {
+        ...booking,
+        payments,
+        slots
+      },
+      ...booking,
+      payments,
+      slots
     });
   } catch (err) {
     next(err);

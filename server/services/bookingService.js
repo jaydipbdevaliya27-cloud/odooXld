@@ -427,11 +427,15 @@ async function createBooking({
 
     // Record payment ledger row
     if (pricing.priceCharged > 0) {
+      const validMethods = ['cash', 'card', 'upi', 'online'];
+      const normalizedMethod = (paymentMethod && validMethods.includes(paymentMethod.toLowerCase()))
+        ? paymentMethod.toLowerCase()
+        : 'online';
       const payCode = `PAY-BK-${Date.now()}`;
       await conn.query(
         `INSERT INTO payments (payment_code, source, reference_id, user_id, amount, method, status, paid_at)
          VALUES (?, 'court', ?, ?, ?, ?, 'paid', NOW())`,
-        [payCode, bookingId, effectiveUserId, pricing.priceCharged, paymentMethod]
+        [payCode, bookingId, effectiveUserId, pricing.priceCharged, normalizedMethod]
       );
     }
 

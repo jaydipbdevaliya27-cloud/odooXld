@@ -185,13 +185,6 @@ async function initShell() {
       </div>
 
       <div class="topbar-actions">
-        <!-- Debounced Global Search -->
-        <div class="global-search-box d-none d-md-block">
-          <i class="bi bi-search global-search-icon"></i>
-          <input type="text" class="global-search-input" id="global-search-input" placeholder="Search members, bookings, items... (press /)" role="search" aria-label="Global search">
-          <div id="global-search-dropdown" class="dropdown-menu shadow-lg p-2 w-100 mt-1" style="max-height: 380px; overflow-y: auto; display: none;"></div>
-        </div>
-
         <!-- Theme Toggle -->
         <button class="icon-btn" id="theme-toggle-btn" title="Toggle Light/Dark Theme" aria-label="Toggle Theme">
           <i class="bi ${savedTheme === 'dark' ? 'bi-sun-fill text-warning' : 'bi-moon-stars-fill'}"></i>
@@ -225,85 +218,6 @@ async function initShell() {
       window.location.href = '/shared/login.html';
     }
   });
-
-  // 4. Keyboard shortcut '/' to focus search
-  window.addEventListener('keydown', (e) => {
-    if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
-      e.preventDefault();
-      document.getElementById('global-search-input')?.focus();
-    }
-  });
-
-  // 5. Global Debounced Search
-  const searchInput = document.getElementById('global-search-input');
-  const searchDropdown = document.getElementById('global-search-dropdown');
-  const searchBox = searchInput?.closest('.global-search-box');
-  let searchAbort = null;
-
-  if (searchInput && searchDropdown) {
-    const handleGlobalSearch = utils.debounce(async (e) => {
-      const q = e.target.value.trim();
-      if (!q) {
-        searchDropdown.style.display = 'none';
-        searchBox?.classList.remove('is-searching');
-        return;
-      }
-
-      if (searchAbort) searchAbort.abort();
-      searchAbort = new AbortController();
-
-      try {
-        const res = await api.get('/api/search', { q }, { signal: searchAbort.signal });
-        let html = '';
-
-        if (res.members && res.members.length) {
-          html += '<h6 class="dropdown-header text-uppercase small fw-bold">Members</h6>';
-          res.members.forEach(m => {
-            html += `<a class="dropdown-item py-2" href="/owner/members.html?q=${encodeURIComponent(m.member_code || m.full_name)}"><i class="bi bi-person me-2 text-accent"></i>${utils.escapeHtml(m.full_name)} <code class="small">${utils.escapeHtml(m.member_code)}</code></a>`;
-          });
-        }
-        if (res.bookings && res.bookings.length) {
-          html += '<h6 class="dropdown-header text-uppercase small fw-bold">Bookings</h6>';
-          res.bookings.forEach(b => {
-            html += `<a class="dropdown-item py-2" href="/owner/bookings.html?q=${encodeURIComponent(b.booking_code)}"><i class="bi bi-calendar-check me-2 text-primary"></i>${utils.escapeHtml(b.booking_code)} · ${utils.escapeHtml(b.court_name)} (${b.booking_date})</a>`;
-          });
-        }
-        if (res.products && res.products.length) {
-          html += '<h6 class="dropdown-header text-uppercase small fw-bold">Products</h6>';
-          res.products.forEach(p => {
-            html += `<a class="dropdown-item py-2" href="/owner/products.html?q=${encodeURIComponent(p.name)}"><i class="bi bi-box-seam me-2 text-success"></i>${utils.escapeHtml(p.name)} · ₹${p.price}</a>`;
-          });
-        }
-        if (res.leads && res.leads.length) {
-          html += '<h6 class="dropdown-header text-uppercase small fw-bold">CRM Leads</h6>';
-          res.leads.forEach(l => {
-            html += `<a class="dropdown-item py-2" href="/owner/leads.html?q=${encodeURIComponent(l.name)}"><i class="bi bi-megaphone me-2 text-warning"></i>${utils.escapeHtml(l.name)} · ${utils.escapeHtml(l.phone)}</a>`;
-          });
-        }
-
-        if (!html) {
-          html = '<div class="p-3 text-muted text-center small">No matches found for "' + utils.escapeHtml(q) + '"</div>';
-        }
-
-        searchDropdown.innerHTML = html;
-        searchDropdown.style.display = 'block';
-      } catch (err) {
-        if (err.name !== 'AbortError') console.warn(err);
-      } finally {
-        searchBox?.classList.remove('is-searching');
-      }
-    }, 300, () => {
-      searchBox?.classList.add('is-searching');
-    });
-
-    searchInput.addEventListener('input', handleGlobalSearch);
-
-    document.addEventListener('click', (e) => {
-      if (!searchInput.contains(e.target) && !searchDropdown.contains(e.target)) {
-        searchDropdown.style.display = 'none';
-      }
-    });
-  }
 
   // 6. Fetch Unread Notifications Count
   try {

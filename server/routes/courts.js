@@ -59,6 +59,56 @@ router.get('/', async (req, res, next) => {
   }
 });
 
+// ── GET /api/courts/:id ─────────────────────────────────────────────────────
+router.get('/:id', async (req, res, next) => {
+  try {
+    const courtId = parseInt(req.params.id, 10);
+    const [rows] = await db.query(
+      'SELECT *, base_price_per_hour AS hourly_rate, surface_type AS surface FROM courts WHERE id = ?',
+      [courtId]
+    );
+    if (!rows.length) {
+      return res.status(404).json({ error: 'Court not found', code: 'COURT_NOT_FOUND' });
+    }
+    const court = rows[0];
+
+    // Fetch upcoming bookings count & total bookings count
+    const [[{ total_bookings }]] = await db.query(
+      'SELECT COUNT(*) AS total_bookings FROM bookings WHERE court_id = ? AND status != "cancelled"',
+      [courtId]
+    );
+    const [[{ today_bookings }]] = await db.query(
+      'SELECT COUNT(*) AS today_bookings FROM bookings WHERE court_id = ? AND booking_date = CURDATE() AND status != "cancelled"',
+      [courtId]
+    );
+    const [upcomingBookings] = await db.query(
+      `SELECT b.id, b.booking_code, b.booking_date, b.start_time, b.end_time, b.price_charged, b.status,
+              COALESCE(u.full_name, b.guest_name) AS player_name
+       FROM bookings b
+       LEFT JOIN users u ON b.user_id = u.id
+       WHERE b.court_id = ? AND b.booking_date >= CURDATE() AND b.status != 'cancelled'
+       ORDER BY b.booking_date ASC, b.start_time ASC LIMIT 5`,
+      [courtId]
+    );
+    const [recentBlocks] = await db.query(
+      `SELECT id, block_date, start_time, end_time, reason
+       FROM court_blocks
+       WHERE court_id = ? AND block_date >= CURDATE()
+       ORDER BY block_date ASC LIMIT 5`,
+      [courtId]
+    );
+
+    court.total_bookings = total_bookings;
+    court.today_bookings = today_bookings;
+    court.upcoming_bookings = upcomingBookings;
+    court.recent_blocks = recentBlocks;
+
+    res.json(court);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ── GET /api/courts/:id/slots ───────────────────────────────────────────────
 router.get('/:id/slots', async (req, res, next) => {
   try {

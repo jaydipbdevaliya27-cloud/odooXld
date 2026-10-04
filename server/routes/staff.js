@@ -390,6 +390,62 @@ router.delete('/payroll/payslips/:id', requireLogin, requireRole('owner'), async
   }
 });
 
+// ── GET /api/staff/:id ──────────────────────────────────────────────────────
+router.get('/:id', requireLogin, requireRole('owner', 'staff'), async (req, res, next) => {
+  try {
+    const staffId = parseInt(req.params.id, 10);
+    const [users] = await db.query(
+      `SELECT id, email, role, full_name, phone, assigned_area, is_active, created_at
+       FROM users WHERE id = ?`,
+      [staffId]
+    );
+    if (!users.length) {
+      return res.status(404).json({ error: 'Staff member not found' });
+    }
+    const staff = users[0];
+
+    // Staff can only view their own profile unless owner
+    if (req.session.user.role === 'staff' && staff.id !== req.session.user.id) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    // Fetch payroll summary & recent payslips
+    const [[paySummary]] = await db.query(
+      `SELECT COUNT(*) AS total_payslips,
+              IFNULL(SUM(gross_salary), 0) AS total_gross,
+              IFNULL(SUM(net_salary), 0) AS total_net,
+              IFNULL(SUM(CASE WHEN payment_status = 'paid' THEN net_salary ELSE 0 END), 0) AS total_paid
+       FROM payroll_payslips WHERE user_id = ?`,
+      [staffId]
+    );
+
+    const [recentPayslips] = await db.query(
+      `SELECT id, payslip_code, pay_period_month, pay_period_year, gross_salary, total_deductions, net_salary, payment_status, payment_method, paid_at
+       FROM payroll_payslips WHERE user_id = ? ORDER BY pay_period_year DESC, id DESC LIMIT 5`,
+      [staffId]
+    );
+
+    // Fetch recent shift assignments
+    const [recentShifts] = await db.query(
+      `SELECT sa.id, sa.assignment_date, sa.notes, s.name AS shift_name, s.start_time, s.end_time
+       FROM shift_assignments sa
+       JOIN shifts s ON sa.shift_id = s.id
+       WHERE sa.user_id = ?
+       ORDER BY sa.assignment_date DESC LIMIT 5`,
+      [staffId]
+    );
+
+    res.json({
+      ...staff,
+      payroll_summary: paySummary,
+      recent_payslips: recentPayslips,
+      recent_shifts: recentShifts
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ── PUT /api/staff/:id ──────────────────────────────────────────────────────
 router.put('/:id', requireLogin, requireRole('owner'), async (req, res, next) => {
   try {

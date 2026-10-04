@@ -586,15 +586,19 @@
                 <label class="form-label required" for="food_price">Selling Price (₹)</label>
                 <input type="number" id="food_price" name="price" class="form-control" min="1" step="1" placeholder="220" required>
               </div>
-              <div class="col-md-4">
+              <div class="col-md-3">
                 <label class="form-label" for="food_cost">Cost Price (₹)</label>
                 <input type="number" id="food_cost" name="cost_price" class="form-control" min="0" step="1" placeholder="90">
               </div>
-              <div class="col-md-4">
+              <div class="col-md-3">
                 <label class="form-label" for="food_stock">Stock Quantity</label>
                 <input type="number" id="food_stock" name="stock_qty" class="form-control" min="0" value="50">
               </div>
-              <div class="col-md-4">
+              <div class="col-md-3">
+                <label class="form-label" for="food_reorder">Reorder Alert Level</label>
+                <input type="number" id="food_reorder" name="reorder_level" class="form-control" min="0" value="5">
+              </div>
+              <div class="col-md-3">
                 <label class="form-label" for="food_active">Availability Status</label>
                 <select id="food_active" name="is_active" class="form-select">
                   <option value="1">Active (Visible to Members)</option>
@@ -1394,6 +1398,7 @@
     function openAddFoodModal() {
       document.getElementById('foodSaveForm').reset();
       document.getElementById('food_id').value = '';
+      document.getElementById('food_reorder').value = '5';
       document.getElementById('foodModalTitle').innerHTML = '<i class="bi bi-cup-hot text-primary"></i> Add Food &amp; Beverage Item';
       document.getElementById('foodFormErr').classList.add('d-none');
       previewFoodImage('');
@@ -1412,7 +1417,8 @@
       document.getElementById('food_cat').value = p.category || 'Beverages';
       document.getElementById('food_price').value = p.price;
       document.getElementById('food_cost').value = p.cost_price || '';
-      document.getElementById('food_stock').value = p.stock_quantity || 0;
+      document.getElementById('food_stock').value = p.stock_qty != null ? p.stock_qty : (p.stock_quantity || 0);
+      document.getElementById('food_reorder').value = p.reorder_level != null ? p.reorder_level : 5;
       document.getElementById('food_active').value = (p.is_active === 1 || p.is_active === true) ? '1' : '0';
       document.getElementById('food_img').value = p.image_url || '';
       document.getElementById('food_desc').value = p.description || '';
@@ -1477,6 +1483,7 @@
         price: Number(form.price.value),
         cost_price: Number(form.cost_price.value) || 0,
         stock_qty: Number(form.stock_qty.value) || 0,
+        reorder_level: Number(form.reorder_level?.value) || 5,
         is_active: Number(form.is_active.value),
         image_url: form.image_url.value.trim() || null,
         description: form.description.value.trim() || null
