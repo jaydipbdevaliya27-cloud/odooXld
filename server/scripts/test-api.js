@@ -147,6 +147,46 @@ async function runTests() {
     const staffLogin = await staff.login('staff.shop@championsclub.com', 'password123');
     assert(staffLogin.status === 200 && staffLogin.body.user.role === 'staff', 'Shop staff logs in successfully');
 
+    const applicantEmail = 'approval.flow@example.com';
+    const missingApplicationEmail = await guest.post('/api/leads', {
+      name: 'Pending Applicant',
+      phone: '9876500198',
+      interest: 'membership'
+    });
+    assert(missingApplicationEmail.status === 400 && missingApplicationEmail.body.code === 'MEMBERSHIP_EMAIL_REQUIRED', 'Membership application requires a login email');
+
+    const membershipApplication = await guest.post('/api/leads', {
+      name: 'Approval Flow Applicant',
+      email: applicantEmail,
+      phone: '9876500199',
+      interest: 'membership',
+      source: 'website'
+    });
+    const [pendingApplicantUsers] = await db.query('SELECT id FROM users WHERE email = ?', [applicantEmail]);
+    assert(membershipApplication.status === 201 && pendingApplicantUsers.length === 0, 'Pending membership request creates a CRM lead, not a login account');
+
+    const applicant = new SessionClient('Approved Applicant');
+    const loginBeforeApproval = await applicant.login(applicantEmail, 'NotYetApproved123');
+    assert(loginBeforeApproval.status === 401, 'Applicant cannot login before owner approval');
+
+    const bypassApproval = await owner.put(`/api/leads/${membershipApplication.body.leadId}`, { status: 'converted' });
+    assert(bypassApproval.status === 409 && bypassApproval.body.code === 'APPROVAL_REQUIRED', 'Lead stage cannot bypass membership approval');
+
+    const [[goldPlan]] = await db.query('SELECT id FROM plans WHERE code = ?', ['GOLD']);
+    const approval = await owner.post(`/api/leads/${membershipApplication.body.leadId}/convert`, { plan_id: goldPlan.id });
+    assert(approval.status === 201 && approval.body.temporary_password && approval.body.user_email === applicantEmail, 'Owner approval creates a member and returns a one-time temporary password');
+
+    const approvedLogin = await applicant.login(applicantEmail, approval.body.temporary_password);
+    assert(approvedLogin.status === 200 && approvedLogin.body.user.must_change_password, 'Approved member can login and is required to change the temporary password');
+
+    const passwordChange = await applicant.post('/api/auth/change-password', {
+      current_password: approval.body.temporary_password,
+      new_password: 'MemberSecure123'
+    });
+    const authenticatedAfterPasswordChange = new SessionClient('Member With New Password');
+    const finalMemberLogin = await authenticatedAfterPasswordChange.login(applicantEmail, 'MemberSecure123');
+    assert(passwordChange.status === 200 && finalMemberLogin.status === 200 && !finalMemberLogin.body.user.must_change_password, 'Approved member can set a new password and continue signing in');
+
     // 10.4 Wrong role / Area access control
     const forbiddenRes = await member.post('/api/courts', { name: 'Hack Court', sport: 'Tennis' });
     assert(forbiddenRes.status === 403, 'Member forbidden from creating courts (403)');

@@ -471,6 +471,36 @@ a:hover {
   margin-bottom: 12px;
 }
 
+.owner-stat-grid .stat-card {
+  min-width: 0;
+  overflow: hidden;
+}
+.owner-stat-grid .stat-card-header {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+.owner-stat-grid .stat-icon-tile {
+  width: 42px;
+  height: 42px;
+  font-size: 1.05rem;
+}
+.owner-stat-grid .stat-meta {
+  min-width: 0;
+  text-align: right;
+}
+.owner-stat-grid .stat-label {
+  font-size: 0.68rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.owner-stat-grid .stat-value {
+  font-size: 1.08rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
 .stat-icon-tile {
   width: 48px;
   height: 48px;
@@ -1410,3 +1440,4 @@ body:has(#app-shell) {
     color: #000000 !important;
   }
 }
+

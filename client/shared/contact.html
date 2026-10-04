@@ -29,8 +29,8 @@
   <div class="container py-5" style="max-width: 900px;">
     <div class="text-center mb-5">
       <span class="text-uppercase text-accent fw-bold small letter-spacing-1">Get in Touch</span>
-      <h2 class="display-6 fw-bold mt-1">Membership &amp; Facility Enquiries</h2>
-      <p class="text-muted">Speak with our sports coordinators for trial sessions, corporate memberships, or court reservations.</p>
+      <h2 class="display-6 fw-bold mt-1">Membership Applications &amp; Enquiries</h2>
+      <p class="text-muted">Membership applications are reviewed by the club team. Login access is created only after approval.</p>
     </div>
 
     <div class="row g-4">
@@ -80,7 +80,7 @@
                 <input type="text" id="c_name" name="name" class="form-control" placeholder="e.g. Rahul Sharma" required>
               </div>
               <div class="col-md-6">
-                <label class="form-label" for="c_email">Email Address</label>
+                <label class="form-label" for="c_email">Email Address <span class="small text-muted" id="contactEmailHint">(required for membership)</span></label>
                 <input type="email" id="c_email" name="email" class="form-control" placeholder="rahul@example.com">
               </div>
               <div class="col-md-6">
@@ -124,6 +124,15 @@
     const alertBox = document.getElementById('contactAlert');
     const btn = document.getElementById('contactSubmitBtn');
     const sp = document.getElementById('contactSpinner');
+    const interest = document.getElementById('c_interest');
+    const email = document.getElementById('c_email');
+
+    function syncMembershipEmailRequirement() {
+      email.required = interest.value === 'membership';
+      document.getElementById('contactEmailHint').textContent = email.required ? '(required for membership)' : '(optional)';
+    }
+    interest.addEventListener('change', syncMembershipEmailRequirement);
+    syncMembershipEmailRequirement();
 
     validators.bindLiveClear(form);
 
@@ -133,7 +142,8 @@
 
       const isValid = validators.validateForm(form, {
         name: { required: true, minLength: 2, label: 'Full name' },
-        phone: { required: true, type: 'phone', label: 'Mobile number' }
+        phone: { required: true, type: 'phone', label: 'Mobile number' },
+        email: { required: interest.value === 'membership', type: 'email', label: 'Email address' }
       });
       if (!isValid) return;
 
@@ -150,8 +160,8 @@
           source: 'website'
         };
 
-        await api.post('/api/leads', payload);
-        ui.toast('Thank you! Your enquiry has been recorded. Our team will contact you shortly.', 'success');
+        const result = await api.post('/api/leads', payload);
+        ui.toast(result.message || 'Thank you! Your enquiry has been recorded. Our team will contact you shortly.', 'success');
         form.reset();
       } catch (err) {
         alertBox.textContent = err.message;

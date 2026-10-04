@@ -430,6 +430,10 @@
                 <input type="tel" id="leadPhone" name="phone" class="form-control" placeholder="+91 98765 43210" required pattern="[6-9][0-9]{9}">
               </div>
               <div class="mb-3">
+                <label class="form-label" for="leadEmail">Email Address <span class="small opacity-75" id="leadEmailHint">(required for membership)</span></label>
+                <input type="email" id="leadEmail" name="email" class="form-control" placeholder="you@example.com">
+              </div>
+              <div class="mb-3">
                 <label class="form-label" for="leadInterest">I am interested in</label>
                 <select id="leadInterest" name="interest" class="form-select">
                   <option value="membership">Annual Membership</option>
@@ -567,7 +571,7 @@
         <div class="col-md-6 col-lg-3">
           <div class="facility-card-wrap">
             <div class="facility-icon-section" style="height: 180px; overflow: hidden; position: relative;">
-              <img src="https://images.unsplash.com/photo-1599586120429-48281b6a0ecd?q=80&w=800&auto=format&fit=crop" alt="Pickleball Arena" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease;">
+              <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQavfd8Mdeke-dHsa6cKuBsZmbGfX7Ys0fuzWKu3cjjQA&s=10" alt="Pickleball Arena" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease;">
               <div style="position: absolute; inset: 0; background: linear-gradient(180deg, transparent 50%, rgba(15,23,42,0.8) 100%);"></div>
             </div>
             <div class="facility-body">
@@ -749,7 +753,7 @@
                     <input type="tel" id="enqPhone" name="phone" class="form-control" placeholder="Mobile Number" required>
                   </div>
                   <div class="col-md-6">
-                    <input type="email" id="enqEmail" name="email" class="form-control" placeholder="Email (optional)">
+                    <input type="email" id="enqEmail" name="email" class="form-control" placeholder="Email (required for membership)">
                   </div>
                   <div class="col-12">
                     <select id="enqInterest" name="interest" class="form-select">
@@ -917,7 +921,15 @@
     }
 
     // ── Hero Lead Form ──────────────────────────────────────────────────────
-    document.getElementById('heroLeadForm').addEventListener('submit', async (e) => {
+    const heroLeadForm = document.getElementById('heroLeadForm');
+    const heroLeadInterest = document.getElementById('leadInterest');
+    const heroLeadEmail = document.getElementById('leadEmail');
+    heroLeadInterest.addEventListener('change', () => {
+      heroLeadEmail.required = heroLeadInterest.value === 'membership';
+    });
+    heroLeadEmail.required = heroLeadInterest.value === 'membership';
+
+    heroLeadForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const form = e.target;
       const btn = document.getElementById('leadSubmitBtn');
@@ -927,13 +939,14 @@
       sp.classList.remove('d-none');
 
       try {
-        await api.post('/api/leads', {
+        const result = await api.post('/api/leads', {
           name: form.name.value.trim(),
           phone: form.phone.value.trim(),
+          email: form.email.value.trim() || undefined,
           interest: form.interest.value,
           source: 'website_hero'
         });
-        ui.toast('Thank you! We will contact you shortly.', 'success');
+        ui.toast(result.message || 'Thank you! We will contact you shortly.', 'success');
         form.reset();
       } catch (err) {
         ui.toast(err.message || 'Failed to submit. Please call us directly.', 'error');
@@ -944,7 +957,16 @@
     });
 
     // ── Enquiry Form ────────────────────────────────────────────────────────
-    document.getElementById('enquiryForm').addEventListener('submit', async (e) => {
+    const enquiryForm = document.getElementById('enquiryForm');
+    const enquiryInterest = document.getElementById('enqInterest');
+    const enquiryEmail = document.getElementById('enqEmail');
+    enquiryInterest.addEventListener('change', () => {
+      enquiryEmail.required = enquiryInterest.value === 'membership';
+      enquiryEmail.placeholder = enquiryEmail.required ? 'Email (required for membership)' : 'Email (optional)';
+    });
+    enquiryEmail.required = enquiryInterest.value === 'membership';
+
+    enquiryForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const form = e.target;
       const btn = document.getElementById('enqSubmitBtn');
@@ -954,14 +976,14 @@
       sp.classList.remove('d-none');
 
       try {
-        await api.post('/api/leads', {
+        const result = await api.post('/api/leads', {
           name: form.name.value.trim(),
           phone: form.phone.value.trim(),
           email: form.email.value.trim() || undefined,
           interest: form.interest.value,
           source: 'website_enquiry'
         });
-        ui.toast('Enquiry received! Our team will reach out within 24 hours.', 'success');
+        ui.toast(result.message || 'Enquiry received! Our team will reach out within 24 hours.', 'success');
         form.reset();
       } catch (err) {
         ui.toast(err.message || 'Failed to submit. Please call us directly.', 'error');

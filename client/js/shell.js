@@ -301,8 +301,98 @@ async function initShell() {
     }
   } catch (e) {}
 
+  if (user.must_change_password) {
+    await enforcePasswordChange(user);
+  }
+
   // 7. Attach SPA Smooth Router
   attachSPARouter();
+}
+
+async function enforcePasswordChange(user) {
+  if (window._passwordChangePromptOpen) return;
+  window._passwordChangePromptOpen = true;
+
+  const modalElement = document.createElement('div');
+  modalElement.className = 'modal fade';
+  modalElement.id = 'required-password-change-modal';
+  modalElement.tabIndex = -1;
+  modalElement.setAttribute('aria-labelledby', 'requiredPasswordTitle');
+  modalElement.setAttribute('aria-hidden', 'true');
+  modalElement.innerHTML = `
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title fs-5 fw-bold" id="requiredPasswordTitle">Set a new password</h2>
+        </div>
+        <form id="requiredPasswordForm">
+          <div class="modal-body">
+            <p class="small text-muted">Your membership is approved. Choose a new password before continuing.</p>
+            <div class="mb-3">
+              <label class="form-label" for="requiredCurrentPassword">Temporary password</label>
+              <input class="form-control" id="requiredCurrentPassword" name="current_password" type="password" autocomplete="current-password" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="requiredNewPassword">New password</label>
+              <input class="form-control" id="requiredNewPassword" name="new_password" type="password" autocomplete="new-password" minlength="8" pattern="(?=.*[A-Za-z])(?=.*\\d).{8,}" required>
+              <small class="text-muted">At least 8 characters, with a letter and a number.</small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="requiredConfirmPassword">Confirm new password</label>
+              <input class="form-control" id="requiredConfirmPassword" type="password" autocomplete="new-password" required>
+            </div>
+            <div class="alert alert-danger py-2 small d-none mb-0" id="requiredPasswordError" role="alert"></div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-accent" type="submit" id="requiredPasswordSubmit">Save new password</button>
+          </div>
+        </form>
+      </div>
+    </div>`;
+
+  document.body.appendChild(modalElement);
+  const modal = new bootstrap.Modal(modalElement, { backdrop: 'static', keyboard: false });
+  const form = modalElement.querySelector('#requiredPasswordForm');
+  const errorBox = modalElement.querySelector('#requiredPasswordError');
+  const submitButton = modalElement.querySelector('#requiredPasswordSubmit');
+
+  await new Promise(resolve => {
+    modalElement.addEventListener('shown.bs.modal', () => modalElement.querySelector('#requiredCurrentPassword').focus(), { once: true });
+    modalElement.addEventListener('hidden.bs.modal', () => {
+      modal.dispose();
+      modalElement.remove();
+      window._passwordChangePromptOpen = false;
+      resolve();
+    }, { once: true });
+
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      errorBox.classList.add('d-none');
+      if (form.new_password.value !== modalElement.querySelector('#requiredConfirmPassword').value) {
+        errorBox.textContent = 'The new passwords do not match.';
+        errorBox.classList.remove('d-none');
+        return;
+      }
+
+      submitButton.disabled = true;
+      try {
+        await api.post('/api/auth/change-password', {
+          current_password: form.current_password.value,
+          new_password: form.new_password.value
+        });
+        user.must_change_password = false;
+        window.currentUser = user;
+        modal.hide();
+        ui.toast('Password updated. Welcome to the club.', 'success');
+      } catch (err) {
+        errorBox.textContent = err.message || 'Could not update password.';
+        errorBox.classList.remove('d-none');
+        submitButton.disabled = false;
+      }
+    });
+
+    modal.show();
+  });
 }
 
 function ensureMobileSidebarToggle(topbar) {

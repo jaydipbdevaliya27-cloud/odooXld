@@ -35,6 +35,14 @@ router.post(
         follow_up_date
       } = req.body;
 
+      if (interest === 'membership' && !email) {
+        return res.status(400).json({
+          error: 'An email address is required for a membership application so login details can be issued after approval.',
+          code: 'MEMBERSHIP_EMAIL_REQUIRED',
+          fields: { email: 'Enter the email address you will use to sign in.' }
+        });
+      }
+
       const [r] = await db.query(
         `INSERT INTO leads (
           name, email, phone, interested_plan_id, message,
@@ -63,7 +71,9 @@ router.post(
       res.status(201).json({
         ok: true,
         leadId,
-        message: 'Thank you! Your enquiry has been received. Our team will contact you shortly.'
+        message: interest === 'membership'
+          ? 'Membership application submitted for review. Login access is created only after club approval.'
+          : 'Thank you! Your enquiry has been received. Our team will contact you shortly.'
       });
     } catch (err) {
       next(err);
@@ -195,6 +205,13 @@ router.put('/:id', requireLogin, requireRole('staff', 'owner'), async (req, res,
   try {
     const { status, notes, assigned_to_user_id, interested_plan_id, follow_up_date } = req.body;
 
+    if (status === 'converted') {
+      return res.status(409).json({
+        error: 'Approve the membership with the conversion action to create the member login.',
+        code: 'APPROVAL_REQUIRED'
+      });
+    }
+
     await db.query(
       `UPDATE leads
        SET status = COALESCE(?, status),
@@ -272,15 +289,16 @@ router.post(
 
         // 1. Create or link user
         let userId;
+        let temporaryPassword = null;
         const email = lead.email || `lead${lead.id}@championsclub.in`;
         const [users] = await conn.query('SELECT id FROM users WHERE email = ?', [email]);
 
         if (users.length) {
           userId = users[0].id;
-          await conn.query('UPDATE users SET role = "member", phone = COALESCE(?, phone) WHERE id = ?', [lead.phone, userId]);
+          await conn.query('UPDATE users SET role = "member", phone = COALESCE(?, phone), is_active = 1 WHERE id = ?', [lead.phone, userId]);
         } else {
-          const tempPwd = `Pass@${crypto.randomBytes(3).toString('hex')}`;
-          const hash = await bcrypt.hash(tempPwd, 10);
+          temporaryPassword = `Pass@${crypto.randomBytes(3).toString('hex')}`;
+          const hash = await bcrypt.hash(temporaryPassword, 10);
           const [insUser] = await conn.query(
             `INSERT INTO users (email, password_hash, role, full_name, phone, must_change_password, is_active)
              VALUES (?, ?, 'member', ?, ?, 1, 1)`,
@@ -326,7 +344,15 @@ router.post(
           [memberId, leadId]
         );
 
-        return { leadId, memberId, memberCode, full_name: lead.name, plan_name: plan.name };
+        return {
+          leadId,
+          memberId,
+          memberCode,
+          full_name: lead.name,
+          user_email: email,
+          plan_name: plan.name,
+          temporary_password: temporaryPassword
+        };
       });
 
       res.status(201).json({ ok: true, message: 'Lead successfully converted to active club member!', ...result });

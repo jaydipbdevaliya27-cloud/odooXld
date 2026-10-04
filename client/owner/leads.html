@@ -306,6 +306,7 @@
   <script>
     let currentView = 'kanban';
     let currentLeads = [];
+    let approvalPlans = [];
     let activeLeadId = null;
     let leadPage = 1;
     let leadTotalPages = 1;
@@ -314,6 +315,7 @@
       initSearch();
       loadLeads();
       loadLeadStats();
+      loadApprovalPlans();
 
       document.getElementById('leadStatusFilter').addEventListener('change', () => { leadPage = 1; loadLeads(); });
       document.getElementById('leadInterestFilter').addEventListener('change', () => { leadPage = 1; loadLeads(); });
@@ -391,6 +393,16 @@
       }
     }
 
+    async function loadApprovalPlans() {
+      if (approvalPlans.length) return approvalPlans;
+      try {
+        approvalPlans = await api.get('/api/plans');
+      } catch (err) {
+        console.error('Failed to load membership plans for approval', err);
+      }
+      return approvalPlans;
+    }
+
     function renderLeads() {
       if (currentView === 'kanban') {
         renderKanban();
@@ -428,8 +440,8 @@
                     <small class="text-muted">${utils.formatDate(lead.created_at)}</small>
                   </div>
                   <label class="small text-muted d-block mt-3" onclick="event.stopPropagation()">Pipeline stage
-                    <select class="form-select form-select-sm mt-1" aria-label="Move ${utils.escapeHtml(lead.name)} to another stage" onclick="event.stopPropagation()" onchange="updateLeadStatus(${lead.id}, this.value)">
-                      ${columns.map(option => `<option value="${option.id}" ${option.id === lead.status ? 'selected' : ''}>${option.label}</option>`).join('')}
+                    <select class="form-select form-select-sm mt-1" aria-label="Move ${utils.escapeHtml(lead.name)} to another stage" onclick="event.stopPropagation()" onchange="updateLeadStatus(${lead.id}, this.value)" ${lead.status === 'converted' ? 'disabled' : ''}>
+                      ${columns.filter(option => option.id !== 'converted' || lead.status === 'converted').map(option => `<option value="${option.id}" ${option.id === lead.status ? 'selected' : ''}>${option.label}</option>`).join('')}
                     </select>
                   </label>
                 </div>
@@ -505,6 +517,7 @@
 
     async function openLeadDrawer(leadId) {
       activeLeadId = leadId;
+      await loadApprovalPlans();
       const drawerEl = document.getElementById('leadDrawer');
       const drawer = bootstrap.Offcanvas.getOrCreateInstance(drawerEl);
       const content = document.getElementById('leadDrawerContent');
@@ -532,21 +545,26 @@
             <!-- Status Dropdown -->
             <div class="mb-3">
               <label class="form-label small fw-bold">Update Pipeline Status</label>
-              <select class="form-select form-select-sm" onchange="updateLeadStatus(${lead.id}, this.value)">
+              <select class="form-select form-select-sm" onchange="updateLeadStatus(${lead.id}, this.value)" ${lead.status === 'converted' ? 'disabled' : ''}>
                 <option value="new" ${lead.status === 'new' ? 'selected' : ''}>New</option>
                 <option value="contacted" ${lead.status === 'contacted' ? 'selected' : ''}>Contacted</option>
                 <option value="quoted" ${lead.status === 'quoted' ? 'selected' : ''}>Quoted</option>
                 <option value="trial_booked" ${lead.status === 'trial_booked' ? 'selected' : ''}>Trial Booked</option>
-                <option value="converted" ${lead.status === 'converted' ? 'selected' : ''}>Converted</option>
+                ${lead.status === 'converted' ? '<option value="converted" selected>Converted</option>' : ''}
                 <option value="lost" ${lead.status === 'lost' ? 'selected' : ''}>Lost</option>
               </select>
             </div>
 
             <!-- Conversion Action -->
             ${lead.status !== 'converted' ? `
-              <div class="d-grid mb-4">
-                <button class="btn btn-success" onclick="convertToMember(${lead.id})">
-                  <i class="bi bi-person-check me-1"></i> Convert to Active Member
+              <div class="mb-4 p-3 rounded border bg-light">
+                <label class="form-label small fw-bold" for="approvalPlan-${lead.id}">Plan to approve</label>
+                <select class="form-select form-select-sm mb-2" id="approvalPlan-${lead.id}">
+                  ${approvalPlans.map(plan => `<option value="${plan.id}" ${plan.code === 'GOLD' ? 'selected' : ''}>${utils.escapeHtml(plan.name)} · ${utils.formatINR(plan.annual_fee)}</option>`).join('')}
+                </select>
+                <p class="small text-muted mb-2">Approval creates the member account. New accounts must change their password at first sign-in.</p>
+                <button class="btn btn-success w-100" onclick="convertToMember(${lead.id})">
+                  <i class="bi bi-person-check me-1"></i> Approve &amp; Activate Membership
                 </button>
               </div>
             ` : `<div class="alert alert-success py-2 small mb-4"><i class="bi bi-check-circle me-1"></i> Converted to Member</div>`}
@@ -603,17 +621,31 @@
     }
 
     async function convertToMember(leadId) {
+      const planId = Number(document.getElementById(`approvalPlan-${leadId}`)?.value);
+      if (!planId) {
+        ui.toast('Select a membership plan before approval.', 'warning');
+        return;
+      }
       const confirmed = await ui.confirmDialog({
-        title: 'Convert Lead to Member',
-        message: 'This will automatically register a new member account from this lead and assign a welcome plan. Proceed?',
-        confirmText: 'Convert Now',
+        title: 'Approve Membership Application',
+        message: 'This creates or activates the member account and starts the selected plan. Continue?',
+        confirmText: 'Approve Member',
         danger: false
       });
       if (!confirmed) return;
 
       try {
-        const res = await api.post(`/api/leads/${leadId}/convert`, { plan_code: 'GOLD' });
-        ui.toast('Lead converted to Member successfully!', 'success');
+        const res = await api.post(`/api/leads/${leadId}/convert`, { plan_id: planId });
+        const credentials = res.temporary_password
+          ? `Membership approved for ${res.full_name}.\n\nLogin: ${res.user_email}\nTemporary password: ${res.temporary_password}\n\nShare these securely. The member must choose a new password at first sign-in.`
+          : `Membership approved for ${res.full_name}.\n\nLogin: ${res.user_email}\nThis account keeps its existing password.`;
+        await ui.confirmDialog({
+          title: 'Membership Approved',
+          message: credentials,
+          confirmText: 'Done',
+          cancelText: 'Close',
+          danger: false
+        });
         bootstrap.Offcanvas.getInstance(document.getElementById('leadDrawer')).hide();
         loadLeads();
         loadLeadStats();
