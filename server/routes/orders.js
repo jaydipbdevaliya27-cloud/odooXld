@@ -110,6 +110,9 @@ router.get('/', requireLogin, async (req, res, next) => {
 // ── GET /api/orders/:id ─────────────────────────────────────────────────────
 router.get('/:id', requireLogin, async (req, res, next) => {
   try {
+    const orderId = parseInt(req.params.id, 10);
+    if (isNaN(orderId)) return next();
+
     const [rows] = await db.query(
       `SELECT o.*,
               COALESCE(u.full_name, o.guest_name) AS customer_name,
@@ -120,7 +123,7 @@ router.get('/:id', requireLogin, async (req, res, next) => {
        LEFT JOIN users u ON o.user_id = u.id
        LEFT JOIN members m ON o.member_id = m.id
        WHERE o.id = ?`,
-      [req.params.id]
+      [orderId]
     );
 
     if (!rows.length) return res.status(404).json({ error: 'Order not found' });
@@ -177,7 +180,11 @@ router.post(
 
       if (user.role === 'member') {
         effectiveUserId = user.id;
-        effectiveMemberId = user.member_id;
+        effectiveMemberId = user.member_id || null;
+        if (!effectiveMemberId) {
+          const [mRows] = await db.query('SELECT id FROM members WHERE user_id = ?', [user.id]);
+          if (mRows.length) effectiveMemberId = mRows[0].id;
+        }
       } else {
         effectiveUserId = user_id || null;
         effectiveMemberId = member_id || null;
@@ -290,6 +297,157 @@ router.put('/kitchen/:itemId/status', requireLogin, requireRole('staff', 'owner'
 
     await db.query('UPDATE order_items SET kitchen_status = ? WHERE id = ?', [status, itemId]);
     res.json({ ok: true, status });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── Dynamic Dining Tables API ──────────────────────────────────────────────
+router.get('/tables', requireLogin, async (req, res, next) => {
+  try {
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS dining_tables (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        table_number VARCHAR(50) NOT NULL UNIQUE,
+        capacity INT DEFAULT 4,
+        section VARCHAR(50) DEFAULT 'Main Dining',
+        status ENUM('available', 'occupied', 'reserved', 'maintenance') DEFAULT 'available',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    const [tables] = await db.query('SELECT * FROM dining_tables ORDER BY id ASC');
+    
+    // Fetch active bar orders with table_no placed today
+    const [activeOrders] = await db.query(
+      `SELECT o.id, o.order_code, o.table_no, o.status, o.total, o.created_at,
+              COALESCE(u.full_name, ordMemberUser.full_name, o.guest_name, 'Member') AS customer_name,
+              COALESCE(u.email, ordMemberUser.email) AS customer_email,
+              COALESCE(u.phone, ordMemberUser.phone, o.guest_phone) AS customer_phone
+       FROM orders o
+       LEFT JOIN users u ON o.user_id = u.id
+       LEFT JOIN members ordMember ON o.member_id = ordMember.id
+       LEFT JOIN users ordMemberUser ON ordMember.user_id = ordMemberUser.id
+       WHERE o.department = 'bar'
+         AND o.table_no IS NOT NULL
+         AND o.status IN ('open', 'placed', 'cooking', 'in_progress', 'served', 'ready')
+         AND DATE(o.created_at) = CURDATE()
+       ORDER BY o.created_at DESC`
+    );
+
+    // Fetch active bar tabs
+    const [activeTabs] = await db.query(
+      `SELECT t.id, t.tab_name, t.opened_at,
+              COALESCE(u.full_name, tabUser.full_name, t.guest_name, 'Guest') AS customer_name,
+              COALESCE(SUM(o.total), 0) AS tab_total
+       FROM tabs t
+       LEFT JOIN users u ON t.user_id = u.id
+       LEFT JOIN members tabMember ON t.member_id = tabMember.id
+       LEFT JOIN users tabUser ON tabMember.user_id = tabUser.id
+       LEFT JOIN orders o ON t.id = o.tab_id AND o.status != 'cancelled'
+       WHERE t.status = 'open'
+       GROUP BY t.id`
+    );
+
+    const mappedTables = tables.map(tbl => {
+      const tNum = tbl.table_number.trim();
+      const order = activeOrders.find(o => o.table_no && (o.table_no.trim().toLowerCase() === tNum.toLowerCase() || o.table_no.trim() === tNum.replace(/[^0-9]/g, '')));
+      const tab = activeTabs.find(t => t.tab_name && (t.tab_name.trim().toLowerCase() === tNum.toLowerCase() || t.tab_name.includes(tNum)));
+
+      const isOccupied = Boolean(order || tab || tbl.status === 'occupied' || tbl.status === 'reserved');
+      const lockedByName = (order && order.customer_name) || (tab && tab.customer_name) || (tbl.status === 'reserved' ? 'Reserved' : null);
+      const lockedOrderCode = (order && order.order_code) || (tab && tab.tab_name) || null;
+      const lockedOrderId = (order && order.id) || (tab && tab.id) || null;
+      const lockedOrderTotal = (order && order.total) || (tab && tab.tab_total) || 0;
+      const lockedOrderTime = (order && order.created_at) || (tab && tab.opened_at) || null;
+
+      return {
+        id: tbl.id,
+        table_number: tbl.table_number,
+        capacity: tbl.capacity,
+        section: tbl.section,
+        status: isOccupied ? 'occupied' : tbl.status,
+        is_occupied: isOccupied,
+        locked_by_name: lockedByName,
+        locked_order_code: lockedOrderCode,
+        locked_order_id: lockedOrderId,
+        locked_order_total: Number(lockedOrderTotal),
+        locked_order_time: lockedOrderTime
+      };
+    });
+
+    res.json({ data: mappedTables });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/orders/tables (Add New Dining Table)
+router.post('/tables', requireLogin, requireRole('staff', 'owner'), async (req, res, next) => {
+  try {
+    const { table_number, capacity = 4, section = 'Main Dining' } = req.body;
+    if (!table_number || !table_number.trim()) {
+      return res.status(400).json({ error: 'Table number/name is required.' });
+    }
+
+    const tNum = table_number.trim();
+    const cap = Math.max(1, parseInt(capacity, 10) || 4);
+    const sec = section.trim() || 'Main Dining';
+
+    const [existing] = await db.query('SELECT id FROM dining_tables WHERE LOWER(table_number) = LOWER(?)', [tNum]);
+    if (existing.length) {
+      return res.status(409).json({ error: `Table "${tNum}" already exists.` });
+    }
+
+    const [result] = await db.query(
+      'INSERT INTO dining_tables (table_number, capacity, section, status) VALUES (?, ?, ?, "available")',
+      [tNum, cap, sec]
+    );
+
+    const [created] = await db.query('SELECT * FROM dining_tables WHERE id = ?', [result.insertId]);
+    res.status(201).json({ ok: true, table: created[0] });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /api/orders/tables/:id (Delete Dining Table)
+router.delete('/tables/:id', requireLogin, requireRole('staff', 'owner'), async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const [rows] = await db.query('SELECT * FROM dining_tables WHERE id = ?', [id]);
+    if (!rows.length) return res.status(404).json({ error: 'Dining table not found.' });
+
+    await db.query('DELETE FROM dining_tables WHERE id = ?', [id]);
+    res.json({ ok: true, message: `Table "${rows[0].table_number}" deleted successfully.` });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/orders/tables/:id/release (Release / Free Occupied Table)
+router.post('/tables/:id/release', requireLogin, requireRole('staff', 'owner'), async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const [rows] = await db.query('SELECT * FROM dining_tables WHERE id = ?', [id]);
+    if (!rows.length) return res.status(404).json({ error: 'Dining table not found.' });
+
+    const tNum = rows[0].table_number;
+
+    await db.query(
+      `UPDATE orders SET status = 'completed', closed_at = NOW()
+       WHERE department = 'bar' AND table_no = ? AND status IN ('open', 'placed', 'cooking', 'in_progress', 'served', 'ready')`,
+      [tNum]
+    );
+
+    await db.query(
+      `UPDATE tabs SET status = 'settled', closed_at = NOW() WHERE status = 'open' AND tab_name = ?`,
+      [tNum]
+    );
+
+    await db.query('UPDATE dining_tables SET status = "available" WHERE id = ?', [id]);
+
+    res.json({ ok: true, message: `Table "${tNum}" has been released and is now available.` });
   } catch (err) {
     next(err);
   }

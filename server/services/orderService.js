@@ -106,8 +106,8 @@ async function createOrder({
 
     // 5. Generate unique order code
     const orderCode = `ORD-${department.toUpperCase().slice(0, 3)}-${Date.now().toString().slice(-6)}`;
-    const fulfilmentStatus = channel === 'online' ? 'placed' : 'ready_for_pickup';
-    const initialStatus = tabId ? 'open' : (channel === 'online' ? 'open' : 'completed');
+    const fulfilmentStatus = channel === 'online' ? 'placed' : (tableNo ? 'placed' : 'ready_for_pickup');
+    const initialStatus = (tabId || channel === 'online' || tableNo) ? 'open' : 'completed';
 
     // 6. Insert order header
     const [ordRes] = await conn.query(
@@ -156,11 +156,13 @@ async function createOrder({
 
     // 8. Record payment if direct sale (not tab)
     if (!tabId && total > 0 && paymentMethod) {
+      const validMethods = ['cash', 'card', 'upi', 'online'];
+      const normalizedMethod = validMethods.includes(paymentMethod.toLowerCase()) ? paymentMethod.toLowerCase() : 'online';
       const payCode = `PAY-ORD-${Date.now()}`;
       await conn.query(
         `INSERT INTO payments (payment_code, source, reference_id, user_id, amount, method, status, paid_at)
          VALUES (?, ?, ?, ?, ?, ?, 'paid', NOW())`,
-        [payCode, department, orderId, effectiveUserId, total, paymentMethod]
+        [payCode, department, orderId, effectiveUserId, total, normalizedMethod]
       );
     }
 

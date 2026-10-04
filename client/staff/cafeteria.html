@@ -14,17 +14,17 @@
     /* ── Bar & Cafeteria Custom Styles ───────────────────────────────────── */
     .table-map-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
       gap: 0.85rem;
     }
     .table-tile {
       appearance: none;
       width: 100%;
-      min-height: 78px;
+      min-height: 98px;
       background: #ffffff;
       border: 1.5px solid #e2e8f0;
       border-radius: 12px;
-      padding: 0.85rem 0.5rem;
+      padding: 0.75rem 0.5rem;
       color: #334155;
       text-align: center;
       cursor: pointer;
@@ -32,7 +32,8 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: space-between;
+      position: relative;
     }
     .table-tile:hover {
       border-color: #0d9488;
@@ -42,12 +43,16 @@
     .table-tile.active-table {
       border-color: #0d9488;
       background: #f0fdfa;
-      box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.25);
+      box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.35);
     }
     .table-tile.occupied-table {
+      border-color: #f87171;
+      background: #fef2f2;
+      box-shadow: 0 2px 6px rgba(239, 68, 68, 0.1);
+    }
+    .table-tile.occupied-table:hover {
       border-color: #ef4444;
-      background: #fff5f5;
-      color: #b91c1c;
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
     }
 
     .cafe-menu-grid {
@@ -265,19 +270,30 @@
           <!-- TAB 1: FLOOR & POS REGISTER                                      -->
           <!-- ════════════════════════════════════════════════════════════════ -->
           <div class="tab-pane fade show active" id="posPane">
-            <!-- Table Floor Map Strip (T1 to T12) -->
+            <!-- Table Floor Map Strip -->
             <div class="card border shadow-sm p-3 mb-3 bg-white rounded-3">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
-                  <i class="bi bi-grid-3x3-gap text-primary"></i> Floor Table Map
-                </h6>
-                <div class="d-flex gap-3 small text-muted">
-                  <span><span class="badge bg-light border text-dark me-1">●</span> Available</span>
-                  <span><span class="badge bg-danger me-1">●</span> Occupied / Open Tab</span>
+              <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2">
+                  <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                    <i class="bi bi-grid-3x3-gap text-primary"></i> Floor Table Management Map
+                  </h6>
+                  <span class="badge bg-light text-muted border small" id="tablesTotalBadge">Loading tables...</span>
+                </div>
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                  <div class="d-none d-md-flex gap-3 small text-muted me-2">
+                    <span><span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 me-1">●</span> Available</span>
+                    <span><span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 me-1">●</span> Locked by Member</span>
+                  </div>
+                  <button type="button" class="btn btn-sm btn-primary" onclick="openAddTableModal()">
+                    <i class="bi bi-plus-circle me-1"></i> Add New Table
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary" onclick="loadDiningTables(true)" title="Refresh Tables">
+                    <i class="bi bi-arrow-clockwise"></i>
+                  </button>
                 </div>
               </div>
               <div class="table-map-grid" id="tableMapGrid">
-                <!-- Tables 1 to 12 injected via JS -->
+                <!-- Dining tables injected dynamically via JS -->
               </div>
             </div>
 
@@ -657,16 +673,90 @@
     </div>
   </div>
 
-  <!-- ── Daily Closing Modal ──────────────────────────────────────────────── -->
-  <div class="modal fade" id="dailyClosingModal" tabindex="-1">
+  <!-- ── Add New Dining Table Modal ────────────────────────────────────── -->
+  <div class="modal fade" id="addTableModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title fw-bold"><i class="bi bi-calculator text-primary me-2"></i>Daily Register Closing</h5>
+          <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle text-primary me-2"></i>Add New Dining Table</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <div class="modal-body" id="dailyClosingBody">
-          <div class="text-center py-3"><span class="spinner-border spinner-border-sm"></span> Loading today's totals…</div>
+        <form id="addTableForm" onsubmit="handleSaveNewTable(event)">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label fw-semibold required">Table Number / Label</label>
+              <input type="text" id="newTableNumber" class="form-control" placeholder="e.g. Table 13, Lounge-A, Patio-4" required>
+            </div>
+            <div class="row g-3 mb-3">
+              <div class="col-6">
+                <label class="form-label fw-semibold">Seating Capacity</label>
+                <input type="number" id="newTableCapacity" class="form-control" value="4" min="1" max="20" required>
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-semibold">Floor Section</label>
+                <select id="newTableSection" class="form-select">
+                  <option value="Main Dining">Main Dining</option>
+                  <option value="Indoor Lounge">Indoor Lounge</option>
+                  <option value="Patio Garden">Patio Garden</option>
+                  <option value="VIP Area">VIP Lounge</option>
+                  <option value="Bar Counter">Bar Counter</option>
+                </select>
+              </div>
+            </div>
+            <div id="addTableErr" class="alert alert-danger d-none small py-2"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="btnSaveTable">
+              <i class="bi bi-check-circle me-1"></i> Create Table
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Table Details & Release Modal ───────────────────────────────────── -->
+  <div class="modal fade" id="tableActionModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold" id="actionModalTableTitle">
+            <i class="bi bi-grid-3x3-gap text-primary me-2"></i>Table Details
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="p-3 rounded-3 bg-light border mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="text-muted small">Current Table Status</span>
+              <span id="actionTableStatusBadge" class="badge bg-danger">Occupied / Locked</span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="text-muted small">Locked By Member</span>
+              <strong id="actionTableMemberName" class="text-dark">—</strong>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="text-muted small">Order / Tab Ref</span>
+              <code id="actionTableOrderCode" class="fw-bold text-primary">—</code>
+            </div>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="text-muted small">Section &amp; Capacity</span>
+              <span id="actionTableSectionMeta" class="small text-muted">—</span>
+            </div>
+          </div>
+          <p class="text-muted small mb-0">Releasing this table will mark any active counter orders as completed and free the table for new member bookings.</p>
+        </div>
+        <div class="modal-footer d-flex justify-content-between">
+          <button type="button" class="btn btn-outline-danger" id="btnDeleteTable" onclick="handleDeleteCurrentTable()">
+            <i class="bi bi-trash3 me-1"></i> Delete Table
+          </button>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-success" id="btnReleaseTable" onclick="handleReleaseCurrentTable()">
+              <i class="bi bi-unlock-fill me-1"></i> Release / Free Table
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -684,12 +774,14 @@
     let foodCatalog = [];
     let cafeCart = [];
     let membersList = [];
+    let diningTablesList = [];
     let selectedTable = 'Takeaway';
+    let currentSelectedTableObj = null;
     let currentFoodView = 'list';
     let kdsTimer = null;
 
     document.addEventListener('DOMContentLoaded', async () => {
-      renderTableMap();
+      await loadDiningTables();
       await loadMembers();
       loadCafeProducts();
       initSearchHandlers();
@@ -700,9 +792,10 @@
       document.getElementById('foodSaveForm').addEventListener('submit', handleSaveFoodItem);
       document.getElementById('adjFoodSaveBtn').addEventListener('click', handleSaveFoodStockAdjustment);
 
-      // Auto poll KDS orders every 10s
+      // Auto poll KDS orders and tables every 10s
       kdsTimer = setInterval(() => {
         loadKitchenOrders(true);
+        loadDiningTables(true);
       }, 10000);
     });
 
@@ -722,36 +815,192 @@
       });
     }
 
-    // ── Table Map (T1 - T12) ─────────────────────────────────────────────────
-    function renderTableMap(occupiedTables = []) {
+    // ── Dynamic Dining Tables Management ─────────────────────────────────────
+    async function loadDiningTables(silent = false) {
+      try {
+        const res = await api.get('/api/orders/tables');
+        diningTablesList = res.data || [];
+        const badge = document.getElementById('tablesTotalBadge');
+        if (badge) {
+          const occupiedCount = diningTablesList.filter(t => t.is_occupied).length;
+          badge.textContent = `${diningTablesList.length} Tables (${occupiedCount} Occupied / Locked)`;
+        }
+        renderTableMap();
+      } catch (err) {
+        if (!silent) ui.toast('Failed to load dining tables: ' + err.message, 'error');
+      }
+    }
+
+    function renderTableMap() {
       const grid = document.getElementById('tableMapGrid');
+      if (!grid) return;
+
       let html = `
         <button type="button" class="table-tile ${selectedTable === 'Takeaway' ? 'active-table' : ''}" onclick="selectTable('Takeaway')">
-          <i class="bi bi-bag mb-1"></i>
-          <span class="fw-bold small">Takeaway</span>
+          <div class="d-flex justify-content-between w-100 align-items-center">
+            <span class="badge bg-light text-dark border" style="font-size:0.65rem;">Counter</span>
+            <span class="badge bg-success bg-opacity-10 text-success" style="font-size:0.65rem;">Express</span>
+          </div>
+          <div class="my-1">
+            <i class="bi bi-bag text-primary fs-5 mb-1 d-block"></i>
+            <span class="fw-bold small text-dark">Takeaway</span>
+          </div>
+          <div class="small text-muted" style="font-size:0.7rem;">Fast Pickup</div>
         </button>
       `;
 
-      for (let i = 1; i <= 12; i++) {
-        const tName = `Table ${i}`;
-        const isOccupied = occupiedTables.includes(tName);
-        const isActive = selectedTable === tName;
+      diningTablesList.forEach(tbl => {
+        const isActive = selectedTable === tbl.table_number;
+        const isOccupied = tbl.is_occupied;
+        const lockedName = tbl.locked_by_name || 'Member';
+        const orderRef = tbl.locked_order_code || 'ORD';
 
         html += `
-          <button type="button" class="table-tile ${isActive ? 'active-table' : ''} ${isOccupied ? 'occupied-table' : ''}" onclick="selectTable('${tName}')">
-            <i class="bi bi-cup mb-1"></i>
-            <span class="fw-bold small">${tName}</span>
-            <span class="small" style="font-size:0.7rem;">${isOccupied ? 'Tab Open' : 'Free'}</span>
+          <button type="button" class="table-tile ${isActive ? 'active-table' : ''} ${isOccupied ? 'occupied-table' : ''}" onclick="handleTableTileClick(${tbl.id})">
+            <div class="d-flex justify-content-between w-100 align-items-center">
+              <span class="badge ${isOccupied ? 'bg-danger text-white' : 'bg-light text-dark border'}" style="font-size:0.65rem;">
+                ${tbl.capacity} Seats
+              </span>
+              <span class="badge ${isOccupied ? 'bg-danger bg-opacity-25 text-danger' : 'bg-success bg-opacity-10 text-success'}" style="font-size:0.65rem;">
+                ${isOccupied ? '<i class="bi bi-lock-fill"></i> Locked' : '<i class="bi bi-check-circle-fill"></i> Free'}
+              </span>
+            </div>
+
+            <div class="my-1 w-100 text-center px-1">
+              <span class="fw-bold small d-block text-truncate ${isOccupied ? 'text-danger' : 'text-dark'}">${utils.escapeHtml(tbl.table_number)}</span>
+              ${isOccupied ? `
+                <div class="fw-semibold text-danger small text-truncate mt-1" style="font-size:0.75rem;" title="${utils.escapeHtml(lockedName)}">
+                  <i class="bi bi-person-fill me-1"></i>${utils.escapeHtml(lockedName)}
+                </div>
+                <div class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 mt-1" style="font-size:0.65rem;">
+                  ${utils.escapeHtml(orderRef)}
+                </div>
+              ` : `
+                <span class="small text-muted d-block mt-1" style="font-size:0.72rem;">${utils.escapeHtml(tbl.section)}</span>
+              `}
+            </div>
+
+            <div class="small w-100 text-center" style="font-size:0.68rem;">
+              ${isOccupied ? '<span class="text-danger fw-semibold">Click to Manage / Free</span>' : '<span class="text-success"><i class="bi bi-check-circle"></i> Available</span>'}
+            </div>
           </button>
         `;
-      }
+      });
+
       grid.innerHTML = html;
+    }
+
+    function handleTableTileClick(tableId) {
+      const tbl = diningTablesList.find(t => t.id === tableId);
+      if (!tbl) return;
+
+      if (tbl.is_occupied) {
+        // Open management modal for occupied table
+        openTableActionModal(tableId);
+      } else {
+        // Select table for current POS order
+        selectTable(tbl.table_number);
+      }
     }
 
     function selectTable(name) {
       selectedTable = name;
       document.getElementById('currentSelectedTableLabel').textContent = name;
       renderTableMap();
+    }
+
+    function openAddTableModal() {
+      document.getElementById('addTableForm').reset();
+      document.getElementById('addTableErr').classList.add('d-none');
+      ui.openModal('addTableModal');
+    }
+
+    async function handleSaveNewTable(e) {
+      e.preventDefault();
+      const num = document.getElementById('newTableNumber').value.trim();
+      const cap = document.getElementById('newTableCapacity').value;
+      const sec = document.getElementById('newTableSection').value;
+      const errEl = document.getElementById('addTableErr');
+      const saveBtn = document.getElementById('btnSaveTable');
+
+      errEl.classList.add('d-none');
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
+
+      try {
+        await api.post('/api/orders/tables', {
+          table_number: num,
+          capacity: parseInt(cap, 10) || 4,
+          section: sec
+        });
+
+        ui.closeModal('addTableModal');
+        ui.toast(`Table "${num}" created successfully!`, 'success');
+        await loadDiningTables();
+      } catch (err) {
+        errEl.textContent = err.message || 'Failed to add table';
+        errEl.classList.remove('d-none');
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i> Create Table';
+      }
+    }
+
+    function openTableActionModal(tableId) {
+      const tbl = diningTablesList.find(t => t.id === tableId);
+      if (!tbl) return;
+      currentSelectedTableObj = tbl;
+
+      document.getElementById('actionModalTableTitle').innerHTML = `<i class="bi bi-grid-3x3-gap text-primary me-2"></i>${utils.escapeHtml(tbl.table_number)}`;
+      document.getElementById('actionTableStatusBadge').textContent = tbl.is_occupied ? 'Occupied / Locked by Member' : 'Available';
+      document.getElementById('actionTableStatusBadge').className = tbl.is_occupied ? 'badge bg-danger' : 'badge bg-success';
+      document.getElementById('actionTableMemberName').textContent = tbl.locked_by_name || 'Walk-in Customer';
+      document.getElementById('actionTableOrderCode').textContent = tbl.locked_order_code || 'ORD';
+      document.getElementById('actionTableSectionMeta').textContent = `${tbl.section} (${tbl.capacity} Seats)`;
+
+      ui.openModal('tableActionModal');
+    }
+
+    async function handleReleaseCurrentTable() {
+      if (!currentSelectedTableObj) return;
+      const btn = document.getElementById('btnReleaseTable');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Releasing...';
+
+      try {
+        const res = await api.post(`/api/orders/tables/${currentSelectedTableObj.id}/release`);
+        ui.closeModal('tableActionModal');
+        ui.toast(res.message || `Table "${currentSelectedTableObj.table_number}" released successfully!`, 'success');
+        await loadDiningTables();
+        await loadKitchenOrders();
+      } catch (err) {
+        ui.toast(err.message || 'Failed to release table', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-unlock-fill me-1"></i> Release / Free Table';
+      }
+    }
+
+    async function handleDeleteCurrentTable() {
+      if (!currentSelectedTableObj) return;
+      const confirmed = await ui.confirmDialog({
+        title: `Delete ${currentSelectedTableObj.table_number}?`,
+        message: `Are you sure you want to permanently delete table "${currentSelectedTableObj.table_number}" from the floor plan?`,
+        confirmText: 'Delete Table'
+      });
+      if (!confirmed) return;
+
+      try {
+        const res = await api.delete(`/api/orders/tables/${currentSelectedTableObj.id}`);
+        ui.closeModal('tableActionModal');
+        ui.toast(res.message || 'Table deleted successfully', 'success');
+        if (selectedTable === currentSelectedTableObj.table_number) {
+          selectTable('Takeaway');
+        }
+        await loadDiningTables();
+      } catch (err) {
+        ui.toast(err.message || 'Failed to delete table', 'error');
+      }
     }
 
     async function loadMembers() {
@@ -761,7 +1010,7 @@
         const sel = document.getElementById('cafeMemberSelect');
         const opts = membersList.map(m => 
           `<option value="${m.id}" data-discount="${m.discount_bar || 0}">
-            ${utils.escapeHtml(m.name)} (${m.member_code}) · ${m.discount_bar || 0}% Off F&amp;B
+            ${utils.escapeHtml(m.name || m.full_name)} (${m.member_code}) · ${m.discount_bar || 0}% Off F&amp;B
           </option>`
         ).join('');
         sel.innerHTML = '<option value="" data-discount="0">Walk-in Guest (No F&amp;B Discount)</option>' + opts;
@@ -1416,8 +1665,7 @@
         if (badge) badge.textContent = tabs.length;
 
         // Update occupied tables on Floor map
-        const occupied = tabs.map(t => t.tab_name).filter(Boolean);
-        renderTableMap(occupied);
+        await loadDiningTables(true);
 
         if (!tabs.length) {
           tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">No open bar tabs currently active.</td></tr>';

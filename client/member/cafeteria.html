@@ -170,16 +170,16 @@
         </div>
 
         <div class="mb-3">
-          <label class="form-label small fw-bold text-muted text-uppercase mb-1">Dine-in / Pickup Option</label>
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <label class="form-label small fw-bold text-muted text-uppercase mb-0">Dine-in / Table Selection</label>
+            <span class="small text-muted" id="tableAvailabilityHint" style="font-size: 0.75rem;">Loading tables...</span>
+          </div>
           <select class="form-select form-select-sm" id="memberOrderTable">
-            <option value="Takeaway">Express Takeaway Counter</option>
-            <option value="Table 1">Lounge Table 1</option>
-            <option value="Table 2">Lounge Table 2</option>
-            <option value="Table 3">Lounge Table 3</option>
-            <option value="Table 4">Lounge Table 4</option>
-            <option value="Table 5">Lounge Table 5</option>
-            <option value="Table 6">Lounge Table 6</option>
+            <option value="Takeaway">Express Takeaway Counter (Pickup)</option>
           </select>
+          <div class="form-text small text-muted mt-1" style="font-size:0.75rem;">
+            <i class="bi bi-info-circle me-1"></i>Selecting a table books and locks it exclusively under your name.
+          </div>
         </div>
 
         <button class="btn btn-primary w-100 py-2 fw-semibold" id="sendOrderBtn" onclick="submitCafeOrder()" disabled>
@@ -199,10 +199,12 @@
     let menuItems = [];
     let cafeOrder = [];
     let memberDiscount = 0;
+    let availableDiningTables = [];
 
     document.addEventListener('DOMContentLoaded', async () => {
       await loadMemberProfile();
       loadMenu();
+      loadMemberDiningTables();
 
       utils.attachSearch({
         input: 'memberCafeSearch',
@@ -213,11 +215,63 @@
 
       document.getElementById('memberCafeCategory').addEventListener('change', () => loadMenu());
 
-      // Auto-refresh menu every 30s to keep active/inactive in sync
+      const drawerEl = document.getElementById('cafeOrderDrawer');
+      if (drawerEl) {
+        drawerEl.addEventListener('show.bs.offcanvas', () => {
+          loadMemberDiningTables(true);
+        });
+      }
+
+      // Auto-refresh menu and tables every 20s to keep real-time lock status in sync
       setInterval(() => {
         loadMenu(true);
-      }, 30000);
+        loadMemberDiningTables(true);
+      }, 20000);
     });
+
+    async function loadMemberDiningTables(silent = false) {
+      try {
+        const res = await api.get('/api/orders/tables');
+        availableDiningTables = res.data || [];
+        renderMemberTableDropdown();
+      } catch (err) {
+        console.error('Failed to load dining tables', err);
+        if (!silent) ui.toast('Could not refresh floor tables', 'warning');
+      }
+    }
+
+    function renderMemberTableDropdown() {
+      const select = document.getElementById('memberOrderTable');
+      const hint = document.getElementById('tableAvailabilityHint');
+      if (!select) return;
+
+      const currentVal = select.value;
+      let freeCount = 0;
+
+      let optionsHtml = '<option value="Takeaway">Express Takeaway Counter (Pickup)</option>';
+
+      availableDiningTables.forEach(t => {
+        if (!t.is_occupied) {
+          freeCount++;
+          optionsHtml += `
+            <option value="${utils.escapeHtml(t.table_number)}" ${currentVal === t.table_number ? 'selected' : ''}>
+              ${utils.escapeHtml(t.table_number)} (${utils.escapeHtml(t.section || 'Dining')} · ${t.capacity} Seats) – Available
+            </option>
+          `;
+        } else {
+          optionsHtml += `
+            <option value="${utils.escapeHtml(t.table_number)}" disabled class="text-muted">
+              ${utils.escapeHtml(t.table_number)} (${utils.escapeHtml(t.section || 'Dining')}) – [Occupied / Locked]
+            </option>
+          `;
+        }
+      });
+
+      select.innerHTML = optionsHtml;
+      if (hint) {
+        hint.textContent = `${freeCount} of ${availableDiningTables.length} tables free`;
+      }
+    }
 
     async function loadMemberProfile() {
       try {
