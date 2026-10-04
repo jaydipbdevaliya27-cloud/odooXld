@@ -60,6 +60,92 @@ router.get(['/me', '/me/profile'], requireLogin, async (req, res, next) => {
   }
 });
 
+// ── GET /api/members/me/history ─────────────────────────────────────────────
+router.get('/me/history', requireLogin, async (req, res, next) => {
+  try {
+    const userId = req.session.user.id;
+    const [mRows] = await db.query('SELECT id FROM members WHERE user_id = ?', [userId]);
+    if (!mRows.length) return res.json({ data: [] });
+
+    const memberId = mRows[0].id;
+    const [history] = await db.query(
+      `SELECT h.*, p.name AS plan_name, p.code AS plan_code
+       FROM membership_history h
+       LEFT JOIN plans p ON h.plan_id = p.id
+       WHERE h.member_id = ?
+       ORDER BY h.created_at DESC`,
+      [memberId]
+    );
+
+    res.json({ data: history });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── POST /api/members/me/renew ──────────────────────────────────────────────
+router.post('/me/renew', requireLogin, async (req, res, next) => {
+  try {
+    const userId = req.session.user.id;
+    const { plan_code, plan_id, payment_method = 'razorpay' } = req.body;
+
+    const [mRows] = await db.query('SELECT * FROM members WHERE user_id = ?', [userId]);
+    if (!mRows.length) return res.status(404).json({ error: 'Membership record not found for current user' });
+    const member = mRows[0];
+
+    let planQuery = 'SELECT * FROM plans WHERE id = ?';
+    let planParam = plan_id || member.plan_id;
+    if (plan_code) {
+      planQuery = 'SELECT * FROM plans WHERE code = ?';
+      planParam = plan_code;
+    }
+
+    const [pRows] = await db.query(planQuery, [planParam]);
+    if (!pRows.length) return res.status(400).json({ error: 'Invalid membership plan specified' });
+    const plan = pRows[0];
+
+    const today = new Date(todayIST());
+    const currExpiry = member.expiry_date ? new Date(member.expiry_date) : today;
+    const baseDate = currExpiry > today ? currExpiry : today;
+    const durationMonths = plan.duration_months || 12;
+    baseDate.setMonth(baseDate.getMonth() + durationMonths);
+    const newExpiry = baseDate.toISOString().slice(0, 10);
+
+    await db.transaction(async (conn) => {
+      await conn.query(
+        `UPDATE members SET plan_id = ?, expiry_date = ?, status = 'active' WHERE id = ?`,
+        [plan.id, newExpiry, member.id]
+      );
+
+      const fee = Number(plan.membership_fee || plan.annual_fee || 0);
+
+      await conn.query(
+        `INSERT INTO membership_history (member_id, plan_id, action, start_date, end_date, amount_paid, notes)
+         VALUES (?, ?, 'renewed', CURDATE(), ?, ?, ?)`,
+        [member.id, plan.id, newExpiry, fee, `Online self-renewal (${plan.name})`]
+      );
+
+      if (fee > 0) {
+        const payCode = `PAY-RNW-${Date.now()}`;
+        await conn.query(
+          `INSERT INTO payments (payment_code, source, reference_id, user_id, amount, method, status, paid_at, notes)
+           VALUES (?, 'membership', ?, ?, ?, ?, 'paid', NOW(), ?)`,
+          [payCode, member.id, userId, fee, payment_method, `Member plan renewal - ${plan.name}`]
+        );
+      }
+    });
+
+    res.json({
+      ok: true,
+      message: `Membership renewed successfully on ${plan.name} plan until ${newExpiry}!`,
+      newExpiry,
+      plan_name: plan.name
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ── GET /api/members ─────────────────────────────────────────────────────────
 router.get('/', requireLogin, requireRole('staff', 'owner'), async (req, res, next) => {
   try {

@@ -193,6 +193,7 @@
   <script src="/js/api.js"></script>
   <script src="/js/utils.js"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/razorpay.js"></script>
   <script src="/js/shell.js"></script>
   <script>
     let menuItems = [];
@@ -382,15 +383,37 @@
       if (!cafeOrder.length) return;
 
       const tableChoice = document.getElementById('memberOrderTable').value;
-      const payload = {
-        department: 'bar',
-        channel: 'counter',
-        table_no: tableChoice !== 'Takeaway' ? tableChoice : null,
-        payment_method: 'online',
-        items: cafeOrder.map(i => ({ product_id: i.id, quantity: i.qty }))
-      };
+      const subtotal = cafeOrder.reduce((sum, i) => sum + (i.price * i.qty), 0);
+      const discountAmount = (subtotal * memberDiscount) / 100;
+      const total = Math.max(0, subtotal - discountAmount);
+
+      const sendBtn = document.getElementById('sendOrderBtn');
+      sendBtn.disabled = true;
+      sendBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Processing...';
 
       try {
+        if (total > 0) {
+          ui.toast('Opening Razorpay payment gateway...', 'info');
+          await RazorpayHelper.openCheckout({
+            amount: total,
+            name: 'The Champions Club Cafe & Bar',
+            description: `Food & Beverage Order (${cafeOrder.length} items)`,
+            source: 'bar',
+            notes: {
+              table_no: tableChoice,
+              items_count: String(cafeOrder.length)
+            }
+          });
+        }
+
+        const payload = {
+          department: 'bar',
+          channel: 'counter',
+          table_no: tableChoice !== 'Takeaway' ? tableChoice : null,
+          payment_method: 'razorpay',
+          items: cafeOrder.map(i => ({ product_id: i.id, quantity: i.qty }))
+        };
+
         const res = await api.post('/api/orders', payload);
         ui.toast(`Order placed & sent to kitchen! Order Code: ${res.data.order_code}`, 'success');
         cafeOrder = [];
@@ -398,6 +421,9 @@
         bootstrap.Offcanvas.getInstance(document.getElementById('cafeOrderDrawer')).hide();
       } catch (err) {
         ui.toast(err.message || 'Order submission failed', 'error');
+      } finally {
+        sendBtn.disabled = false;
+        sendBtn.innerHTML = '<i class="bi bi-send-check me-1"></i> Confirm &amp; Send to Kitchen';
       }
     }
   </script>

@@ -677,6 +677,7 @@
   <script src="/js/utils.js"></script>
   <script src="/js/ui.js"></script>
   <script src="/js/validators.js"></script>
+  <script src="/js/razorpay.js"></script>
   <script src="/js/shell.js"></script>
   <script>
     let cafeProducts = [];
@@ -909,18 +910,43 @@
       }
 
       const memberId = document.getElementById('cafeMemberSelect').value || null;
-      const payload = {
-        department: 'bar',
-        channel: 'counter',
-        table_no: selectedTable !== 'Takeaway' ? selectedTable : null,
-        member_id: memberId,
-        payment_method: paymentMethod,
-        items: cafeCart.map(i => ({ product_id: i.id, quantity: i.qty }))
-      };
+      const selectedMember = membersList.find(m => m.id == memberId);
+      const discountPercent = selectedMember ? (Number(selectedMember.bar_discount_pct) || 0) : 0;
+      const subtotal = cafeCart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+      const discountAmount = (subtotal * discountPercent) / 100;
+      const total = Math.max(0, subtotal - discountAmount);
 
       try {
+        if ((paymentMethod === 'upi' || paymentMethod === 'card') && total > 0) {
+          ui.toast('Opening Razorpay payment gateway...', 'info');
+          await RazorpayHelper.openCheckout({
+            amount: total,
+            name: 'The Champions Club Cafe & Bar POS',
+            description: `Table ${selectedTable} Sale (${cafeCart.length} items)`,
+            source: 'bar',
+            prefill: {
+              name: selectedMember ? selectedMember.full_name : 'Customer',
+              email: selectedMember ? selectedMember.email : '',
+              contact: selectedMember ? selectedMember.phone : ''
+            },
+            notes: {
+              table_no: selectedTable,
+              payment_method: paymentMethod
+            }
+          });
+        }
+
+        const payload = {
+          department: 'bar',
+          channel: 'counter',
+          table_no: selectedTable !== 'Takeaway' ? selectedTable : null,
+          member_id: memberId,
+          payment_method: paymentMethod === 'cash' ? 'cash' : 'razorpay',
+          items: cafeCart.map(i => ({ product_id: i.id, quantity: i.qty }))
+        };
+
         const res = await api.post('/api/orders', payload);
-        ui.toast(`Order placed & sent to kitchen! Order: ${res.data.order_code}`, 'success');
+        ui.toast(`Order placed & payment received! Order: ${res.data.order_code}`, 'success');
         clearCafeCart();
         loadCafeProducts();
         loadKitchenOrders();

@@ -236,22 +236,38 @@
           data: {
             labels: trendLabels,
             datasets: [{
-              label: 'Daily Revenue (₹)',
+              label: 'Daily Revenue',
               data: trendValues,
               borderColor: '#0F766E',
               backgroundColor: 'rgba(15, 118, 110, 0.08)',
               fill: true,
               tension: 0.35,
               pointRadius: 3,
-              pointHoverRadius: 6
+              pointHoverRadius: 6,
+              pointBackgroundColor: '#0F766E'
             }]
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: function(ctx) {
+                    return `Revenue: ₹${Number(ctx.parsed.y || 0).toLocaleString('en-IN')}`;
+                  }
+                }
+              }
+            },
             scales: {
-              y: { beginAtZero: true, grid: { color: '#E5E9ED' } },
+              y: {
+                beginAtZero: true,
+                grid: { color: '#E5E9ED' },
+                ticks: {
+                  callback: function(val) { return `₹${Number(val).toLocaleString('en-IN')}`; }
+                }
+              },
               x: { grid: { display: false } }
             }
           }
@@ -259,25 +275,40 @@
 
         // Render Revenue by Source Chart
         const sourceCtx = document.getElementById('sourceChart').getContext('2d');
-        const sourceLabels = (data.revBySource || []).map(s => s.source.toUpperCase());
-        const sourceValues = (data.revBySource || []).map(s => Number(s.total));
+        const sourceLabels = (data.revBySource && data.revBySource.length) 
+          ? data.revBySource.map(s => (s.source || '').toUpperCase()) 
+          : ['MEMBERSHIP', 'COURTS', 'PRO SHOP', 'CAFE'];
+        const sourceValues = (data.revBySource && data.revBySource.length) 
+          ? data.revBySource.map(s => Number(s.total)) 
+          : [0, 0, 0, 0];
 
         if (sourceChartInstance) sourceChartInstance.destroy();
         sourceChartInstance = new Chart(sourceCtx, {
           type: 'doughnut',
           data: {
-            labels: sourceLabels.length ? sourceLabels : ['No data'],
+            labels: sourceLabels,
             datasets: [{
-              data: sourceValues.length ? sourceValues : [1],
-              backgroundColor: ['#0F766E', '#2F80ED', '#E8A317', '#2E9E5B', '#8B5CF6']
+              data: sourceValues.some(v => v > 0) ? sourceValues : [1, 0, 0, 0],
+              backgroundColor: ['#0F766E', '#2F80ED', '#E8A317', '#2E9E5B', '#8B5CF6'],
+              borderWidth: 2,
+              borderColor: '#ffffff'
             }]
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-              legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }
-            }
+              legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+              tooltip: {
+                callbacks: {
+                  label: function(ctx) {
+                    const val = ctx.dataset.data[ctx.dataIndex];
+                    return ` ${ctx.label}: ₹${Number(val).toLocaleString('en-IN')}`;
+                  }
+                }
+              }
+            },
+            cutout: '65%'
           }
         });
 

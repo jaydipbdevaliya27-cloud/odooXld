@@ -215,6 +215,7 @@
   <script src="/js/api.js"></script>
   <script src="/js/utils.js"></script>
   <script src="/js/ui.js"></script>
+  <script src="/js/razorpay.js"></script>
   <script src="/js/shell.js"></script>
   <script>
     let productsList = [];
@@ -440,23 +441,48 @@
         return;
       }
 
-      const payload = {
-        department: 'shop',
-        channel: 'online',
-        payment_method: 'online',
-        delivery_address: isDelivery ? address : undefined,
-        items: cart.map(i => ({ product_id: i.id, quantity: i.qty }))
-      };
+      const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+      const discountAmount = (subtotal * memberPerkDiscount) / 100;
+      const total = Math.max(0, subtotal - discountAmount);
+
+      const checkoutBtn = document.getElementById('checkoutBtn');
+      checkoutBtn.disabled = true;
+      checkoutBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Processing Order...';
 
       try {
+        if (total > 0) {
+          ui.toast('Opening Razorpay payment gateway...', 'info');
+          await RazorpayHelper.openCheckout({
+            amount: total,
+            name: 'The Champions Club Pro Shop',
+            description: `Order: ${cart.length} item(s)`,
+            source: 'shop',
+            notes: {
+              fulfilment: isDelivery ? 'delivery' : 'pickup',
+              items_count: String(cart.length)
+            }
+          });
+        }
+
+        const payload = {
+          department: 'shop',
+          channel: 'online',
+          payment_method: 'razorpay',
+          delivery_address: isDelivery ? address : undefined,
+          items: cart.map(i => ({ product_id: i.id, quantity: i.qty }))
+        };
+
         const res = await api.post('/api/orders', payload);
-        ui.toast(`Order placed successfully! Receipt: ${res.data.order_code}`, 'success');
+        ui.toast(`Order placed & payment received! Receipt: ${res.data.order_code}`, 'success');
         cart = [];
         updateCartDrawer();
         loadProducts();
         bootstrap.Offcanvas.getInstance(document.getElementById('cartDrawer')).hide();
       } catch (err) {
         ui.toast(err.message || 'Checkout failed', 'error');
+      } finally {
+        checkoutBtn.disabled = false;
+        checkoutBtn.innerHTML = '<i class="bi bi-credit-card me-1"></i> Place Online Order';
       }
     }
   </script>

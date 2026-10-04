@@ -580,15 +580,38 @@
             
             <!-- Step 1: Staff Member & Pay Period Selection -->
             <div class="p-3 bg-light rounded border mb-4">
-              <h6 class="fw-bold mb-3 text-primary"><i class="bi bi-person-check-fill me-1"></i>Step 1: Staff Member & Period</h6>
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0 text-primary"><i class="bi bi-person-check-fill me-1"></i>Step 1: Staff Member & Period</h6>
+                <div class="btn-group btn-group-sm" role="group">
+                  <input type="radio" class="btn-check" name="payrollMode" id="payrollModeSingle" value="single" checked onchange="togglePayrollStaffMode()">
+                  <label class="btn btn-outline-primary" for="payrollModeSingle"><i class="bi bi-person"></i> Single Staff</label>
+                  <input type="radio" class="btn-check" name="payrollMode" id="payrollModeMulti" value="multi" onchange="togglePayrollStaffMode()">
+                  <label class="btn btn-outline-primary" for="payrollModeMulti"><i class="bi bi-people-fill"></i> Multiple Staff (Batch)</label>
+                </div>
+              </div>
+
               <div class="row g-3">
-                <div class="col-md-6">
+                <!-- Single Staff Selection -->
+                <div class="col-md-6" id="singleStaffSelectWrap">
                   <label class="form-label fw-semibold">Select Staff Member *</label>
-                  <select id="payrollStaffSelect" class="form-select" onchange="onPayrollStaffSelected()" required>
+                  <select id="payrollStaffSelect" class="form-select" onchange="onPayrollStaffSelected()">
                     <option value="">-- Choose staff member --</option>
                   </select>
-                  <small class="text-muted" id="selectedStaffInfo">Selecting a member will auto-fill standard salary profile</small>
+                  <small class="text-muted d-block mt-1" id="selectedStaffInfo">Selecting a member will auto-fill standard salary profile</small>
                 </div>
+
+                <!-- Multi Staff Checklist Selection -->
+                <div class="col-md-6 d-none" id="multiStaffSelectWrap">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label class="form-label fw-semibold mb-0">Select Staff Members *</label>
+                    <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none fw-bold" onclick="toggleSelectAllStaffPayroll()">Select All</button>
+                  </div>
+                  <div class="border rounded bg-white p-2" style="max-height: 120px; overflow-y: auto;" id="multiStaffChecklist">
+                    <!-- Populated dynamically -->
+                  </div>
+                  <small class="text-primary fw-semibold d-block mt-1" id="multiStaffSelectedCount">0 staff members selected</small>
+                </div>
+
                 <div class="col-md-3">
                   <label class="form-label fw-semibold">Pay Period Month *</label>
                   <select id="payrollMonthSelect" class="form-select" required onchange="recalculatePayrollLive()">
@@ -1391,9 +1414,64 @@
       });
     }
 
+    function togglePayrollStaffMode() {
+      const isMulti = document.getElementById('payrollModeMulti').checked;
+      const singleWrap = document.getElementById('singleStaffSelectWrap');
+      const multiWrap = document.getElementById('multiStaffSelectWrap');
+      const submitBtn = document.getElementById('btnSubmitPayroll');
+
+      if (isMulti) {
+        singleWrap.classList.add('d-none');
+        multiWrap.classList.remove('d-none');
+        renderMultiStaffChecklist();
+        submitBtn.innerHTML = '<i class="bi bi-people-fill me-1"></i> Generate Payslips for Selected Staff';
+      } else {
+        singleWrap.classList.remove('d-none');
+        multiWrap.classList.add('d-none');
+        submitBtn.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Pay & Generate Payslip';
+      }
+    }
+
+    function renderMultiStaffChecklist() {
+      const container = document.getElementById('multiStaffChecklist');
+      if (!STAFF_CACHE || !STAFF_CACHE.length) {
+        container.innerHTML = '<div class="text-muted small">No active staff members found.</div>';
+        return;
+      }
+
+      container.innerHTML = STAFF_CACHE.map(s => `
+        <div class="form-check py-1 border-bottom">
+          <input class="form-check-input staff-select-checkbox" type="checkbox" value="${s.id}" id="staffCheck_${s.id}" onchange="updateMultiStaffSelectedCount()">
+          <label class="form-check-label d-flex justify-content-between align-items-center w-100 small" for="staffCheck_${s.id}">
+            <span class="fw-semibold text-dark">${utils.escapeHtml(s.full_name)}</span>
+            <span class="badge bg-light text-dark border ms-2">${utils.escapeHtml((s.assigned_area || 'general').toUpperCase())}</span>
+          </label>
+        </div>
+      `).join('');
+
+      updateMultiStaffSelectedCount();
+    }
+
+    function toggleSelectAllStaffPayroll() {
+      const checkboxes = document.querySelectorAll('.staff-select-checkbox');
+      const anyUnchecked = Array.from(checkboxes).some(cb => !cb.checked);
+      checkboxes.forEach(cb => { cb.checked = anyUnchecked; });
+      updateMultiStaffSelectedCount();
+    }
+
+    function updateMultiStaffSelectedCount() {
+      const count = document.querySelectorAll('.staff-select-checkbox:checked').length;
+      const countEl = document.getElementById('multiStaffSelectedCount');
+      if (countEl) {
+        countEl.textContent = `${count} of ${STAFF_CACHE.length} staff members selected`;
+      }
+    }
+
     function openCreatePayrollModal() {
       populatePayrollStaffDropdown();
       document.getElementById('createPayrollForm').reset();
+      document.getElementById('payrollModeSingle').checked = true;
+      togglePayrollStaffMode();
 
       // Set default Month & Year to current date
       const date = new Date();
@@ -1478,13 +1556,27 @@
     }
 
     async function handleCreatePayslip() {
-      const staffId = document.getElementById('payrollStaffSelect').value;
-      if (!staffId) {
-        ui.showToast('Please select a staff member.', 'danger');
-        return;
+      const isMulti = document.getElementById('payrollModeMulti').checked;
+      let targetUserIds = [];
+      let staff = null;
+
+      if (isMulti) {
+        const checkedBoxes = document.querySelectorAll('.staff-select-checkbox:checked');
+        targetUserIds = Array.from(checkedBoxes).map(cb => parseInt(cb.value, 10));
+        if (!targetUserIds.length) {
+          ui.showToast('Please select at least one staff member from the list.', 'danger');
+          return;
+        }
+      } else {
+        const staffId = document.getElementById('payrollStaffSelect').value;
+        if (!staffId) {
+          ui.showToast('Please select a staff member.', 'danger');
+          return;
+        }
+        targetUserIds = [parseInt(staffId, 10)];
+        staff = STAFF_CACHE.find(s => s.id == staffId);
       }
 
-      const staff = STAFF_CACHE.find(s => s.id == staffId);
       const month = document.getElementById('payrollMonthSelect').value;
       const year = parseInt(document.getElementById('payrollYearSelect').value, 10);
 
@@ -1506,7 +1598,8 @@
       const notes = document.getElementById('payrollNotes').value.trim();
 
       const payload = {
-        user_id: staffId,
+        user_ids: isMulti ? targetUserIds : undefined,
+        user_id: !isMulti ? targetUserIds[0] : undefined,
         staff_name: staff ? staff.full_name : 'Staff Member',
         staff_email: staff ? staff.email : '',
         assigned_area: staff ? staff.assigned_area : 'general',
@@ -1530,24 +1623,27 @@
 
       const submitBtn = document.getElementById('btnSubmitPayroll');
       submitBtn.disabled = true;
-      submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Processing Payout...';
+      submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Processing Payroll...';
 
       try {
         const res = await api.post('/api/staff/payroll/payslips', payload);
-        ui.showToast(`Payslip ${res.payslip_code || ''} generated & recorded successfully!`, 'success');
+        const count = res.count || (res.payslips ? res.payslips.length : 1);
+        ui.showToast(`Successfully generated ${count} payslip(s) for ${month} ${year}!`, 'success');
         
         bootstrap.Modal.getInstance(document.getElementById('createPayrollModal')).hide();
         await loadPayrollData();
 
-        // Optionally open the generated slip for preview
-        if (res.id) {
+        // If single payslip generated, preview voucher
+        if (res.id && !isMulti) {
           viewPayslipModal(res.id);
         }
       } catch (err) {
-        ui.showToast(err.message || 'Failed to generate payslip', 'danger');
+        ui.showToast(err.message || 'Failed to generate payslips', 'danger');
       } finally {
         submitBtn.disabled = false;
-        submitBtn.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Pay & Generate Payslip';
+        submitBtn.innerHTML = isMulti 
+          ? '<i class="bi bi-people-fill me-1"></i> Generate Payslips for Selected Staff'
+          : '<i class="bi bi-check-circle-fill me-1"></i> Pay & Generate Payslip';
       }
     }
 

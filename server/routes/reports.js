@@ -15,11 +15,11 @@ router.get('/dashboard', requireLogin, requireRole('owner', 'staff'), async (req
   try {
     const today = todayIST();
 
-    // Today's revenue
+    // Today's revenue (supports both 'paid' and 'completed')
     const [[{ todayRevenue }]] = await db.query(
       `SELECT COALESCE(SUM(amount), 0) AS todayRevenue
        FROM payments
-       WHERE DATE(paid_at) = ? AND status = 'paid'`,
+       WHERE DATE(paid_at) = ? AND status IN ('paid', 'completed')`,
       [today]
     );
 
@@ -46,14 +46,14 @@ router.get('/dashboard', requireLogin, requireRole('owner', 'staff'), async (req
 
     // Open orders
     const [[{ openOrders }]] = await db.query(
-      "SELECT COUNT(*) AS openOrders FROM orders WHERE status = 'open'"
+      "SELECT COUNT(*) AS openOrders FROM orders WHERE status IN ('open', 'placed', 'in_progress')"
     );
 
     // Revenue by source (last 7 days)
     const [revBySource] = await db.query(
       `SELECT source, COALESCE(SUM(amount), 0) AS total, COUNT(id) AS transactions
        FROM payments
-       WHERE paid_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND status = 'paid'
+       WHERE paid_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND status IN ('paid', 'completed')
        GROUP BY source`
     );
 
@@ -61,11 +61,11 @@ router.get('/dashboard', requireLogin, requireRole('owner', 'staff'), async (req
     const [revByMethod] = await db.query(
       `SELECT method, COALESCE(SUM(amount), 0) AS total
        FROM payments
-       WHERE paid_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND status = 'paid'
+       WHERE paid_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND status IN ('paid', 'completed')
        GROUP BY method`
     );
 
-    // Expiring members list (top 5)
+    // Expiring members list (top 10)
     const [expiringList] = await db.query(
       `SELECT m.id, m.member_code, m.expiry_date,
               u.full_name, u.email, u.phone,
@@ -75,17 +75,32 @@ router.get('/dashboard', requireLogin, requireRole('owner', 'staff'), async (req
        JOIN users u ON m.user_id = u.id
        JOIN plans p ON m.plan_id = p.id
        WHERE m.status = 'active' AND m.expiry_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
-       ORDER BY m.expiry_date ASC LIMIT 5`
+       ORDER BY m.expiry_date ASC LIMIT 10`
     );
 
-    // 30-day revenue trend
-    const [trend30d] = await db.query(
-      `SELECT DATE(paid_at) AS pay_date, COALESCE(SUM(amount), 0) AS daily_total
+    // 30-day revenue trend from DB
+    const [dbTrend] = await db.query(
+      `SELECT DATE_FORMAT(paid_at, '%Y-%m-%d') AS pay_date, COALESCE(SUM(amount), 0) AS daily_total
        FROM payments
-       WHERE paid_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND status = 'paid'
-       GROUP BY DATE(paid_at)
+       WHERE paid_at >= DATE_SUB(CURDATE(), INTERVAL 29 DAY) AND status IN ('paid', 'completed')
+       GROUP BY DATE_FORMAT(paid_at, '%Y-%m-%d')
        ORDER BY pay_date ASC`
     );
+
+    // Build complete 30-day continuous timeline
+    const trendMap = {};
+    dbTrend.forEach(t => { trendMap[t.pay_date] = Number(t.daily_total); });
+
+    const trend30d = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().slice(0, 10);
+      trend30d.push({
+        pay_date: dateStr,
+        daily_total: trendMap[dateStr] || 0
+      });
+    }
 
     res.json({
       todayRevenue: Number(todayRevenue),

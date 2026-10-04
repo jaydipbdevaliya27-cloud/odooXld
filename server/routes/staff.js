@@ -276,6 +276,7 @@ router.post('/payroll/payslips', requireLogin, requireRole('owner'), async (req,
   try {
     const {
       user_id,
+      user_ids,
       staff_name,
       staff_email,
       assigned_area,
@@ -299,58 +300,79 @@ router.post('/payroll/payslips', requireLogin, requireRole('owner'), async (req,
       notes
     } = req.body;
 
-    if (!user_id || !pay_period_month || !pay_period_year || !base_salary) {
-      return res.status(400).json({ error: 'Staff member, month, year, and base salary are required.' });
+    const targetUserIds = Array.isArray(user_ids) && user_ids.length > 0 
+      ? user_ids 
+      : (user_id ? [user_id] : []);
+
+    if (!targetUserIds.length || !pay_period_month || !pay_period_year || !base_salary) {
+      return res.status(400).json({ error: 'At least one staff member, month, year, and base salary are required.' });
     }
 
-    const [userRows] = await db.query('SELECT id, full_name, email, assigned_area FROM users WHERE id = ?', [user_id]);
-    const staff = userRows.length ? userRows[0] : { id: user_id, full_name: staff_name || 'Staff Member', email: staff_email || '', assigned_area: assigned_area || 'general' };
+    const createdPayslips = [];
 
-    const base = Number(base_salary) || 0;
-    const hra = Number(hra_allowance) || 0;
-    const transport = Number(transport_allowance) || 0;
-    const bonus = Number(performance_bonus) || 0;
-    const otPay = overtime_pay ? Number(overtime_pay) : (Number(overtime_hours || 0) * Number(overtime_rate || 0));
-    const gross = Math.round((base + hra + transport + bonus + otPay) * 100) / 100;
+    for (const uid of targetUserIds) {
+      const [userRows] = await db.query('SELECT id, full_name, email, assigned_area FROM users WHERE id = ?', [uid]);
+      const staff = userRows.length ? userRows[0] : { id: uid, full_name: staff_name || 'Staff Member', email: staff_email || '', assigned_area: assigned_area || 'general' };
 
-    const pf = Number(provident_fund) || 0;
-    const pt = Number(professional_tax) || 0;
-    const tds = Number(income_tax_tds) || 0;
-    const leaveDed = unpaid_leave_deduction ? Number(unpaid_leave_deduction) : (leave_days > 0 ? Math.round(((base / 30) * Number(leave_days)) * 100) / 100 : 0);
-    const deductions = Math.round((pf + pt + tds + leaveDed) * 100) / 100;
+      const base = Number(base_salary) || 0;
+      const hra = Number(hra_allowance) || 0;
+      const transport = Number(transport_allowance) || 0;
+      const bonus = Number(performance_bonus) || 0;
+      const otPay = overtime_pay ? Number(overtime_pay) : (Number(overtime_hours || 0) * Number(overtime_rate || 0));
+      const gross = Math.round((base + hra + transport + bonus + otPay) * 100) / 100;
 
-    const net = Math.max(0, Math.round((gross - deductions) * 100) / 100);
+      const pf = Number(provident_fund) || 0;
+      const pt = Number(professional_tax) || 0;
+      const tds = Number(income_tax_tds) || 0;
+      const leaveDed = unpaid_leave_deduction ? Number(unpaid_leave_deduction) : (leave_days > 0 ? Math.round(((base / 30) * Number(leave_days)) * 100) / 100 : 0);
+      const deductions = Math.round((pf + pt + tds + leaveDed) * 100) / 100;
 
-    // Generate unique payslip code
-    const monthNum = ['january','february','march','april','may','june','july','august','september','october','november','december'].indexOf(String(pay_period_month).toLowerCase()) + 1;
-    const mStr = String(monthNum > 0 ? monthNum : 1).padStart(2, '0');
-    const payslipCode = `PAY-${pay_period_year}${mStr}-${String(staff.id).padStart(3, '0')}`;
+      const net = Math.max(0, Math.round((gross - deductions) * 100) / 100);
 
-    const payRef = payment_reference || (payment_status === 'paid' ? `UTR${pay_period_year}${Date.now().toString().slice(-6)}` : null);
-    const paidAt = payment_status === 'paid' ? new Date() : null;
+      // Generate unique payslip code
+      const monthNum = ['january','february','march','april','may','june','july','august','september','october','november','december'].indexOf(String(pay_period_month).toLowerCase()) + 1;
+      const mStr = String(monthNum > 0 ? monthNum : 1).padStart(2, '0');
+      const randomSuffix = Math.floor(100 + Math.random() * 900);
+      const payslipCode = `PAY-${pay_period_year}${mStr}-${String(staff.id).padStart(3, '0')}-${randomSuffix}`;
 
-    const [result] = await db.query(
-      `INSERT INTO payroll_payslips (
-        payslip_code, user_id, staff_name, staff_email, assigned_area,
-        pay_period_month, pay_period_year, base_salary, hra_allowance, transport_allowance,
-        performance_bonus, overtime_pay, overtime_hours, gross_salary, provident_fund,
-        professional_tax, income_tax_tds, unpaid_leave_deduction, leave_days,
-        total_deductions, net_salary, payment_method, payment_status, payment_reference, paid_at,
-        created_by_user_id, notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        payslipCode, staff.id, staff.full_name, staff.email, staff.assigned_area || 'general',
-        pay_period_month, pay_period_year, base, hra, transport,
-        bonus, otPay, Number(overtime_hours) || 0, gross, pf,
-        pt, tds, leaveDed, Number(leave_days) || 0,
-        deductions, net, payment_method, payment_status, payRef, paidAt,
-        req.session.user.id, notes || null
-      ]
-    );
+      const payRef = payment_reference || (payment_status === 'paid' ? `UTR${pay_period_year}${Date.now().toString().slice(-6)}${randomSuffix}` : null);
+      const paidAt = payment_status === 'paid' ? new Date() : null;
 
-    const [created] = await db.query('SELECT * FROM payroll_payslips WHERE id = ?', [result.insertId]);
+      const [result] = await db.query(
+        `INSERT INTO payroll_payslips (
+          payslip_code, user_id, staff_name, staff_email, assigned_area,
+          pay_period_month, pay_period_year, base_salary, hra_allowance, transport_allowance,
+          performance_bonus, overtime_pay, overtime_hours, gross_salary, provident_fund,
+          professional_tax, income_tax_tds, unpaid_leave_deduction, leave_days,
+          total_deductions, net_salary, payment_method, payment_status, payment_reference, paid_at,
+          created_by_user_id, notes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          payslipCode, staff.id, staff.full_name, staff.email, staff.assigned_area || 'general',
+          pay_period_month, pay_period_year, base, hra, transport,
+          bonus, otPay, Number(overtime_hours) || 0, gross, pf,
+          pt, tds, leaveDed, Number(leave_days) || 0,
+          deductions, net, payment_method, payment_status, payRef, paidAt,
+          req.session.user.id, notes || null
+        ]
+      );
 
-    res.status(201).json(created[0]);
+      const [created] = await db.query('SELECT * FROM payroll_payslips WHERE id = ?', [result.insertId]);
+      if (created.length) {
+        createdPayslips.push(created[0]);
+      }
+    }
+
+    if (createdPayslips.length === 1 && !Array.isArray(user_ids)) {
+      return res.status(201).json(createdPayslips[0]);
+    }
+
+    res.status(201).json({
+      ok: true,
+      count: createdPayslips.length,
+      payslips: createdPayslips,
+      ...(createdPayslips[0] || {})
+    });
   } catch (err) {
     next(err);
   }

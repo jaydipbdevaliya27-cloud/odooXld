@@ -5,11 +5,133 @@
  */
 
 const express = require('express');
+const crypto = require('crypto');
+const Razorpay = require('razorpay');
 const db = require('../db');
 const { requireLogin, requireRole } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
 
 const router = express.Router();
+
+const razorpayKeyId = process.env.RAZORPAY_KEY_ID || 'rzp_test_RhVYKPOupv38C4';
+const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET || 'YfX6poJ2kdF26aKSAIg2Ljd8';
+
+let razorpay = null;
+try {
+  razorpay = new Razorpay({
+    key_id: razorpayKeyId,
+    key_secret: razorpayKeySecret
+  });
+} catch (e) {
+  console.warn('[WARN] Razorpay initialization warning:', e.message);
+}
+
+// ── GET /api/payments/razorpay/config ──────────────────────────────────────
+router.get('/razorpay/config', (req, res) => {
+  res.json({
+    keyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_RhVYKPOupv38C4'
+  });
+});
+
+// ── POST /api/payments/razorpay/create-order ───────────────────────────────
+router.post('/razorpay/create-order', requireLogin, async (req, res, next) => {
+  try {
+    const { amount, receipt, notes = {} } = req.body;
+    const numAmount = Number(amount);
+    if (!numAmount || numAmount <= 0) {
+      return res.status(400).json({ error: 'Valid amount is required (greater than 0)' });
+    }
+
+    const amountInPaise = Math.round(numAmount * 100);
+    const receiptId = receipt || `rcpt_${Date.now().toString().slice(-8)}`;
+
+    if (!razorpay) {
+      razorpay = new Razorpay({
+        key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_RhVYKPOupv38C4',
+        key_secret: process.env.RAZORPAY_KEY_SECRET || 'YfX6poJ2kdF26aKSAIg2Ljd8'
+      });
+    }
+
+    const order = await razorpay.orders.create({
+      amount: amountInPaise,
+      currency: 'INR',
+      receipt: receiptId,
+      notes: {
+        user_id: String(req.session.user ? req.session.user.id : ''),
+        ...notes
+      }
+    });
+
+    res.json({
+      keyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_RhVYKPOupv38C4',
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      receipt: order.receipt
+    });
+  } catch (err) {
+    console.error('[RAZORPAY ERROR]', err);
+    res.status(500).json({ error: err.message || 'Failed to create Razorpay order' });
+  }
+});
+
+// ── POST /api/payments/razorpay/verify ─────────────────────────────────────
+router.post('/razorpay/verify', requireLogin, async (req, res, next) => {
+  try {
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      source = 'general',
+      reference_id = null,
+      amount = 0,
+      notes = ''
+    } = req.body;
+
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return res.status(400).json({ error: 'Missing Razorpay verification parameters' });
+    }
+
+    const secret = process.env.RAZORPAY_KEY_SECRET || 'YfX6poJ2kdF26aKSAIg2Ljd8';
+    const generated_signature = crypto
+      .createHmac('sha256', secret)
+      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+      .digest('hex');
+
+    if (generated_signature !== razorpay_signature) {
+      return res.status(400).json({ error: 'Invalid payment signature. Transaction verification failed.', code: 'PAYMENT_VERIFICATION_FAILED' });
+    }
+
+    const paymentCode = `PAY-RZP-${Date.now()}`;
+    const paidAmount = Number(amount) || 0;
+    const userId = req.session.user ? req.session.user.id : null;
+
+    const [result] = await db.query(
+      `INSERT INTO payments (
+        payment_code, source, reference_id, user_id, amount, method,
+        status, notes, paid_at
+      ) VALUES (?, ?, ?, ?, ?, 'razorpay', 'paid', ?, NOW())`,
+      [
+        paymentCode,
+        source,
+        reference_id,
+        userId,
+        paidAmount,
+        `Razorpay ID: ${razorpay_payment_id}. Order: ${razorpay_order_id}. ${notes}`.trim()
+      ]
+    );
+
+    res.json({
+      ok: true,
+      verified: true,
+      paymentId: result.insertId,
+      paymentCode,
+      razorpay_payment_id
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 
 // ── GET /api/payments ───────────────────────────────────────────────────────
 router.get('/', requireLogin, async (req, res, next) => {

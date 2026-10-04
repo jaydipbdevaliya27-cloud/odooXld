@@ -193,6 +193,7 @@
   <script src="../js/api.js"></script>
   <script src="../js/utils.js"></script>
   <script src="../js/ui.js"></script>
+  <script src="../js/razorpay.js"></script>
   <script src="../js/shell.js"></script>
   <script>
     let allCourts = [];
@@ -401,17 +402,38 @@
       }
 
       const date = document.getElementById('bookingDateInput').value;
-      const payload = {
-        court_id: selectedCourt.id,
-        booking_date: date,
-        start_time: selectedStartTime,
-        payment_method: 'online',
-        source: 'member_portal'
-      };
+      const rate = Number(selectedCourt.hourly_rate || 0);
+
+      const confirmBtn = document.getElementById('confirmBookingBtn');
+      confirmBtn.disabled = true;
+      confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Processing...';
 
       try {
+        if (rate > 0) {
+          ui.toast('Opening Razorpay payment gateway...', 'info');
+          await RazorpayHelper.openCheckout({
+            amount: rate,
+            name: 'The Champions Club',
+            description: `Court Booking: ${selectedCourt.name} (${selectedCourt.sport})`,
+            source: 'court',
+            notes: {
+              court_id: String(selectedCourt.id),
+              booking_date: date,
+              start_time: selectedStartTime
+            }
+          });
+        }
+
+        const payload = {
+          court_id: selectedCourt.id,
+          booking_date: date,
+          start_time: selectedStartTime,
+          payment_method: 'razorpay',
+          source: 'member_portal'
+        };
+
         const res = await api.post('/api/bookings', payload);
-        ui.toast('Court reservation confirmed!', 'success');
+        ui.toast('Court reservation confirmed & payment received!', 'success');
         setTimeout(() => {
           window.location.href = 'bookings.html';
         }, 1200);
@@ -421,6 +443,9 @@
           if (selectedCourt) loadSlots();
         }
         ui.toast(err.message || 'Failed to complete booking', 'error');
+      } finally {
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = '<i class="bi bi-calendar-check-fill me-2"></i>Confirm &amp; Book Court';
       }
     }
   </script>

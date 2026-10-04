@@ -158,8 +158,12 @@
   <script src="../js/api.js"></script>
   <script src="../js/utils.js"></script>
   <script src="../js/ui.js"></script>
+  <script src="../js/razorpay.js"></script>
   <script src="../js/shell.js"></script>
   <script>
+    let availablePlans = [];
+    let currentProfile = null;
+
     document.addEventListener('DOMContentLoaded', async () => {
       await loadProfile();
       await loadHistory();
@@ -172,6 +176,7 @@
         const res = await api.get('/api/members/me/profile');
         const m = res.data;
         if (!m) return;
+        currentProfile = m;
 
         document.getElementById('planCodeBadge').textContent = m.plan_code || 'GOLD';
         document.getElementById('planName').textContent = m.plan_name || 'Standard Membership';
@@ -225,10 +230,10 @@
     async function loadPlans() {
       try {
         const res = await api.get('/api/plans');
-        const plans = res.data || [];
+        availablePlans = res.data || [];
         const select = document.getElementById('renewPlanSelect');
         select.innerHTML = '<option value="">Select Plan...</option>' + 
-          plans.map(p => `<option value="${p.code}">${p.name} (${p.duration_months} mo) - ${utils.formatINR(p.membership_fee)}</option>`).join('');
+          availablePlans.map(p => `<option value="${p.code}">${p.name} (${p.duration_months} mo) - ${utils.formatINR(p.membership_fee || p.annual_fee)}</option>`).join('');
       } catch (err) {
         console.error(err);
       }
@@ -241,19 +246,52 @@
     async function handleRenew(e) {
       e.preventDefault();
       const form = e.target;
-      const payload = {
-        plan_code: form.plan_code.value,
-        payment_method: form.payment_method.value
-      };
+      const planCode = form.plan_code.value;
+      const method = form.payment_method.value;
+
+      const selectedPlan = availablePlans.find(p => p.code === planCode);
+      const planFee = selectedPlan ? Number(selectedPlan.membership_fee || selectedPlan.annual_fee || 0) : 0;
+
+      const submitBtn = form.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Processing...';
 
       try {
-        await api.post('/api/members/me/renew', payload);
+        // If online payment (UPI or Card) and fee > 0, trigger Razorpay Gateway
+        if ((method === 'upi' || method === 'card') && planFee > 0) {
+          ui.toast('Opening Razorpay payment gateway...', 'info');
+          await RazorpayHelper.openCheckout({
+            amount: planFee,
+            name: 'The Champions Club',
+            description: `Membership: ${selectedPlan ? selectedPlan.name : 'Renewal'}`,
+            source: 'membership',
+            prefill: {
+              name: currentProfile ? currentProfile.full_name : '',
+              email: currentProfile ? currentProfile.email : '',
+              contact: currentProfile ? currentProfile.phone : ''
+            },
+            notes: {
+              plan_code: planCode,
+              member_code: currentProfile ? currentProfile.member_code : ''
+            }
+          });
+        }
+
+        // Complete membership renewal
+        const res = await api.post('/api/members/me/renew', {
+          plan_code: planCode,
+          payment_method: method === 'cash' ? 'cash' : 'razorpay'
+        });
+
         ui.closeModal('renewModal');
-        ui.toast('Membership renewed successfully!', 'success');
-        loadProfile();
-        loadHistory();
+        ui.toast(res.message || 'Membership renewed successfully!', 'success');
+        await loadProfile();
+        await loadHistory();
       } catch (err) {
         ui.toast(err.message || 'Renewal failed', 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Confirm Renewal';
       }
     }
   </script>
