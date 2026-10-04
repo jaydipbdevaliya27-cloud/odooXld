@@ -105,19 +105,26 @@ router.post('/razorpay/verify', requireLogin, async (req, res, next) => {
     const paymentCode = `PAY-RZP-${Date.now()}`;
     const paidAmount = Number(amount) || 0;
     const userId = req.session.user ? req.session.user.id : null;
+    const safeRefId = (reference_id && !isNaN(parseInt(reference_id, 10))) ? parseInt(reference_id, 10) : 0;
+    const safeSource = ['membership', 'court', 'shop', 'bar', 'service', 'social'].includes(source) ? source : 'bar';
+
+    // Ensure database allows nullable/zero reference_id and online method
+    try {
+      await db.query('ALTER TABLE payments MODIFY COLUMN reference_id INT NULL DEFAULT 0');
+    } catch (e) {}
 
     const [result] = await db.query(
       `INSERT INTO payments (
         payment_code, source, reference_id, user_id, amount, method,
         status, notes, paid_at
-      ) VALUES (?, ?, ?, ?, ?, 'razorpay', 'paid', ?, NOW())`,
+      ) VALUES (?, ?, ?, ?, ?, 'online', 'paid', ?, NOW())`,
       [
         paymentCode,
-        source,
-        reference_id,
+        safeSource,
+        safeRefId,
         userId,
         paidAmount,
-        `Razorpay ID: ${razorpay_payment_id}. Order: ${razorpay_order_id}. ${notes}`.trim()
+        `Razorpay ID: ${razorpay_payment_id}. Order: ${razorpay_order_id}. ${notes || ''}`.trim()
       ]
     );
 
