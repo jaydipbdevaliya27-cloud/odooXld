@@ -62,8 +62,29 @@
         throw new Error('Failed to initialize Razorpay payment transaction.');
       }
 
+      // Auto-resolve user profile details for prefill if not provided
+      let resolvedPrefill = {
+        name: prefill.name || '',
+        email: prefill.email || '',
+        contact: prefill.contact || prefill.phone || ''
+      };
+
+      if (!resolvedPrefill.name || !resolvedPrefill.email || !resolvedPrefill.contact) {
+        try {
+          const authRes = await api.get('/api/auth/me');
+          if (authRes && authRes.user) {
+            resolvedPrefill.name = resolvedPrefill.name || authRes.user.full_name || '';
+            resolvedPrefill.email = resolvedPrefill.email || authRes.user.email || '';
+            resolvedPrefill.contact = resolvedPrefill.contact || authRes.user.phone || '';
+          }
+        } catch (e) {
+          // Fallback if not logged in
+        }
+      }
+
       // Step 2: Open Razorpay Popup
       return new Promise(function (resolve, reject) {
+        const isTestMode = (orderData.keyId || '').startsWith('rzp_test_');
         const rzpOptions = {
           key: orderData.keyId || 'rzp_test_RhVYKPOupv38C4',
           amount: orderData.amount,
@@ -71,11 +92,7 @@
           name: name,
           description: description,
           order_id: orderData.orderId,
-          prefill: {
-            name: prefill.name || '',
-            email: prefill.email || '',
-            contact: prefill.contact || prefill.phone || ''
-          },
+          prefill: resolvedPrefill,
           theme: {
             color: '#0F766E'
           },
