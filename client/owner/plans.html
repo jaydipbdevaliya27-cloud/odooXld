@@ -25,6 +25,19 @@
           </button>
         </div>
 
+        <div class="table-card-toolbar">
+          <div class="search-input-group">
+            <i class="bi bi-search search-leading-icon"></i>
+            <input type="text" id="searchInput" placeholder="Search by plan name, tier, code..." aria-label="Search plans">
+            <button type="button" class="search-clear-btn d-none" id="searchClearBtn"><i class="bi bi-x"></i></button>
+          </div>
+          <select id="statusFilter" class="form-select form-select-sm" style="width: auto;">
+            <option value="">All Statuses</option>
+            <option value="active">Active Only</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+
         <div class="table-responsive">
           <table class="cc-table" id="plansTable">
             <thead>
@@ -128,11 +141,29 @@
   <script src="/js/validators.js"></script>
   <script src="/js/shell.js"></script>
   <script>
+    let searchAbort = null;
+    let ALL_PLANS_CACHE = [];
+
     async function loadPlans() {
+      const q = document.getElementById('searchInput')?.value.trim() || '';
+      const status = document.getElementById('statusFilter')?.value || '';
       const tbody = document.querySelector('#plansTable tbody');
+
+      if (searchAbort) searchAbort.abort();
+      searchAbort = new AbortController();
+
+      tbody.innerHTML = ui.skeleton(4, 10);
+
       try {
-        const plans = await api.get('/api/plans?all=1');
-        tbody.innerHTML = plans.map(p => `
+        const plans = await api.get('/api/plans', { all: 1, q, status }, { signal: searchAbort.signal });
+        ALL_PLANS_CACHE = Array.isArray(plans) ? plans : [];
+
+        if (!ALL_PLANS_CACHE.length) {
+          tbody.innerHTML = `<tr><td colspan="10">${ui.emptyState({ headline: 'No plans found', message: 'No membership plans match your search filter.' })}</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = ALL_PLANS_CACHE.map(p => `
           <tr>
             <td>
               <code class="fw-bold text-dark fs-6">${utils.escapeHtml(p.code)}</code>
@@ -150,14 +181,39 @@
             <td class="mono">${p.max_bookings_per_day} / day</td>
             <td>${p.is_active ? utils.statusChip('active') : utils.statusChip('suspended')}</td>
             <td class="text-end">
-              <button class="icon-btn" onclick="openEditPlanModal(${p.id})" title="Edit Plan">
-                <i class="bi bi-pencil"></i>
-              </button>
+              <div class="d-flex justify-content-end gap-1">
+                <button class="icon-btn" onclick="openEditPlanModal(${p.id})" title="Edit Plan">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="icon-btn text-danger" onclick="deletePlan(${p.id}, '${utils.escapeHtml(p.name)}')" title="Delete Plan">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
             </td>
           </tr>
         `).join('');
       } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="10" class="text-center py-4 text-danger">${utils.escapeHtml(err.message)}</td></tr>`;
+        if (err.name !== 'AbortError') {
+          tbody.innerHTML = `<tr><td colspan="10" class="text-center py-4 text-danger">${utils.escapeHtml(err.message)}</td></tr>`;
+        }
+      }
+    }
+
+    async function deletePlan(id, name) {
+      const confirmed = await ui.confirmDialog({
+        title: 'Delete Membership Plan',
+        message: `Are you sure you want to delete plan "${name}"?`,
+        confirmText: 'Delete Plan',
+        danger: true
+      });
+      if (!confirmed) return;
+
+      try {
+        await api.delete(`/api/plans/${id}?force=true`);
+        ui.toast(`Plan "${name}" deleted successfully.`, 'success');
+        loadPlans();
+      } catch (err) {
+        ui.toast(err.message, 'error');
       }
     }
 
@@ -243,6 +299,15 @@
         sp.classList.add('d-none');
       }
     });
+
+    utils.attachSearch({
+      input: 'searchInput',
+      clearBtn: 'searchClearBtn',
+      onSearch: () => loadPlans(),
+      delay: 300
+    });
+
+    document.getElementById('statusFilter')?.addEventListener('change', () => loadPlans());
 
     document.addEventListener('DOMContentLoaded', loadPlans);
   </script>

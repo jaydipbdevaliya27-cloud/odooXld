@@ -3,79 +3,384 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Court Bookings – The Champions Club</title>
+  <title>Court Bookings &amp; Schedules – The Champions Club</title>
   <meta name="description" content="View court reservations, daily slot schedule matrix, maintenance blocks, and cancellation controls.">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="/css/main.css">
+  <style>
+    /* ── Schedule Matrix & Custom Styles ─────────────────────────────────── */
+    .view-switch-btn {
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+    .view-switch-btn.active {
+      background: #0f172a !important;
+      color: #ffffff !important;
+      border-color: #0f172a !important;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25);
+    }
+
+    /* Court Selector Ribbon */
+    .court-selector-ribbon {
+      display: flex;
+      gap: 0.65rem;
+      overflow-x: auto;
+      padding-bottom: 0.5rem;
+      scrollbar-width: thin;
+    }
+    .court-pill-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 0.65rem 1rem;
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px;
+      color: #334155;
+      font-size: 0.85rem;
+      text-align: left;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-width: 170px;
+    }
+    .court-pill-btn:hover {
+      border-color: #0d9488;
+      background: #f0fdfa;
+      transform: translateY(-1px);
+    }
+    .court-pill-btn.active {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: #ffffff;
+      border-color: #0f172a;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+    }
+    .court-pill-btn.active .badge-sport {
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+    }
+
+    /* Summary Stats Banner */
+    .matrix-kpi-banner {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .matrix-kpi-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      transition: transform 0.2s ease;
+    }
+    .matrix-kpi-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+    }
+    .matrix-kpi-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.35rem;
+      flex-shrink: 0;
+    }
+
+    /* Matrix Timeslot Grid */
+    .matrix-slots-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+    .matrix-slot-card {
+      border-radius: 12px;
+      border: 1.5px solid #e2e8f0;
+      background: #ffffff;
+      padding: 0.9rem 1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+      min-height: 140px;
+    }
+    .matrix-slot-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+    }
+
+    /* Slot Status: Available */
+    .matrix-slot-card.status-available {
+      border-color: #a7f3d0;
+      background: #f0fdf4;
+    }
+    .matrix-slot-card.status-available::before {
+      background: #10b981;
+    }
+
+    /* Slot Status: Booked */
+    .matrix-slot-card.status-booked {
+      border-color: #bfdbfe;
+      background: #ffffff;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.06);
+    }
+    .matrix-slot-card.status-booked::before {
+      background: #2563eb;
+    }
+
+    /* Slot Status: Completed */
+    .matrix-slot-card.status-completed {
+      border-color: #cbd5e1;
+      background: #f8fafc;
+      opacity: 0.85;
+    }
+    .matrix-slot-card.status-completed::before {
+      background: #64748b;
+    }
+
+    /* Slot Status: Blocked */
+    .matrix-slot-card.status-blocked {
+      border-color: #fecaca;
+      background: #fff5f5;
+    }
+    .matrix-slot-card.status-blocked::before {
+      background: #ef4444;
+    }
+
+    /* Slot Status: Past */
+    .matrix-slot-card.status-past {
+      border-color: #e2e8f0;
+      background: #f8fafc;
+      opacity: 0.65;
+    }
+    .matrix-slot-card.status-past::before {
+      background: #94a3b8;
+    }
+
+    .slot-time-badge {
+      font-size: 0.82rem;
+      font-weight: 700;
+      font-family: var(--font-mono, monospace);
+      letter-spacing: -0.02em;
+    }
+    .slot-status-pill {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      padding: 0.2rem 0.55rem;
+      border-radius: 9999px;
+    }
+
+    /* Legend Pills */
+    .legend-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: #64748b;
+    }
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+  </style>
 </head>
 <body>
   <div class="app-layout">
     <div id="app-shell"></div>
 
     <main class="app-main">
-      <!-- Bookings Table Card -->
+      <!-- Bookings Card Container -->
       <div class="table-card">
-        <div class="table-card-header">
+        <!-- Card Header -->
+        <div class="table-card-header flex-wrap gap-3">
           <div>
-            <h5 class="table-card-title"><i class="bi bi-calendar-check"></i> Court Bookings &amp; Schedules</h5>
-            <p class="table-card-subtitle">Real-time session reservations, participants, and court occupancy</p>
+            <h5 class="table-card-title d-flex align-items-center gap-2">
+              <i class="bi bi-calendar-check text-primary"></i> Court Bookings &amp; Schedules
+            </h5>
+            <p class="table-card-subtitle">Real-time court reservations, daily schedule matrix, and occupancy controls</p>
           </div>
-          <div class="d-flex gap-2">
+          
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <!-- View Mode Switcher -->
+            <div class="btn-group btn-group-sm p-1 bg-light rounded-3 border" role="group" aria-label="Booking View Selector">
+              <button type="button" class="btn btn-sm view-switch-btn active" id="viewListBtn" onclick="setBookingView('table')">
+                <i class="bi bi-list-ul me-1"></i> List View
+              </button>
+              <button type="button" class="btn btn-sm view-switch-btn" id="viewMatrixBtn" onclick="setBookingView('matrix')">
+                <i class="bi bi-grid-3x3-gap-fill me-1"></i> Schedule Matrix
+              </button>
+            </div>
+
+            <!-- Maintenance Block Button -->
             <button class="btn btn-outline-custom text-white border-light border-opacity-50 btn-sm" data-bs-toggle="modal" data-bs-target="#blockCourtModal">
               <i class="bi bi-shield-slash me-1"></i> Block Court Maintenance
             </button>
           </div>
         </div>
 
-        <!-- Toolbar -->
-        <div class="table-card-toolbar">
-          <div class="search-input-group">
-            <i class="bi bi-search search-leading-icon"></i>
-            <input type="text" id="searchInput" placeholder="Search by booking code, player name, court..." aria-label="Search bookings">
-            <button type="button" class="search-clear-btn d-none" id="searchClearBtn"><i class="bi bi-x"></i></button>
+        <!-- ══════════════════════════════════════════════════════════════════ -->
+        <!-- VIEW 1: TABLE LIST VIEW                                            -->
+        <!-- ══════════════════════════════════════════════════════════════════ -->
+        <div id="tableViewSection">
+          <!-- Toolbar -->
+          <div class="table-card-toolbar">
+            <div class="search-input-group">
+              <i class="bi bi-search search-leading-icon"></i>
+              <input type="text" id="searchInput" placeholder="Search by booking code, player name, court..." aria-label="Search bookings">
+              <button type="button" class="search-clear-btn d-none" id="searchClearBtn"><i class="bi bi-x"></i></button>
+            </div>
+
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <input type="date" id="dateFilter" class="form-control form-control-sm" style="width: auto;">
+              <select id="statusFilter" class="form-select form-select-sm" style="width: auto;">
+                <option value="">All Statuses</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+              <select id="sportFilter" class="form-select form-select-sm" style="width: auto;">
+                <option value="">All Sports</option>
+                <option value="tennis">Tennis</option>
+                <option value="cricket">Cricket</option>
+                <option value="badminton">Badminton</option>
+                <option value="pickleball">Pickleball</option>
+              </select>
+            </div>
           </div>
 
-          <div class="d-flex align-items-center gap-2 flex-wrap">
-            <input type="date" id="dateFilter" class="form-control form-control-sm" style="width: auto;">
-            <select id="statusFilter" class="form-select form-select-sm" style="width: auto;">
-              <option value="">All Statuses</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-            <select id="sportFilter" class="form-select form-select-sm" style="width: auto;">
-              <option value="">All Sports</option>
-              <option value="tennis">Tennis</option>
-              <option value="cricket">Cricket</option>
-              <option value="badminton">Badminton</option>
-              <option value="pickleball">Pickleball</option>
-            </select>
+          <!-- Table -->
+          <div class="table-responsive">
+            <table class="cc-table" id="bookingsTable">
+              <thead>
+                <tr>
+                  <th>Booking Code</th>
+                  <th>Player / Booker</th>
+                  <th>Court &amp; Sport</th>
+                  <th>Date &amp; Time</th>
+                  <th>Fee Charged</th>
+                  <th>Source</th>
+                  <th>Status</th>
+                  <th class="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td colspan="8" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading bookings…</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="table-footer" id="pagination"></div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════════════════════════ -->
+        <!-- VIEW 2: SCHEDULE TIMESLOT MATRIX VIEW                              -->
+        <!-- ══════════════════════════════════════════════════════════════════ -->
+        <div id="matrixViewSection" class="p-3 p-md-4 d-none">
+          <!-- 1. Court Selector Tabs Ribbon -->
+          <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <label class="form-label fw-bold small text-uppercase text-muted mb-0">Select Court Facility</label>
+              <span class="small text-muted" id="matrixCourtMeta"></span>
+            </div>
+            <div class="court-selector-ribbon" id="matrixCourtPills">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <!-- 2. Date Navigation & Legend Bar -->
+          <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 p-3 mb-3 bg-light rounded-3 border">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <button class="btn btn-sm btn-outline-secondary" onclick="shiftMatrixDate(-1)" title="Previous Day">
+                <i class="bi bi-chevron-left"></i> Prev Day
+              </button>
+              <input type="date" id="matrixDatePicker" class="form-control form-control-sm" style="width: 150px;" onchange="onMatrixDateChange(this.value)">
+              <button class="btn btn-sm btn-outline-secondary" onclick="shiftMatrixDate(1)" title="Next Day">
+                Next Day <i class="bi bi-chevron-right"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-primary" onclick="setMatrixToday()">
+                <i class="bi bi-calendar-event me-1"></i> Today
+              </button>
+              <button class="btn btn-sm btn-light border" onclick="loadCourtMatrix()" title="Refresh Schedule">
+                <i class="bi bi-arrow-clockwise"></i>
+              </button>
+            </div>
+
+            <!-- Legend -->
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+              <span class="legend-pill"><span class="legend-dot bg-success"></span> Available</span>
+              <span class="legend-pill"><span class="legend-dot bg-primary"></span> Booked</span>
+              <span class="legend-pill"><span class="legend-dot bg-danger"></span> Maintenance Block</span>
+              <span class="legend-pill"><span class="legend-dot bg-secondary"></span> Completed / Past</span>
+            </div>
+          </div>
+
+          <!-- 3. KPI Summary Banner -->
+          <div class="matrix-kpi-banner" id="matrixKpiBanner">
+            <div class="matrix-kpi-card">
+              <div class="matrix-kpi-icon bg-primary bg-opacity-10 text-primary">
+                <i class="bi bi-pie-chart"></i>
+              </div>
+              <div>
+                <div class="small text-muted">Occupancy Rate</div>
+                <div class="fs-5 fw-bold text-dark" id="kpiOccupancy">—</div>
+              </div>
+            </div>
+
+            <div class="matrix-kpi-card">
+              <div class="matrix-kpi-icon bg-info bg-opacity-10 text-info">
+                <i class="bi bi-calendar-check"></i>
+              </div>
+              <div>
+                <div class="small text-muted">Booked Sessions</div>
+                <div class="fs-5 fw-bold text-dark" id="kpiBookedSlots">—</div>
+              </div>
+            </div>
+
+            <div class="matrix-kpi-card">
+              <div class="matrix-kpi-icon bg-success bg-opacity-10 text-success">
+                <i class="bi bi-check-circle"></i>
+              </div>
+              <div>
+                <div class="small text-muted">Available Slots</div>
+                <div class="fs-5 fw-bold text-dark" id="kpiFreeSlots">—</div>
+              </div>
+            </div>
+
+            <div class="matrix-kpi-card">
+              <div class="matrix-kpi-icon bg-warning bg-opacity-10 text-warning">
+                <i class="bi bi-currency-rupee"></i>
+              </div>
+              <div>
+                <div class="small text-muted">Est. Court Revenue</div>
+                <div class="fs-5 fw-bold text-dark" id="kpiRevenue">—</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. Matrix Timeslot Grid -->
+          <div id="matrixSlotsLoading" class="text-center py-5 text-muted d-none">
+            <div class="spinner-border text-primary spinner-border-sm me-2"></div> Loading court schedule matrix…
+          </div>
+          <div class="matrix-slots-grid" id="matrixSlotsGrid">
+            <!-- Populated via JS -->
           </div>
         </div>
-
-        <!-- Table -->
-        <div class="table-responsive">
-          <table class="cc-table" id="bookingsTable">
-            <thead>
-              <tr>
-                <th>Booking Code</th>
-                <th>Player / Booker</th>
-                <th>Court &amp; Sport</th>
-                <th>Date &amp; Time</th>
-                <th>Fee Charged</th>
-                <th>Source</th>
-                <th>Status</th>
-                <th class="text-end">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td colspan="8" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading bookings…</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="table-footer" id="pagination"></div>
       </div>
     </main>
   </div>
@@ -112,7 +417,7 @@
             </div>
             <div class="mb-3">
               <label class="form-label" for="blk_reason">Maintenance Reason *</label>
-              <textarea id="blk_reason" name="reason" class="form-control" rows="2" placeholder="e.g. Surface recoating and net repair" required></textarea>
+              <textarea id="blk_reason" name="reason" class="form-control" rows="2" placeholder="e.g. Surface recoating, floodlight repair, or net replacement" required></textarea>
             </div>
             <div id="blockErr" class="alert alert-danger d-none small py-2"></div>
           </form>
@@ -137,15 +442,258 @@
   <script>
     let searchAbort = null;
     let courts = [];
+    let currentView = 'table';
+    let selectedMatrixCourtId = 1;
+    let selectedMatrixDate = utils.todayIST();
 
+    // ── Load Courts for Block Modal & Matrix Ribbon ───────────────────────────
     async function loadCourts() {
       try {
         courts = await api.get('/api/courts');
         const sel = document.getElementById('blk_court');
-        sel.innerHTML = courts.map(c => `<option value="${c.id}">${utils.escapeHtml(c.name)} (${c.sport.toUpperCase()})</option>`).join('');
-      } catch (e) {}
+        if (sel) {
+          sel.innerHTML = courts.map(c => `<option value="${c.id}">${utils.escapeHtml(c.name)} (${c.sport.toUpperCase()})</option>`).join('');
+        }
+        renderMatrixCourtPills();
+      } catch (e) {
+        console.error('Failed to load courts', e);
+      }
     }
 
+    // ── Switch Between Table View & Schedule Matrix View ──────────────────────
+    function setBookingView(view) {
+      currentView = view;
+      const tableSec = document.getElementById('tableViewSection');
+      const matrixSec = document.getElementById('matrixViewSection');
+      const tableBtn = document.getElementById('viewListBtn');
+      const matrixBtn = document.getElementById('viewMatrixBtn');
+
+      if (view === 'matrix') {
+        tableSec.classList.add('d-none');
+        matrixSec.classList.remove('d-none');
+        tableBtn.classList.remove('active');
+        matrixBtn.classList.add('active');
+        loadCourtMatrix();
+      } else {
+        matrixSec.classList.add('d-none');
+        tableSec.classList.remove('d-none');
+        matrixBtn.classList.remove('active');
+        tableBtn.classList.add('active');
+        loadBookings(1);
+      }
+    }
+
+    // ── Render Court Selector Pills in Matrix View ────────────────────────────
+    function renderMatrixCourtPills() {
+      const container = document.getElementById('matrixCourtPills');
+      if (!container || !courts.length) return;
+
+      container.innerHTML = courts.map(c => {
+        const isActive = c.id === selectedMatrixCourtId;
+        const sportIcon = c.sport === 'tennis' ? 'bi-circle' : c.sport === 'cricket' ? 'bi-shield-shaded' : 'bi-activity';
+        return `
+          <button type="button" class="court-pill-btn ${isActive ? 'active' : ''}" onclick="selectMatrixCourt(${c.id})">
+            <div class="d-flex align-items-center gap-1 w-100 justify-content-between mb-1">
+              <span class="fw-bold">${utils.escapeHtml(c.name)}</span>
+              <span class="badge ${isActive ? 'badge-sport' : 'bg-light text-dark'} text-capitalize small">${c.sport}</span>
+            </div>
+            <div class="small ${isActive ? 'text-light opacity-75' : 'text-muted'}">
+              ${c.surface_type ? utils.escapeHtml(c.surface_type) : ''} · ₹${c.base_price_per_hour}/hr
+            </div>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function selectMatrixCourt(courtId) {
+      selectedMatrixCourtId = courtId;
+      renderMatrixCourtPills();
+      loadCourtMatrix();
+    }
+
+    function shiftMatrixDate(days) {
+      const cur = new Date(selectedMatrixDate + 'T00:00:00');
+      cur.setDate(cur.getDate() + days);
+      const y = cur.getFullYear();
+      const m = String(cur.getMonth() + 1).padStart(2, '0');
+      const d = String(cur.getDate()).padStart(2, '0');
+      selectedMatrixDate = `${y}-${m}-${d}`;
+      document.getElementById('matrixDatePicker').value = selectedMatrixDate;
+      loadCourtMatrix();
+    }
+
+    function setMatrixToday() {
+      selectedMatrixDate = utils.todayIST();
+      document.getElementById('matrixDatePicker').value = selectedMatrixDate;
+      loadCourtMatrix();
+    }
+
+    function onMatrixDateChange(val) {
+      if (!val) return;
+      selectedMatrixDate = val;
+      loadCourtMatrix();
+    }
+
+    // ── Fetch & Render Court Timeslot Schedule Matrix ────────────────────────
+    async function loadCourtMatrix(courtId = selectedMatrixCourtId, dateStr = selectedMatrixDate) {
+      const loading = document.getElementById('matrixSlotsLoading');
+      const grid = document.getElementById('matrixSlotsGrid');
+      const kpiOccupancy = document.getElementById('kpiOccupancy');
+      const kpiBooked = document.getElementById('kpiBookedSlots');
+      const kpiFree = document.getElementById('kpiFreeSlots');
+      const kpiRevenue = document.getElementById('kpiRevenue');
+      const courtMeta = document.getElementById('matrixCourtMeta');
+
+      loading.classList.remove('d-none');
+      grid.innerHTML = '';
+
+      try {
+        const res = await api.get('/api/bookings/court-matrix', {
+          court_id: courtId,
+          date: dateStr
+        });
+
+        const court = res.court || {};
+        const summary = res.summary || {};
+        const matrix = res.matrix || [];
+
+        // Update Court Meta & Header
+        if (courtMeta) {
+          courtMeta.textContent = `${court.name} · ${court.sport?.toUpperCase()} · Base: ₹${court.base_price_per_hour}/hr`;
+        }
+
+        // Update KPIs
+        if (kpiOccupancy) kpiOccupancy.textContent = `${summary.occupancy_rate || 0}%`;
+        if (kpiBooked) kpiBooked.textContent = `${summary.booked_slots || 0} / ${summary.total_slots || 32} Slots`;
+        if (kpiFree) kpiFree.textContent = `${summary.available_slots || 0} Free Slots`;
+        if (kpiRevenue) kpiRevenue.textContent = utils.formatINR(summary.revenue_today || 0);
+
+        if (!matrix.length) {
+          grid.innerHTML = `<div class="col-12 text-center py-5 text-muted">${ui.emptyState({ headline: 'No slots available', message: 'No time slots generated for this date.' })}</div>`;
+          return;
+        }
+
+        grid.innerHTML = matrix.map(slot => {
+          const status = slot.status; // 'available', 'booked', 'completed', 'blocked', 'past'
+          const b = slot.booking;
+          const blk = slot.block;
+
+          let statusBadge = '';
+          let bodyContent = '';
+          let footerActions = '';
+
+          if (status === 'available') {
+            statusBadge = `<span class="slot-status-pill bg-success text-white">Available</span>`;
+            bodyContent = `
+              <div class="my-2">
+                <div class="text-success fw-semibold small"><i class="bi bi-check-circle me-1"></i> Open for reservation</div>
+                <div class="small text-muted">Standard rate: ₹${court.base_price_per_hour / 2}/slot</div>
+              </div>
+            `;
+            footerActions = `
+              <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                <span class="badge bg-light text-success border border-success border-opacity-25">Ready</span>
+                <button class="btn btn-xs btn-outline-secondary py-0 px-2" style="font-size:0.75rem;" onclick="prefillBlockModal(${court.id}, '${slot.start_time}', '${slot.end_time}')" title="Block for maintenance">
+                  <i class="bi bi-shield-slash"></i> Block
+                </button>
+              </div>
+            `;
+          } else if (status === 'booked' || status === 'completed') {
+            const isComp = status === 'completed';
+            statusBadge = isComp 
+              ? `<span class="slot-status-pill bg-secondary text-white">Completed</span>`
+              : `<span class="slot-status-pill bg-primary text-white">Booked</span>`;
+            
+            bodyContent = `
+              <div class="my-2">
+                <div class="d-flex align-items-center justify-content-between">
+                  <strong class="text-dark text-truncate" style="max-width: 170px;">${utils.escapeHtml(b?.player_name || 'Booked Member')}</strong>
+                  ${b?.member_code ? `<span class="badge bg-light text-dark border">${utils.escapeHtml(b.member_code)}</span>` : '<span class="badge bg-secondary">Guest</span>'}
+                </div>
+                <div class="d-flex align-items-center justify-content-between small mt-1">
+                  <span class="mono text-muted small">${utils.escapeHtml(b?.booking_code || '')}</span>
+                  <span class="mono fw-bold text-dark">${utils.formatINR(b?.price_charged || 0)}</span>
+                </div>
+                ${b?.discount_pct > 0 ? `<div class="small text-success mt-0">${b.discount_pct}% plan disc. applied</div>` : ''}
+              </div>
+            `;
+
+            footerActions = `
+              <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                <span class="small text-muted text-capitalize" style="font-size:0.75rem;"><i class="bi bi-person-badge me-1"></i>${utils.escapeHtml(b?.source?.replace(/_/g, ' ') || 'direct')}</span>
+                <div class="d-flex gap-1">
+                  ${!isComp ? `
+                    <button class="btn btn-xs btn-outline-warning py-0 px-1" style="font-size:0.75rem;" onclick="cancelBookingAction(${b?.id}, '${utils.escapeHtml(b?.booking_code || '')}')" title="Cancel Booking">
+                      <i class="bi bi-calendar-x"></i>
+                    </button>
+                  ` : ''}
+                  <button class="btn btn-xs btn-outline-danger py-0 px-1" style="font-size:0.75rem;" onclick="deleteBookingAction(${b?.id}, '${utils.escapeHtml(b?.booking_code || '')}')" title="Delete Booking Permanently">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </div>
+            `;
+          } else if (status === 'blocked') {
+            statusBadge = `<span class="slot-status-pill bg-danger text-white"><i class="bi bi-shield-slash me-1"></i>Blocked</span>`;
+            bodyContent = `
+              <div class="my-2">
+                <div class="text-danger fw-semibold small"><i class="bi bi-tools me-1"></i> Maintenance Schedule</div>
+                <div class="small text-muted text-truncate" title="${utils.escapeHtml(blk?.reason || 'Maintenance')}">
+                  ${utils.escapeHtml(blk?.reason || 'Facility Maintenance')}
+                </div>
+              </div>
+            `;
+            footerActions = `
+              <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                <span class="badge bg-danger bg-opacity-10 text-danger" style="font-size:0.72rem;">Unavailable</span>
+                <span class="small text-muted mono" style="font-size:0.75rem;">${blk?.start_time?.slice(0,5)}–${blk?.end_time?.slice(0,5)}</span>
+              </div>
+            `;
+          } else if (status === 'past') {
+            statusBadge = `<span class="slot-status-pill bg-secondary bg-opacity-50 text-dark">Past</span>`;
+            bodyContent = `
+              <div class="my-2">
+                <div class="text-muted small"><i class="bi bi-clock-history me-1"></i> Time slot elapsed</div>
+                <div class="small text-muted">Unreserved historical slot</div>
+              </div>
+            `;
+            footerActions = `
+              <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                <span class="small text-muted" style="font-size:0.75rem;">Ended</span>
+              </div>
+            `;
+          }
+
+          return `
+            <div class="matrix-slot-card status-${status}">
+              <div class="d-flex justify-content-between align-items-center pb-1">
+                <div class="slot-time-badge text-dark">
+                  <i class="bi bi-clock me-1 text-muted"></i>${slot.start_time} – ${slot.end_time}
+                </div>
+                ${statusBadge}
+              </div>
+              ${bodyContent}
+              ${footerActions}
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        grid.innerHTML = `<div class="col-12 alert alert-danger">${utils.escapeHtml(err.message)}</div>`;
+      } finally {
+        loading.classList.add('d-none');
+      }
+    }
+
+    function prefillBlockModal(courtId, startTime, endTime) {
+      document.getElementById('blk_court').value = courtId;
+      document.getElementById('blk_date').value = selectedMatrixDate;
+      document.getElementById('blk_start').value = startTime;
+      document.getElementById('blk_end').value = endTime;
+      const modal = new bootstrap.Modal(document.getElementById('blockCourtModal'));
+      modal.show();
+    }
+
+    // ── Load Bookings for Table List View ─────────────────────────────────────
     async function loadBookings(page = 1) {
       const q = document.getElementById('searchInput').value.trim();
       const date = document.getElementById('dateFilter').value;
@@ -182,7 +730,7 @@
               <td>
                 <div>
                   <strong class="text-dark">${utils.escapeHtml(b.player_name)}</strong>
-                  ${b.member_code ? `<span class="badge bg-light text-dark ms-1">${utils.escapeHtml(b.member_code)}</span>` : '<span class="badge bg-secondary ms-1">Guest</span>'}
+                  ${b.member_code ? `<span class="badge bg-light text-dark ms-1 border">${utils.escapeHtml(b.member_code)}</span>` : '<span class="badge bg-secondary ms-1">Guest</span>'}
                 </div>
                 <div class="small text-muted">${utils.escapeHtml(b.player_phone || '—')}</div>
               </td>
@@ -203,11 +751,16 @@
               </td>
               <td>${utils.statusChip(b.status)}</td>
               <td class="text-end">
-                ${canCancel ? `
-                  <button class="btn btn-sm btn-outline-danger" onclick="cancelBookingAction(${b.id}, '${utils.escapeHtml(b.booking_code)}')" title="Cancel Booking">
-                    <i class="bi bi-calendar-x"></i> Cancel
+                <div class="d-flex justify-content-end gap-1">
+                  ${canCancel ? `
+                    <button class="btn btn-sm btn-outline-warning" onclick="cancelBookingAction(${b.id}, '${utils.escapeHtml(b.booking_code)}')" title="Cancel Booking">
+                      <i class="bi bi-calendar-x"></i> Cancel
+                    </button>
+                  ` : ''}
+                  <button class="btn btn-sm btn-outline-danger" onclick="deleteBookingAction(${b.id}, '${utils.escapeHtml(b.booking_code)}')" title="Delete Booking Permanently">
+                    <i class="bi bi-trash"></i>
                   </button>
-                ` : `<span class="text-muted small">—</span>`}
+                </div>
               </td>
             </tr>
           `;
@@ -239,13 +792,39 @@
       try {
         await api.post(`/api/bookings/${id}/cancel`, { cancellation_reason: 'Owner cancelled' });
         ui.toast('Booking cancelled and slot released successfully.', 'success');
-        loadBookings(1);
+        if (currentView === 'matrix') {
+          loadCourtMatrix();
+        } else {
+          loadBookings(1);
+        }
       } catch (err) {
         ui.toast(err.message, 'error');
       }
     }
 
-    // Block court handler
+    async function deleteBookingAction(id, code) {
+      const confirmed = await ui.confirmDialog({
+        title: 'Delete Booking Permanently',
+        message: `Are you sure you want to permanently remove booking ${code} and associated slot reservations?`,
+        confirmText: 'Delete Booking',
+        danger: true
+      });
+      if (!confirmed) return;
+
+      try {
+        await api.delete(`/api/bookings/${id}?force=true`);
+        ui.toast(`Booking ${code} deleted permanently.`, 'success');
+        if (currentView === 'matrix') {
+          loadCourtMatrix();
+        } else {
+          loadBookings(1);
+        }
+      } catch (err) {
+        ui.toast(err.message, 'error');
+      }
+    }
+
+    // ── Block Court Handler ───────────────────────────────────────────────────
     document.getElementById('blockSaveBtn').addEventListener('click', async () => {
       const form = document.getElementById('blockCourtForm');
       const errBox = document.getElementById('blockErr');
@@ -268,7 +847,11 @@
         ui.closeModal('blockCourtModal');
         ui.toast('Court maintenance block established successfully.', 'success');
         form.reset();
-        loadBookings(1);
+        if (currentView === 'matrix') {
+          loadCourtMatrix();
+        } else {
+          loadBookings(1);
+        }
       } catch (err) {
         errBox.textContent = err.message;
         errBox.classList.remove('d-none');
@@ -278,18 +861,12 @@
       }
     });
 
-    const searchInput = document.getElementById('searchInput');
-    const searchClearBtn = document.getElementById('searchClearBtn');
-
-    searchInput.addEventListener('input', utils.debounce((e) => {
-      searchClearBtn.classList.toggle('d-none', !e.target.value);
-      loadBookings(1);
-    }, 300));
-
-    searchClearBtn.addEventListener('click', () => {
-      searchInput.value = '';
-      searchClearBtn.classList.add('d-none');
-      loadBookings(1);
+    // ── Attach Search with Bounce Animation ───────────────────────────────────
+    utils.attachSearch({
+      input: 'searchInput',
+      clearBtn: 'searchClearBtn',
+      onSearch: () => loadBookings(1),
+      delay: 300
     });
 
     document.getElementById('dateFilter').addEventListener('change', () => loadBookings(1));
@@ -297,8 +874,27 @@
     document.getElementById('sportFilter').addEventListener('change', () => loadBookings(1));
 
     document.addEventListener('DOMContentLoaded', async () => {
+      document.getElementById('matrixDatePicker').value = selectedMatrixDate;
+      const urlParams = new URLSearchParams(window.location.search);
+      const initialQ = urlParams.get('q');
+      const initialView = urlParams.get('view');
+      const initialCourt = urlParams.get('court_id');
+
+      if (initialQ) {
+        document.getElementById('searchInput').value = initialQ;
+        document.getElementById('searchClearBtn')?.classList.remove('d-none');
+      }
+      if (initialCourt) {
+        selectedMatrixCourtId = parseInt(initialCourt, 10) || 1;
+      }
+
       await loadCourts();
-      loadBookings(1);
+
+      if (initialView === 'matrix') {
+        setBookingView('matrix');
+      } else {
+        loadBookings(1);
+      }
     });
   </script>
 </body>

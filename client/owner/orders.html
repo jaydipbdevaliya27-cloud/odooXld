@@ -140,9 +140,14 @@
             <td>${utils.statusChip(o.fulfilment_status || o.status)}</td>
             <td class="small text-muted mono">${utils.formatDateTime(o.created_at)}</td>
             <td class="text-end">
-              <button class="icon-btn" onclick="openOrderDrawer(${o.id})" title="View Order Details">
-                <i class="bi bi-eye"></i>
-              </button>
+              <div class="d-flex justify-content-end gap-1">
+                <button class="icon-btn" onclick="openOrderDrawer(${o.id})" title="View Order Details">
+                  <i class="bi bi-eye"></i>
+                </button>
+                <button class="icon-btn text-danger" onclick="deleteOrderAction(${o.id}, '${utils.escapeHtml(o.order_code)}')" title="Delete Order">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
             </td>
           </tr>
         `).join('');
@@ -158,6 +163,27 @@
         if (err.name !== 'AbortError') {
           tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-danger">${utils.escapeHtml(err.message)}</td></tr>`;
         }
+      }
+    }
+
+    async function deleteOrderAction(id, code) {
+      const confirmed = await ui.confirmDialog({
+        title: 'Delete Order',
+        message: `Are you sure you want to delete order ${code}? Any tracked inventory will be restored.`,
+        confirmText: 'Delete Order',
+        danger: true
+      });
+      if (!confirmed) return;
+
+      try {
+        await api.delete(`/api/orders/${id}?force=true`);
+        ui.toast(`Order ${code} deleted successfully.`, 'success');
+        const drawerEl = document.getElementById('orderDrawer');
+        const bsDrawer = bootstrap.Offcanvas.getInstance(drawerEl);
+        if (bsDrawer) bsDrawer.hide();
+        loadOrders(1);
+      } catch (err) {
+        ui.toast(err.message, 'error');
       }
     }
 
@@ -225,6 +251,12 @@
               </div>
             </div>
           ` : ''}
+
+          <div class="border-top pt-3 mt-3 d-flex justify-content-end">
+            <button class="btn btn-sm btn-outline-danger" onclick="deleteOrderAction(${o.id}, '${utils.escapeHtml(o.order_code)}')">
+              <i class="bi bi-trash me-1"></i> Delete Order
+            </button>
+          </div>
         `;
       } catch (err) {
         drawerBody.innerHTML = `<div class="alert alert-danger">${utils.escapeHtml(err.message)}</div>`;
@@ -242,25 +274,26 @@
       }
     }
 
-    const searchInput = document.getElementById('searchInput');
-    const searchClearBtn = document.getElementById('searchClearBtn');
-
-    searchInput.addEventListener('input', utils.debounce((e) => {
-      searchClearBtn.classList.toggle('d-none', !e.target.value);
-      loadOrders(1);
-    }, 300));
-
-    searchClearBtn.addEventListener('click', () => {
-      searchInput.value = '';
-      searchClearBtn.classList.add('d-none');
-      loadOrders(1);
+    utils.attachSearch({
+      input: 'searchInput',
+      clearBtn: 'searchClearBtn',
+      onSearch: () => loadOrders(1),
+      delay: 300
     });
 
     document.getElementById('deptFilter').addEventListener('change', () => loadOrders(1));
     document.getElementById('channelFilter').addEventListener('change', () => loadOrders(1));
     document.getElementById('statusFilter').addEventListener('change', () => loadOrders(1));
 
-    document.addEventListener('DOMContentLoaded', () => loadOrders(1));
+    document.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const initialQ = urlParams.get('q');
+      if (initialQ) {
+        document.getElementById('searchInput').value = initialQ;
+        document.getElementById('searchClearBtn')?.classList.remove('d-none');
+      }
+      loadOrders(1);
+    });
   </script>
 </body>
 </html>

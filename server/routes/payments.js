@@ -39,7 +39,7 @@ router.get('/', requireLogin, async (req, res, next) => {
       params.push(user.id);
     }
 
-    if (q && q.trim().length >= 2) {
+    if (q && q.trim()) {
       const s = `%${q.trim().replace(/[%_]/g, '\\$&')}%`;
       where += ' AND (p.payment_code LIKE ? OR u.full_name LIKE ? OR u.email LIKE ? OR p.notes LIKE ?)';
       params.push(s, s, s, s);
@@ -209,6 +209,20 @@ router.get('/export/csv', requireLogin, requireRole('owner'), async (req, res, n
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename=payments-export-${Date.now()}.csv`);
     res.send(lines.join('\r\n'));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── DELETE /api/payments/:id ────────────────────────────────────────────────
+router.delete('/:id', requireLogin, requireRole('owner'), async (req, res, next) => {
+  try {
+    const paymentId = parseInt(req.params.id, 10);
+    const [rows] = await db.query('SELECT * FROM payments WHERE id = ?', [paymentId]);
+    if (!rows.length) return res.status(404).json({ error: 'Payment record not found', code: 'NOT_FOUND' });
+
+    await db.query('DELETE FROM payments WHERE id = ? OR refund_of_id = ?', [paymentId, paymentId]);
+    res.json({ ok: true, message: 'Payment record deleted successfully' });
   } catch (err) {
     next(err);
   }

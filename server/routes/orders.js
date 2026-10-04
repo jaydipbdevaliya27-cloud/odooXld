@@ -42,7 +42,7 @@ router.get('/', requireLogin, async (req, res, next) => {
       params.push(user.id, user.member_id || 0);
     }
 
-    if (q && q.trim().length >= 2) {
+    if (q && q.trim()) {
       const s = `%${q.trim().replace(/[%_]/g, '\\$&')}%`;
       where += ' AND (o.order_code LIKE ? OR u.full_name LIKE ? OR o.guest_name LIKE ? OR o.table_no LIKE ?)';
       params.push(s, s, s, s);
@@ -212,11 +212,16 @@ router.post(
 router.put('/:id/fulfilment', requireLogin, requireRole('staff', 'owner'), async (req, res, next) => {
   try {
     const { fulfilment_status } = req.body;
-    const orderId = req.params.id;
+    const orderId = parseInt(req.params.id, 10);
 
     const allowed = ['placed', 'packed', 'ready_for_pickup', 'out_for_delivery', 'collected', 'delivered', 'cancelled'];
     if (!allowed.includes(fulfilment_status)) {
       return res.status(400).json({ error: `Invalid fulfilment status: ${fulfilment_status}` });
+    }
+
+    if (fulfilment_status === 'cancelled') {
+      await orderService.updateOrderStatus(orderId, 'cancelled', req.session.user.id);
+      return res.json({ ok: true, fulfilment_status: 'cancelled', status: 'cancelled' });
     }
 
     let extraUpdate = '';
@@ -483,5 +488,40 @@ router.post(
     }
   }
 );
+
+// ── DELETE /api/orders/:id ──────────────────────────────────────────────────
+router.delete('/:id', requireLogin, requireRole('owner', 'staff'), async (req, res, next) => {
+  try {
+    const orderId = parseInt(req.params.id, 10);
+    const force = req.query.force === 'true';
+
+    if (force && req.session.user.role === 'owner') {
+      await db.transaction(async (conn) => {
+        const [orders] = await conn.query('SELECT status FROM orders WHERE id = ?', [orderId]);
+        if (orders.length && orders[0].status !== 'cancelled') {
+          const [items] = await conn.query(
+            'SELECT oi.*, p.track_stock FROM order_items oi JOIN products p ON oi.product_id = p.id WHERE oi.order_id = ?',
+            [orderId]
+          );
+          for (const item of items) {
+            if (item.track_stock) {
+              await conn.query('UPDATE products SET stock_qty = stock_qty + ? WHERE id = ?', [item.quantity, item.product_id]);
+            }
+          }
+        }
+        await conn.query('DELETE FROM order_items WHERE order_id = ?', [orderId]);
+        await conn.query('DELETE FROM payments WHERE source IN ("shop", "bar") AND reference_id = ?', [orderId]);
+        await conn.query('DELETE FROM orders WHERE id = ?', [orderId]);
+      });
+      return res.json({ ok: true, message: 'Order permanently deleted' });
+    }
+
+    // Default: cancel order and restore stock
+    await orderService.updateOrderStatus(orderId, 'cancelled', req.session.user.id);
+    res.json({ ok: true, message: 'Order cancelled and stock restored' });
+  } catch (err) {
+    next(err);
+  }
+});
 
 module.exports = router;

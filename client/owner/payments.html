@@ -169,11 +169,16 @@
               <td>${utils.statusChip(p.status)}</td>
               <td class="mono small text-muted">${utils.formatDateTime(p.paid_at)}</td>
               <td class="text-end">
-                ${!isRefund && Number(p.amount) > 0 ? `
-                  <button class="btn btn-sm btn-outline-danger" onclick="openRefundModal(${p.id}, '${utils.escapeHtml(p.payment_code)}', ${p.amount})" title="Refund Transaction">
-                    <i class="bi bi-arrow-counterclockwise"></i> Refund
+                <div class="d-flex justify-content-end gap-1">
+                  ${!isRefund && Number(p.amount) > 0 ? `
+                    <button class="btn btn-sm btn-outline-warning" onclick="openRefundModal(${p.id}, '${utils.escapeHtml(p.payment_code)}', ${p.amount})" title="Refund Transaction">
+                      <i class="bi bi-arrow-counterclockwise"></i> Refund
+                    </button>
+                  ` : ''}
+                  <button class="btn btn-sm btn-outline-danger" onclick="deletePayment(${p.id}, '${utils.escapeHtml(p.payment_code)}')" title="Delete Payment Record">
+                    <i class="bi bi-trash"></i>
                   </button>
-                ` : `<span class="text-muted small">—</span>`}
+                </div>
               </td>
             </tr>
           `;
@@ -190,6 +195,24 @@
         if (err.name !== 'AbortError') {
           tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger">${utils.escapeHtml(err.message)}</td></tr>`;
         }
+      }
+    }
+
+    async function deletePayment(id, code) {
+      const confirmed = await ui.confirmDialog({
+        title: 'Delete Payment Record',
+        message: `Are you sure you want to delete payment record ${code}?`,
+        confirmText: 'Delete Payment',
+        danger: true
+      });
+      if (!confirmed) return;
+
+      try {
+        await api.delete(`/api/payments/${id}`);
+        ui.toast(`Payment ${code} deleted successfully.`, 'success');
+        loadPayments(1);
+      } catch (err) {
+        ui.toast(err.message, 'error');
       }
     }
 
@@ -247,25 +270,26 @@
       window.location.href = '/api/payments/export/csv';
     });
 
-    const searchInput = document.getElementById('searchInput');
-    const searchClearBtn = document.getElementById('searchClearBtn');
-
-    searchInput.addEventListener('input', utils.debounce((e) => {
-      searchClearBtn.classList.toggle('d-none', !e.target.value);
-      loadPayments(1);
-    }, 300));
-
-    searchClearBtn.addEventListener('click', () => {
-      searchInput.value = '';
-      searchClearBtn.classList.add('d-none');
-      loadPayments(1);
+    utils.attachSearch({
+      input: 'searchInput',
+      clearBtn: 'searchClearBtn',
+      onSearch: () => loadPayments(1),
+      delay: 300
     });
 
     document.getElementById('sourceFilter').addEventListener('change', () => loadPayments(1));
     document.getElementById('methodFilter').addEventListener('change', () => loadPayments(1));
     document.getElementById('statusFilter').addEventListener('change', () => loadPayments(1));
 
-    document.addEventListener('DOMContentLoaded', () => loadPayments(1));
+    document.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const initialQ = urlParams.get('q');
+      if (initialQ) {
+        document.getElementById('searchInput').value = initialQ;
+        document.getElementById('searchClearBtn')?.classList.remove('d-none');
+      }
+      loadPayments(1);
+    });
   </script>
 </body>
 </html>

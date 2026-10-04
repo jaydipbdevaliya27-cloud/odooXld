@@ -647,6 +647,7 @@ a:hover {
   transform: translateY(-50%);
   color: var(--text-muted);
   font-size: 0.9rem;
+  transition: color 0.2s var(--ease), transform 0.2s var(--ease);
 }
 
 .search-clear-btn {
@@ -659,6 +660,55 @@ a:hover {
   color: var(--text-muted);
   cursor: pointer;
   padding: 4px;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.15s ease;
+}
+.search-clear-btn:hover {
+  transform: translateY(-50%) scale(1.2);
+  color: var(--danger) !important;
+}
+
+/* ── Search Bouncing & Pulse Animations ───────────────────────────────────── */
+@keyframes searchBounce {
+  0%, 100% {
+    transform: translateY(-50%) scale(1);
+  }
+  30% {
+    transform: translateY(-65%) scale(1.22);
+  }
+  60% {
+    transform: translateY(-42%) scale(0.92);
+  }
+  80% {
+    transform: translateY(-52%) scale(1.06);
+  }
+}
+
+@keyframes searchGlowBounce {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(15, 118, 110, 0);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.22);
+    transform: scale(1.008);
+  }
+}
+
+.search-input-group.is-searching .search-leading-icon,
+.global-search-box.is-searching .global-search-icon,
+.search-input-wrap.is-searching .search-icon,
+.is-searching > .bi-search,
+.is-searching .search-leading-icon {
+  animation: searchBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) infinite alternate;
+  color: var(--accent) !important;
+}
+
+.search-input-group.is-searching input,
+.global-search-box.is-searching input,
+.search-input-wrap.is-searching input,
+input.is-searching {
+  animation: searchGlowBounce 0.8s ease-in-out infinite;
+  border-color: var(--accent) !important;
 }
 
 /* ── Table Styling ────────────────────────────────────────────────────────── */

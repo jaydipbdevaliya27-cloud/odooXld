@@ -3,132 +3,174 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cafe & Lounge - Champions Club</title>
+  <title>Cafe &amp; Sports Lounge – The Champions Club</title>
+  <meta name="description" content="Artisanal coffee, high-protein smoothies, nutrition bowls, snacks and cafeteria favorites.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="/css/main.css">
   <style>
+    /* ── Member Cafe & Lounge Cards ──────────────────────────────────────── */
     .menu-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
-      gap: 1rem;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1.5rem;
     }
     .menu-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 14px;
       overflow: hidden;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       min-width: 0;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     }
     .menu-card:hover {
-      border-color: var(--accent);
-      transform: translateY(-3px);
-      box-shadow: var(--shadow-md);
+      border-color: #0d9488;
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(13, 148, 136, 0.12);
     }
-    .menu-card-art {
-      height: 142px;
-      display: grid;
-      place-items: center;
+    .menu-card-img-wrap {
       position: relative;
-      background: linear-gradient(135deg, var(--accent-soft), var(--surface-alt));
-      color: var(--accent);
-      font-size: 2rem;
+      height: 175px;
+      background: #f8fafc;
+      overflow: hidden;
     }
-    .menu-card-art img {
-      position: absolute;
-      inset: 0;
+    .menu-card-img {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      transition: transform 0.4s ease;
     }
-    .menu-card-body { padding: 1rem; min-width: 0; }
-    .menu-card-title { min-height: 2.6em; overflow-wrap: anywhere; }
+    .menu-card:hover .menu-card-img {
+      transform: scale(1.06);
+    }
+    .menu-card-fallback {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #f0fdfa, #f1f5f9);
+      color: #0d9488;
+      font-size: 3rem;
+    }
+    .menu-card-body {
+      padding: 1.1rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .discount-pill {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #059669;
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+    }
     @media (max-width: 575.98px) {
-      .menu-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.65rem; }
-      .menu-card-art { height: 112px; }
-      .menu-card-body { padding: 0.75rem; }
+      .menu-grid { grid-template-columns: repeat(1, 1fr); gap: 1rem; }
     }
   </style>
 </head>
 <body>
-  <div id="app-shell"></div>
+  <div class="app-layout">
+    <div id="app-shell"></div>
 
-  <div class="content-container">
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-      <div>
-        <h2 class="fw-bold mb-1">Cafe & Sports Lounge</h2>
-        <p class="text-muted mb-0">Fuel your post-game recovery with nutrition shakes, artisanal coffee and meals.</p>
-      </div>
-      <button class="btn btn-outline-primary position-relative" data-bs-toggle="offcanvas" data-bs-target="#cafeOrderDrawer">
-        <i class="bi bi-cup-hot me-1"></i> My Order
-        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cafeOrderBadge" style="display:none;">0</span>
-      </button>
-    </div>
+    <main class="app-main">
+      <div class="container-fluid p-3 p-md-4">
+        <!-- Header Banner -->
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+          <div>
+            <h4 class="fw-bold mb-1 text-dark d-flex align-items-center gap-2">
+              <i class="bi bi-cup-hot text-primary"></i> Cafe &amp; Sports Lounge
+            </h4>
+            <p class="text-muted small mb-0">Post-workout protein shakes, artisan brew coffee, healthy meals &amp; snacks prepared fresh.</p>
+          </div>
+          <button class="btn btn-primary position-relative d-flex align-items-center gap-2 px-3 py-2" data-bs-toggle="offcanvas" data-bs-target="#cafeOrderDrawer">
+            <i class="bi bi-cup-straw fs-5"></i>
+            <span class="fw-semibold">My Cafe Order</span>
+            <span class="badge rounded-pill bg-danger ms-1" id="cafeOrderBadge" style="display:none;">0</span>
+          </button>
+        </div>
 
-    <!-- Filter & Search Toolbar -->
-    <div class="card border-0 shadow-sm p-3 mb-4">
-      <div class="row g-2 align-items-center">
-        <div class="col-md-7">
-          <div class="search-input-wrap">
-            <i class="bi bi-search search-icon"></i>
-            <input type="search" class="form-control" id="memberCafeSearch" placeholder="Search menu (Espresso, Protein Shake, Smoothie, Bowl...)" aria-label="Search cafe">
+        <!-- Filter & Search Toolbar -->
+        <div class="card border shadow-sm p-3 mb-4 bg-white rounded-3">
+          <div class="row g-2 align-items-center">
+            <div class="col-md-7">
+              <div class="search-input-group">
+                <i class="bi bi-search search-leading-icon"></i>
+                <input type="text" id="memberCafeSearch" placeholder="Search menu (Espresso, Whey Shake, Acai Bowl, Sandwich, Wrap...)" aria-label="Search cafe">
+                <button type="button" class="search-clear-btn d-none" id="memberCafeSearchClearBtn"><i class="bi bi-x"></i></button>
+              </div>
+            </div>
+            <div class="col-md-5">
+              <select class="form-select form-select-sm" id="memberCafeCategory">
+                <option value="">All Categories</option>
+                <option value="Beverages">Beverages &amp; Coffee</option>
+                <option value="Snacks">Snacks &amp; Bites</option>
+                <option value="Meals">Health Bowls &amp; Meals</option>
+                <option value="Protein">Protein &amp; Shakes</option>
+              </select>
+            </div>
           </div>
         </div>
-        <div class="col-md-5">
-          <select class="form-select" id="memberCafeCategory">
-            <option value="">All Categories</option>
-            <option value="Beverages">Beverages & Coffee</option>
-            <option value="Snacks">Snacks & Bites</option>
-            <option value="Meals">Health Bowls & Meals</option>
-            <option value="Protein">Protein & Shakes</option>
-          </select>
+
+        <!-- Real-Time Kitchen Live Sync Strip -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <span class="small text-muted" id="menuCount">Loading fresh menu…</span>
+          <span class="small text-success d-flex align-items-center gap-1">
+            <span class="spinner-grow spinner-grow-sm text-success" style="width: 8px; height: 8px;" role="status"></span>
+            Active kitchen connected
+          </span>
+        </div>
+
+        <!-- Menu Grid -->
+        <div class="menu-grid" id="memberMenuGrid">
+          <div class="col-12 text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading fresh items…</div>
         </div>
       </div>
-    </div>
-
-    <!-- Menu Grid -->
-    <div class="menu-grid" id="memberMenuGrid">
-      <!-- Injected via JS -->
-    </div>
+    </main>
   </div>
 
-  <!-- Cafe Order Drawer -->
-  <div class="offcanvas offcanvas-end" tabindex="-1" id="cafeOrderDrawer" style="width: 400px;">
+  <!-- Cafe Order Drawer (Offcanvas) -->
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="cafeOrderDrawer" style="width: 440px;">
     <div class="offcanvas-header border-bottom">
-      <h5 class="offcanvas-title fw-bold"><i class="bi bi-receipt me-2 text-primary"></i>Cafe Order</h5>
+      <h5 class="offcanvas-title fw-bold d-flex align-items-center gap-2"><i class="bi bi-cup-hot text-primary"></i> Cafe Order</h5>
       <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
-    <div class="offcanvas-body d-flex flex-column">
+    <div class="offcanvas-body d-flex flex-column p-3">
       <div class="flex-grow-1 overflow-y-auto" id="cafeOrderItems">
         <div class="text-center py-5 text-muted">
-          <i class="bi bi-cup-straw fs-1 d-block mb-2 text-dim"></i>
+          <i class="bi bi-cup-straw fs-1 d-block mb-2 text-secondary"></i>
           Your order is empty
         </div>
       </div>
 
       <div class="border-top pt-3 mt-auto">
         <div class="d-flex justify-content-between text-muted small mb-1">
-          <span>Subtotal</span>
-          <span id="cafeSubtotal" class="font-monospace">₹0</span>
+          <span>Menu Subtotal</span>
+          <span id="cafeSubtotal" class="mono">₹0</span>
         </div>
         <div class="d-flex justify-content-between text-success small mb-1">
-          <span>Member F&B Discount</span>
-          <span id="cafeDiscount" class="font-monospace">-₹0</span>
+          <span>Member F&amp;B Discount</span>
+          <span id="cafeDiscount" class="mono">-₹0</span>
         </div>
-        <div class="d-flex justify-content-between fw-bold fs-5 mb-3">
-          <span>Total</span>
-          <span id="cafeTotal" class="font-monospace text-primary">₹0</span>
+        <div class="d-flex justify-content-between fw-bold fs-5 mb-3 pt-1 border-top">
+          <span class="text-dark">Total Payable</span>
+          <span id="cafeTotal" class="mono text-primary">₹0</span>
         </div>
 
         <div class="mb-3">
-          <label class="form-label small fw-bold">Dine-in / Pickup Option</label>
+          <label class="form-label small fw-bold text-muted text-uppercase mb-1">Dine-in / Pickup Option</label>
           <select class="form-select form-select-sm" id="memberOrderTable">
             <option value="Takeaway">Express Takeaway Counter</option>
             <option value="Table 1">Lounge Table 1</option>
@@ -136,21 +178,22 @@
             <option value="Table 3">Lounge Table 3</option>
             <option value="Table 4">Lounge Table 4</option>
             <option value="Table 5">Lounge Table 5</option>
+            <option value="Table 6">Lounge Table 6</option>
           </select>
         </div>
 
         <button class="btn btn-primary w-100 py-2 fw-semibold" id="sendOrderBtn" onclick="submitCafeOrder()" disabled>
-          <i class="bi bi-fire me-1"></i> Send to Kitchen & Pay Online
+          <i class="bi bi-fire me-1"></i> Send to Kitchen &amp; Pay Online
         </button>
       </div>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="../js/api.js"></script>
-  <script src="../js/utils.js"></script>
-  <script src="../js/ui.js"></script>
-  <script src="../js/shell.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/utils.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/shell.js"></script>
   <script>
     let menuItems = [];
     let cafeOrder = [];
@@ -160,8 +203,19 @@
       await loadMemberProfile();
       loadMenu();
 
+      utils.attachSearch({
+        input: 'memberCafeSearch',
+        clearBtn: 'memberCafeSearchClearBtn',
+        onSearch: () => loadMenu(),
+        delay: 300
+      });
+
       document.getElementById('memberCafeCategory').addEventListener('change', () => loadMenu());
-      document.getElementById('memberCafeSearch').addEventListener('input', utils.debounce(() => loadMenu(), 300));
+
+      // Auto-refresh menu every 30s to keep active/inactive in sync
+      setInterval(() => {
+        loadMenu(true);
+      }, 30000);
     });
 
     async function loadMemberProfile() {
@@ -171,49 +225,79 @@
           memberDiscount = res.data.discount_bar || 0;
         }
       } catch (err) {
-        console.error(err);
+        console.error('Failed to load profile', err);
       }
     }
 
-    async function loadMenu() {
+    async function loadMenu(silent = false) {
       const q = document.getElementById('memberCafeSearch').value.trim();
       const category = document.getElementById('memberCafeCategory').value;
       const grid = document.getElementById('memberMenuGrid');
+      const countLabel = document.getElementById('menuCount');
 
       try {
+        // Automatically returns only active items (is_active = 1) for members
         const res = await api.get('/api/products', { department: 'bar', q, category, limit: 100 });
-        menuItems = res.data || [];
+        // Double-check is_active filter
+        menuItems = (res.data || []).filter(item => item.is_active === 1 || item.is_active === true);
+
+        if (countLabel) countLabel.textContent = `Showing ${menuItems.length} active items`;
         renderMenu();
       } catch (err) {
-        grid.innerHTML = `<div class="text-danger small">${err.message}</div>`;
+        if (!silent) grid.innerHTML = `<div class="col-12 text-danger text-center py-5">${err.message}</div>`;
       }
     }
 
     function renderMenu() {
       const grid = document.getElementById('memberMenuGrid');
       if (!menuItems.length) {
-        grid.innerHTML = '<div class="col-12 text-center py-5 text-muted">No menu items found.</div>';
+        grid.innerHTML = '<div class="col-12 text-center py-5 text-muted">No cafeteria items currently available.</div>';
         return;
       }
 
-      grid.innerHTML = menuItems.map(item => `
-        <div class="menu-card">
-          <div class="menu-card-art" aria-hidden="true">
-            <i class="bi bi-cup-hot"></i>
-            ${item.image_url ? `<img src="${utils.escapeHtml(item.image_url)}" alt="" loading="lazy" onerror="this.remove()">` : ''}
-          </div>
-          <div class="menu-card-body">
-            <span class="badge bg-light text-dark border mb-2">${utils.escapeHtml(item.category || 'Cafe')}</span>
-            <h6 class="menu-card-title fw-bold mb-3">${utils.escapeHtml(item.name)}</h6>
-            <div class="d-flex justify-content-between align-items-center gap-2 pt-2 border-top">
-              <span class="fw-bold font-monospace text-primary">${utils.formatINR(item.price)}</span>
-              <button class="btn btn-sm btn-primary" onclick="addToCafeOrder(${item.id})">
-                <i class="bi bi-plus-lg"></i><span class="d-none d-sm-inline"> Add</span>
-              </button>
+      grid.innerHTML = menuItems.map(item => {
+        const basePrice = Number(item.price);
+        const discountedPrice = memberDiscount > 0 ? Math.round(basePrice * (1 - memberDiscount / 100)) : basePrice;
+
+        return `
+          <div class="menu-card">
+            <div class="menu-card-img-wrap">
+              ${item.image_url ? `
+                <img src="${utils.escapeHtml(item.image_url)}" alt="${utils.escapeHtml(item.name)}" class="menu-card-img" loading="lazy" onerror="this.outerHTML='<div class=\\'menu-card-fallback\\'><i class=\\'bi bi-cup-hot\\'></i></div>'">
+              ` : `
+                <div class="menu-card-fallback"><i class="bi bi-cup-hot"></i></div>
+              `}
+              <span class="position-absolute top-0 end-0 m-2 badge bg-success shadow-sm">
+                Fresh &amp; Available
+              </span>
+            </div>
+            <div class="menu-card-body">
+              <div>
+                <span class="badge bg-light text-dark border small mb-1">${utils.escapeHtml(item.category || 'Cafe')}</span>
+                <h6 class="fw-bold text-dark text-truncate mb-1" title="${utils.escapeHtml(item.name)}">${utils.escapeHtml(item.name)}</h6>
+                <div class="small text-muted text-truncate mb-3">${utils.escapeHtml(item.description || 'Nutrition-rich cafeteria specialty')}</div>
+              </div>
+
+              <div class="pt-2 border-top mt-auto">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <div>
+                    <div class="mono fw-bold text-primary fs-5">${utils.formatINR(discountedPrice)}</div>
+                    ${memberDiscount > 0 ? `
+                      <div class="small text-muted">
+                        <span class="text-decoration-line-through">${utils.formatINR(basePrice)}</span>
+                        <span class="discount-pill ms-1">${memberDiscount}% OFF</span>
+                      </div>
+                    ` : ''}
+                  </div>
+                </div>
+                <button class="btn btn-primary w-100 fw-semibold d-flex align-items-center justify-content-center gap-1" onclick="addToCafeOrder(${item.id})">
+                  <i class="bi bi-plus-lg"></i> Add to Order
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
     function addToCafeOrder(itemId) {
@@ -226,11 +310,11 @@
       } else {
         cafeOrder.push({ id: item.id, name: item.name, price: Number(item.price), qty: 1 });
       }
-      updateDrawer();
-      ui.toast(`Added ${item.name} to order`, 'info');
+      updateCafeOrderDrawer();
+      ui.toast(`Added "${item.name}" to order`, 'info');
     }
 
-    function updateOrderQty(itemId, delta) {
+    function updateCafeOrderQty(itemId, delta) {
       const item = cafeOrder.find(i => i.id === itemId);
       if (!item) return;
 
@@ -238,10 +322,10 @@
       if (item.qty <= 0) {
         cafeOrder = cafeOrder.filter(i => i.id !== itemId);
       }
-      updateDrawer();
+      updateCafeOrderDrawer();
     }
 
-    function updateDrawer() {
+    function updateCafeOrderDrawer() {
       const container = document.getElementById('cafeOrderItems');
       const badge = document.getElementById('cafeOrderBadge');
       const totalCount = cafeOrder.reduce((sum, i) => sum + i.qty, 0);
@@ -256,7 +340,7 @@
       if (!cafeOrder.length) {
         container.innerHTML = `
           <div class="text-center py-5 text-muted">
-            <i class="bi bi-cup-straw fs-1 d-block mb-2 text-dim"></i>
+            <i class="bi bi-cup-straw fs-1 d-block mb-2 text-secondary"></i>
             Your order is empty
           </div>
         `;
@@ -267,16 +351,16 @@
 
       container.innerHTML = cafeOrder.map(i => `
         <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-          <div style="max-width:160px;">
-            <div class="fw-semibold small text-truncate">${utils.escapeHtml(i.name)}</div>
-            <small class="text-muted font-monospace">${utils.formatINR(i.price)}</small>
+          <div style="max-width:180px;">
+            <div class="fw-semibold small text-truncate text-dark">${utils.escapeHtml(i.name)}</div>
+            <small class="text-muted mono">${utils.formatINR(i.price)}</small>
           </div>
           <div class="d-flex align-items-center gap-1">
-            <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="updateOrderQty(${i.id}, -1)">-</button>
-            <span class="font-monospace small px-1">${i.qty}</span>
-            <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="updateOrderQty(${i.id}, 1)">+</button>
+            <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="updateCafeOrderQty(${i.id}, -1)">-</button>
+            <span class="mono small px-1">${i.qty}</span>
+            <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="updateCafeOrderQty(${i.id}, 1)">+</button>
           </div>
-          <div class="font-monospace fw-semibold small">${utils.formatINR(i.price * i.qty)}</div>
+          <div class="mono fw-semibold small text-dark">${utils.formatINR(i.price * i.qty)}</div>
         </div>
       `).join('');
 
@@ -297,23 +381,23 @@
     async function submitCafeOrder() {
       if (!cafeOrder.length) return;
 
-      const tableNumber = document.getElementById('memberOrderTable').value;
+      const tableChoice = document.getElementById('memberOrderTable').value;
       const payload = {
         department: 'bar',
-        channel: 'online',
-        table_number: tableNumber,
+        channel: 'counter',
+        table_no: tableChoice !== 'Takeaway' ? tableChoice : null,
         payment_method: 'online',
         items: cafeOrder.map(i => ({ product_id: i.id, quantity: i.qty }))
       };
 
       try {
         const res = await api.post('/api/orders', payload);
-        ui.toast(`Order placed! Order Code: ${res.data.order_code}`, 'success');
+        ui.toast(`Order placed & sent to kitchen! Order Code: ${res.data.order_code}`, 'success');
         cafeOrder = [];
-        updateDrawer();
+        updateCafeOrderDrawer();
         bootstrap.Offcanvas.getInstance(document.getElementById('cafeOrderDrawer')).hide();
       } catch (err) {
-        ui.toast(err.message || 'Failed to place order', 'error');
+        ui.toast(err.message || 'Order submission failed', 'error');
       }
     }
   </script>

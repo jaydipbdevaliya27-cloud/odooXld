@@ -59,7 +59,7 @@ async function initShell() {
         items: [
           { href: '/owner/payments.html', icon: 'bi-credit-card', label: 'Payments Ledger' },
           { href: '/owner/plans.html', icon: 'bi-award', label: 'Membership Plans' },
-          { href: '/owner/staff.html', icon: 'bi-person-badge', label: 'Staff & Roster' }
+          { href: '/owner/staff.html', icon: 'bi-person-badge', label: 'Staff & Payroll' }
         ]
       }
     ];
@@ -237,13 +237,15 @@ async function initShell() {
   // 5. Global Debounced Search
   const searchInput = document.getElementById('global-search-input');
   const searchDropdown = document.getElementById('global-search-dropdown');
+  const searchBox = searchInput?.closest('.global-search-box');
   let searchAbort = null;
 
   if (searchInput && searchDropdown) {
-    searchInput.addEventListener('input', utils.debounce(async (e) => {
+    const handleGlobalSearch = utils.debounce(async (e) => {
       const q = e.target.value.trim();
-      if (q.length < 2) {
+      if (!q) {
         searchDropdown.style.display = 'none';
+        searchBox?.classList.remove('is-searching');
         return;
       }
 
@@ -257,19 +259,25 @@ async function initShell() {
         if (res.members && res.members.length) {
           html += '<h6 class="dropdown-header text-uppercase small fw-bold">Members</h6>';
           res.members.forEach(m => {
-            html += `<a class="dropdown-item py-2" href="/owner/members.html"><i class="bi bi-person me-2 text-accent"></i>${utils.escapeHtml(m.full_name)} <code class="small">${utils.escapeHtml(m.member_code)}</code></a>`;
+            html += `<a class="dropdown-item py-2" href="/owner/members.html?q=${encodeURIComponent(m.member_code || m.full_name)}"><i class="bi bi-person me-2 text-accent"></i>${utils.escapeHtml(m.full_name)} <code class="small">${utils.escapeHtml(m.member_code)}</code></a>`;
           });
         }
         if (res.bookings && res.bookings.length) {
           html += '<h6 class="dropdown-header text-uppercase small fw-bold">Bookings</h6>';
           res.bookings.forEach(b => {
-            html += `<a class="dropdown-item py-2" href="/owner/bookings.html"><i class="bi bi-calendar-check me-2 text-primary"></i>${utils.escapeHtml(b.booking_code)} · ${utils.escapeHtml(b.court_name)} (${b.booking_date})</a>`;
+            html += `<a class="dropdown-item py-2" href="/owner/bookings.html?q=${encodeURIComponent(b.booking_code)}"><i class="bi bi-calendar-check me-2 text-primary"></i>${utils.escapeHtml(b.booking_code)} · ${utils.escapeHtml(b.court_name)} (${b.booking_date})</a>`;
           });
         }
         if (res.products && res.products.length) {
           html += '<h6 class="dropdown-header text-uppercase small fw-bold">Products</h6>';
           res.products.forEach(p => {
-            html += `<a class="dropdown-item py-2" href="/owner/products.html"><i class="bi bi-box-seam me-2 text-success"></i>${utils.escapeHtml(p.name)} · ₹${p.price}</a>`;
+            html += `<a class="dropdown-item py-2" href="/owner/products.html?q=${encodeURIComponent(p.name)}"><i class="bi bi-box-seam me-2 text-success"></i>${utils.escapeHtml(p.name)} · ₹${p.price}</a>`;
+          });
+        }
+        if (res.leads && res.leads.length) {
+          html += '<h6 class="dropdown-header text-uppercase small fw-bold">CRM Leads</h6>';
+          res.leads.forEach(l => {
+            html += `<a class="dropdown-item py-2" href="/owner/leads.html?q=${encodeURIComponent(l.name)}"><i class="bi bi-megaphone me-2 text-warning"></i>${utils.escapeHtml(l.name)} · ${utils.escapeHtml(l.phone)}</a>`;
           });
         }
 
@@ -281,8 +289,14 @@ async function initShell() {
         searchDropdown.style.display = 'block';
       } catch (err) {
         if (err.name !== 'AbortError') console.warn(err);
+      } finally {
+        searchBox?.classList.remove('is-searching');
       }
-    }, 300));
+    }, 300, () => {
+      searchBox?.classList.add('is-searching');
+    });
+
+    searchInput.addEventListener('input', handleGlobalSearch);
 
     document.addEventListener('click', (e) => {
       if (!searchInput.contains(e.target) && !searchDropdown.contains(e.target)) {

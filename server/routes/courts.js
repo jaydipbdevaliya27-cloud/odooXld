@@ -21,7 +21,7 @@ router.get('/', async (req, res, next) => {
     let where = '1=1';
     const params = [];
 
-    if (q && q.trim().length >= 2) {
+    if (q && q.trim()) {
       const s = `%${q.trim().replace(/[%_]/g, '\\$&')}%`;
       where += ' AND (name LIKE ? OR surface_type LIKE ? OR sport LIKE ?)';
       params.push(s, s, s);
@@ -246,6 +246,39 @@ router.get('/social-sessions', async (req, res, next) => {
        ORDER BY s.session_date ASC, s.start_time ASC`
     );
     res.json(rows);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── DELETE /api/courts/:id ──────────────────────────────────────────────────
+router.delete('/:id', requireLogin, requireRole('owner'), async (req, res, next) => {
+  try {
+    const courtId = parseInt(req.params.id, 10);
+    const [cRows] = await db.query('SELECT * FROM courts WHERE id = ?', [courtId]);
+    if (!cRows.length) return res.status(404).json({ error: 'Court not found', code: 'NOT_FOUND' });
+
+    // Check if there are active bookings
+    const [activeBookings] = await db.query(
+      "SELECT id FROM bookings WHERE court_id = ? AND booking_date >= CURDATE() AND status = 'confirmed'",
+      [courtId]
+    );
+    if (activeBookings.length > 0 && req.query.force !== 'true') {
+      return res.status(409).json({
+        error: `Cannot delete court: ${activeBookings.length} upcoming confirmed booking(s) exist. Deactivate the court or cancel bookings first.`,
+        code: 'COURT_HAS_BOOKINGS'
+      });
+    }
+
+    await db.transaction(async (conn) => {
+      await conn.query('DELETE FROM booking_slots WHERE court_id = ?', [courtId]);
+      await conn.query('DELETE FROM court_blocks WHERE court_id = ?', [courtId]);
+      await conn.query('DELETE FROM social_sessions WHERE court_id = ?', [courtId]);
+      await conn.query('DELETE FROM bookings WHERE court_id = ?', [courtId]);
+      await conn.query('DELETE FROM courts WHERE id = ?', [courtId]);
+    });
+
+    res.json({ ok: true, message: 'Court deleted successfully' });
   } catch (err) {
     next(err);
   }

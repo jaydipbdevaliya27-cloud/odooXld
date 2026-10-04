@@ -3,295 +3,753 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bar & Cafe POS - Champions Club</title>
+  <title>Bar &amp; Cafeteria Operations – Champions Club</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="/css/main.css">
   <style>
+    /* ── Bar & Cafeteria Custom Styles ───────────────────────────────────── */
     .table-map-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-      gap: 0.75rem;
-      margin-bottom: 1.5rem;
+      grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
+      gap: 0.85rem;
     }
     .table-tile {
       appearance: none;
       width: 100%;
-      min-width: 0;
-      min-height: 74px;
-      background: var(--surface);
-      border: 2px solid var(--border);
-      border-radius: var(--radius-md);
+      min-height: 78px;
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px;
       padding: 0.85rem 0.5rem;
-      color: var(--text);
-      font: inherit;
+      color: #334155;
       text-align: center;
       cursor: pointer;
       transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
     }
     .table-tile:hover {
-      border-color: var(--accent);
+      border-color: #0d9488;
       transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(13, 148, 136, 0.12);
     }
     .table-tile.active-table {
-      border-color: var(--accent);
-      background: var(--accent-soft);
+      border-color: #0d9488;
+      background: #f0fdfa;
+      box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.25);
     }
-    .table-tile.occupied {
-      background: var(--danger-soft);
-      border-color: var(--danger);
-      color: var(--danger);
+    .table-tile.occupied-table {
+      border-color: #ef4444;
+      background: #fff5f5;
+      color: #b91c1c;
+    }
+
+    .cafe-menu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
+      gap: 1rem;
+      max-height: calc(100vh - 280px);
+      overflow-y: auto;
+      padding-right: 0.35rem;
     }
     .menu-item-tile {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-md);
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px;
       padding: 0.85rem;
       cursor: pointer;
-      transition: all 0.15s ease;
+      transition: all 0.2s ease;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      height: 100%;
+      min-height: 200px;
     }
     .menu-item-tile:hover {
-      border-color: var(--accent);
-      box-shadow: var(--shadow-sm);
+      border-color: #0d9488;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.05);
     }
-    .table-tile.occupied-table {
-      border-color: var(--danger);
-      background: var(--danger-soft);
+    .menu-item-img {
+      height: 90px;
+      width: 100%;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+      background: #f1f5f9;
+    }
+    .menu-item-img-fallback {
+      height: 90px;
+      width: 100%;
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #f0fdfa, #e2e8f0);
+      color: #0d9488;
+      font-size: 1.8rem;
+    }
+
+    /* Cart Sidebar */
+    .cart-sidebar {
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 1.25rem;
+      min-height: calc(100vh - 220px);
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    }
+    .cart-items-scroll {
+      flex: 1;
+      overflow-y: auto;
+      margin: 1rem 0;
+      max-height: 300px;
+    }
+    .cart-item-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.55rem 0;
+      border-bottom: 1px dashed #e2e8f0;
+    }
+
+    /* Kanban Card Form */
+    .kanban-cafe-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1.25rem;
+    }
+    .kanban-cafe-card {
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 14px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+    }
+    .kanban-cafe-card:hover {
+      transform: translateY(-3px);
+      border-color: #0d9488;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+    }
+    .kanban-img-wrap {
+      position: relative;
+      height: 140px;
+      background: #f8fafc;
+      overflow: hidden;
+    }
+    .kanban-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+    .kanban-cafe-card:hover .kanban-img {
+      transform: scale(1.05);
+    }
+    .kanban-img-fallback {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #f0fdfa, #f1f5f9);
+      color: #0d9488;
+      font-size: 2.5rem;
+    }
+
+    /* KDS Board Grid */
+    .kot-board {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.25rem;
+    }
+    .kot-card {
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s ease;
+    }
+    .kot-card:hover {
+      transform: translateY(-2px);
+    }
+    .kot-header {
+      padding: 0.75rem 1rem;
+      background: #f8fafc;
+      border-bottom: 1.5px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .kot-header.new-kot {
+      background: #fef3c7;
+      border-color: #fde68a;
+    }
+
+    .nav-pills-custom .nav-link {
+      color: #475569;
+      font-weight: 600;
+      border-radius: 10px;
+      padding: 0.6rem 1.1rem;
+      transition: all 0.2s ease;
+    }
+    .nav-pills-custom .nav-link.active {
+      background: #0f172a;
+      color: #ffffff;
+      box-shadow: 0 4px 10px rgba(15, 23, 42, 0.2);
     }
   </style>
 </head>
 <body>
-  <div id="app-shell"></div>
+  <div class="app-layout">
+    <div id="app-shell"></div>
 
-  <div class="content-container">
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-      <div>
-        <h2 class="fw-bold mb-1">Bar & Cafe POS</h2>
-        <p class="text-muted mb-0">Manage floor tables, take orders, assign bar tabs and perform daily closing.</p>
-      </div>
-      <div class="d-flex gap-2">
-        <a href="bar-dashboard.html" class="btn btn-outline-primary">
-          <i class="bi bi-fire me-1"></i> Kitchen Display Board
-        </a>
-        <button class="btn btn-outline-dark" onclick="openDailyClosingModal()">
-          <i class="bi bi-calculator me-1"></i> Daily Register Closing
-        </button>
-      </div>
-    </div>
+    <main class="app-main">
+      <div class="container-fluid p-3 p-md-4">
+        <!-- Top Bar Title & Navigation Tabs -->
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-3">
+          <div>
+            <h4 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+              <i class="bi bi-cup-hot text-primary"></i> Bar &amp; Cafeteria Operations
+            </h4>
+            <p class="text-muted small mb-0">Floor Table POS, Food &amp; Beverage Catalog, Live Kitchen Display (KDS) &amp; Open Bar Tabs</p>
+          </div>
 
-    <!-- Table Map (T1 to T12) -->
-    <div class="card border-0 shadow-sm p-3 mb-4">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h6 class="fw-bold mb-0"><i class="bi bi-grid-3x3-gap me-2 text-primary"></i>Floor Table Map</h6>
-        <div class="d-flex gap-3 small text-muted">
-          <span><span class="badge bg-light border text-dark me-1">●</span> Free</span>
-          <span><span class="badge bg-danger me-1">●</span> Occupied / Open Tab</span>
-        </div>
-      </div>
-      <div class="table-map-grid" id="tableMapGrid">
-        <!-- Tables 1 to 12 injected via JS -->
-      </div>
-    </div>
+          <div class="d-flex gap-2 align-items-center flex-wrap">
+            <ul class="nav nav-pills nav-pills-custom gap-2" id="cafeTabs" role="tablist">
+              <li class="nav-item">
+                <button class="nav-link active" id="pos-tab" data-bs-toggle="pill" data-bs-target="#posPane" type="button">
+                  <i class="bi bi-grid-3x3-gap me-1"></i> Floor &amp; POS
+                </button>
+              </li>
+              <li class="nav-item">
+                <button class="nav-link" id="catalog-tab" data-bs-toggle="pill" data-bs-target="#catalogPane" type="button" onclick="loadFoodCatalog(1)">
+                  <i class="bi bi-egg-fried me-1"></i> Food &amp; Drink Menu
+                </button>
+              </li>
+              <li class="nav-item">
+                <button class="nav-link" id="kds-tab" data-bs-toggle="pill" data-bs-target="#kdsPane" type="button" onclick="loadKitchenOrders()">
+                  <i class="bi bi-fire me-1"></i> Kitchen KDS (<span id="kotBadgeCount">0</span>)
+                </button>
+              </li>
+              <li class="nav-item">
+                <button class="nav-link" id="tabs-tab" data-bs-toggle="pill" data-bs-target="#tabsPane" type="button" onclick="loadActiveTabs()">
+                  <i class="bi bi-receipt-cutoff me-1"></i> Bar Tabs (<span id="tabBadgeCount">0</span>)
+                </button>
+              </li>
+            </ul>
 
-    <div class="row g-3">
-      <!-- Menu Catalog -->
-      <div class="col-lg-8">
-        <div class="card border-0 shadow-sm p-3 mb-3">
-          <div class="row g-2">
-            <div class="col-md-7">
-              <input type="search" class="form-control" id="cafeSearchInput" placeholder="Search cafe menu (Coffee, Shake, Sandwich...)" aria-label="Search cafe menu">
-            </div>
-            <div class="col-md-5">
-              <select class="form-select" id="cafeCategoryFilter">
-                <option value="">All Categories</option>
-                <option value="Beverages">Beverages & Coffee</option>
-                <option value="Snacks">Snacks & Bites</option>
-                <option value="Meals">Health Bowls & Meals</option>
-                <option value="Protein">Protein & Shakes</option>
-              </select>
-            </div>
+            <button class="btn btn-outline-dark btn-sm" onclick="openDailyClosingModal()">
+              <i class="bi bi-calculator me-1"></i> Daily Closing
+            </button>
           </div>
         </div>
 
-        <div class="row g-3" id="cafeMenuGrid" style="max-height: calc(100vh - 380px); overflow-y: auto;">
-          <!-- Menu items injected via JS -->
+        <div class="tab-content">
+          <!-- ════════════════════════════════════════════════════════════════ -->
+          <!-- TAB 1: FLOOR & POS REGISTER                                      -->
+          <!-- ════════════════════════════════════════════════════════════════ -->
+          <div class="tab-pane fade show active" id="posPane">
+            <!-- Table Floor Map Strip (T1 to T12) -->
+            <div class="card border shadow-sm p-3 mb-3 bg-white rounded-3">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                  <i class="bi bi-grid-3x3-gap text-primary"></i> Floor Table Map
+                </h6>
+                <div class="d-flex gap-3 small text-muted">
+                  <span><span class="badge bg-light border text-dark me-1">●</span> Available</span>
+                  <span><span class="badge bg-danger me-1">●</span> Occupied / Open Tab</span>
+                </div>
+              </div>
+              <div class="table-map-grid" id="tableMapGrid">
+                <!-- Tables 1 to 12 injected via JS -->
+              </div>
+            </div>
+
+            <div class="row g-3">
+              <!-- Left: Food & Drink Menu -->
+              <div class="col-lg-8">
+                <div class="card border shadow-sm p-3 mb-3 bg-white rounded-3">
+                  <div class="row g-2 align-items-center">
+                    <div class="col-md-7">
+                      <div class="search-input-group">
+                        <i class="bi bi-search search-leading-icon"></i>
+                        <input type="text" id="cafeSearchInput" placeholder="Search menu (Espresso, Shake, Sandwich, Bowl...)" aria-label="Search cafe menu">
+                        <button type="button" class="search-clear-btn d-none" id="cafeSearchClearBtn"><i class="bi bi-x"></i></button>
+                      </div>
+                    </div>
+                    <div class="col-md-5">
+                      <select class="form-select form-select-sm" id="cafeCategoryFilter">
+                        <option value="">All Categories</option>
+                        <option value="Beverages">Beverages &amp; Coffee</option>
+                        <option value="Snacks">Snacks &amp; Bites</option>
+                        <option value="Meals">Health Bowls &amp; Meals</option>
+                        <option value="Protein">Protein &amp; Shakes</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="cafe-menu-grid" id="cafeProductsGrid">
+                  <!-- Populated via JS -->
+                </div>
+              </div>
+
+              <!-- Right: Cart & Order Management -->
+              <div class="col-lg-4">
+                <div class="cart-sidebar">
+                  <div class="d-flex justify-content-between align-items-center border-bottom pb-2">
+                    <div>
+                      <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-cup-straw me-2 text-primary"></i>Current Order</h5>
+                      <span class="badge bg-primary bg-opacity-10 text-primary small mt-1" id="currentSelectedTableLabel">Takeaway Counter</span>
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger" onclick="clearCafeCart()" title="Clear Order">
+                      <i class="bi bi-trash3"></i> Clear
+                    </button>
+                  </div>
+
+                  <!-- Customer / Member Selector -->
+                  <div class="mt-3">
+                    <label class="form-label small fw-bold text-muted text-uppercase mb-1">Customer / Member</label>
+                    <select class="form-select form-select-sm" id="cafeMemberSelect" onchange="updateCafeCartTotals()">
+                      <option value="" data-discount="0">Walk-in Guest (No F&amp;B Discount)</option>
+                    </select>
+                  </div>
+
+                  <!-- Cart Items Scroll -->
+                  <div class="cart-items-scroll" id="cafeCartContainer">
+                    <div class="text-center py-5 text-muted">
+                      <i class="bi bi-cup-straw fs-1 d-block mb-2 text-secondary"></i>
+                      Order is empty.<br>Click menu items to add to order.
+                    </div>
+                  </div>
+
+                  <!-- Order Totals -->
+                  <div class="border-top pt-3">
+                    <div class="d-flex justify-content-between text-muted small mb-1">
+                      <span>Subtotal</span>
+                      <span id="cafeSubtotal" class="mono">₹0</span>
+                    </div>
+                    <div class="d-flex justify-content-between text-success small mb-1">
+                      <span>Member Discount</span>
+                      <span id="cafeDiscount" class="mono">-₹0</span>
+                    </div>
+                    <div class="d-flex justify-content-between fw-bold fs-5 mb-3">
+                      <span>Total Due</span>
+                      <span id="cafeTotal" class="mono text-primary">₹0</span>
+                    </div>
+
+                    <!-- Actions: Settle Direct vs Open Tab -->
+                    <div class="row g-2 mb-2">
+                      <div class="col-6">
+                        <button class="btn btn-outline-primary w-100 py-2 small fw-semibold" onclick="processCafeSale('cash')">
+                          <i class="bi bi-cash-stack d-block mb-1"></i> Cash / Card
+                        </button>
+                      </div>
+                      <div class="col-6">
+                        <button class="btn btn-outline-secondary w-100 py-2 small fw-semibold" onclick="processCafeSale('upi')">
+                          <i class="bi bi-qr-code d-block mb-1"></i> UPI Pay
+                        </button>
+                      </div>
+                    </div>
+                    <button class="btn btn-dark w-100 py-2 fw-semibold" onclick="openMemberTab()">
+                      <i class="bi bi-card-checklist me-1"></i> Open / Add to Bar Tab
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ════════════════════════════════════════════════════════════════ -->
+          <!-- TAB 2: FOOD & BEVERAGE MENU CATALOG & ITEMS (NEW TAB)            -->
+          <!-- ════════════════════════════════════════════════════════════════ -->
+          <div class="tab-pane fade" id="catalogPane">
+            <div class="table-card">
+              <div class="table-card-header flex-wrap gap-2">
+                <div>
+                  <h5 class="table-card-title"><i class="bi bi-egg-fried text-primary"></i> Food &amp; Beverage Catalog</h5>
+                  <p class="table-card-subtitle">Manage cafeteria items, photo assets, pricing and active/inactive availability</p>
+                </div>
+
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                  <!-- View Switcher -->
+                  <div class="btn-group btn-group-sm p-1 bg-light rounded-3 border" role="group" aria-label="Menu View">
+                    <button type="button" class="btn btn-sm active" id="foodListViewBtn" onclick="setFoodView('list')">
+                      <i class="bi bi-list-ul me-1"></i> List Form
+                    </button>
+                    <button type="button" class="btn btn-sm" id="foodKanbanViewBtn" onclick="setFoodView('kanban')">
+                      <i class="bi bi-grid me-1"></i> Kanban Cards
+                    </button>
+                  </div>
+
+                  <!-- Add Food Item Button -->
+                  <button class="btn btn-primary btn-sm" onclick="openAddFoodModal()">
+                    <i class="bi bi-plus-lg me-1"></i> Add New Menu Item
+                  </button>
+                </div>
+              </div>
+
+              <!-- Toolbar -->
+              <div class="table-card-toolbar">
+                <div class="search-input-group">
+                  <i class="bi bi-search search-leading-icon"></i>
+                  <input type="text" id="foodCatSearchInput" placeholder="Search menu by name, SKU, category..." aria-label="Search food catalog">
+                  <button type="button" class="search-clear-btn d-none" id="foodCatSearchClearBtn"><i class="bi bi-x"></i></button>
+                </div>
+
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                  <select id="foodCatCategoryFilter" class="form-select form-select-sm" style="width: auto;">
+                    <option value="">All Categories</option>
+                    <option value="Beverages">Beverages &amp; Coffee</option>
+                    <option value="Snacks">Snacks &amp; Bites</option>
+                    <option value="Meals">Health Bowls &amp; Meals</option>
+                    <option value="Protein">Protein &amp; Shakes</option>
+                  </select>
+                  <select id="foodCatStatusFilter" class="form-select form-select-sm" style="width: auto;">
+                    <option value="">All Statuses (Active &amp; Inactive)</option>
+                    <option value="active">Active Only</option>
+                    <option value="inactive">Deactivated Only</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- List View -->
+              <div id="foodListContainer">
+                <div class="table-responsive">
+                  <table class="cc-table" id="foodCatalogTable">
+                    <thead>
+                      <tr>
+                        <th>Menu Item &amp; Photo</th>
+                        <th>SKU</th>
+                        <th>Category</th>
+                        <th>Price</th>
+                        <th>Cost</th>
+                        <th>Inventory</th>
+                        <th>Availability Status</th>
+                        <th class="text-end" style="min-width: 170px;">Actions &amp; Toggle</th>
+                      </tr>
+                    </thead>
+                    <tbody id="foodCatalogTableBody">
+                      <tr><td colspan="8" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading menu items…</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Kanban Cards View -->
+              <div id="foodKanbanContainer" class="p-3 d-none">
+                <div class="kanban-cafe-grid" id="foodKanbanGrid">
+                  <!-- Injected via JS -->
+                </div>
+              </div>
+
+              <div class="table-footer" id="foodPagination"></div>
+            </div>
+          </div>
+
+          <!-- ════════════════════════════════════════════════════════════════ -->
+          <!-- TAB 3: KITCHEN DISPLAY SYSTEM (KDS)                              -->
+          <!-- ════════════════════════════════════════════════════════════════ -->
+          <div class="tab-pane fade" id="kdsPane">
+            <div class="table-card">
+              <div class="table-card-header flex-wrap gap-2">
+                <div>
+                  <h5 class="table-card-title"><i class="bi bi-fire text-danger"></i> Live Kitchen Display Board</h5>
+                  <p class="table-card-subtitle">Real-time KOT tickets for baristas &amp; chefs with live preparation timers</p>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="badge bg-success bg-opacity-10 text-success p-2 border border-success border-opacity-25">
+                    <span class="spinner-grow spinner-grow-sm me-1"></span> Live Polling Active
+                  </span>
+                  <button class="btn btn-sm btn-outline-secondary" onclick="loadKitchenOrders()">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                  </button>
+                </div>
+              </div>
+
+              <div class="p-3 p-md-4">
+                <div class="kot-board" id="kotBoard">
+                  <!-- KOT Cards injected via JS -->
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ════════════════════════════════════════════════════════════════ -->
+          <!-- TAB 4: ACTIVE BAR TABS                                           -->
+          <!-- ════════════════════════════════════════════════════════════════ -->
+          <div class="tab-pane fade" id="tabsPane">
+            <div class="table-card">
+              <div class="table-card-header flex-wrap gap-2">
+                <div>
+                  <h5 class="table-card-title"><i class="bi bi-receipt-cutoff text-primary"></i> Active Bar &amp; Lounge Tabs</h5>
+                  <p class="table-card-subtitle">Open tabs across tables and members with split payment &amp; settlement</p>
+                </div>
+                <button class="btn btn-sm btn-outline-secondary" onclick="loadActiveTabs()">
+                  <i class="bi bi-arrow-clockwise me-1"></i> Refresh Tabs
+                </button>
+              </div>
+
+              <div class="table-responsive">
+                <table class="cc-table" id="openTabsTable">
+                  <thead>
+                    <tr>
+                      <th>Tab Name / Code</th>
+                      <th>Customer / Member</th>
+                      <th>Assigned Table</th>
+                      <th>Opened Time</th>
+                      <th>Orders Count</th>
+                      <th>Running Total</th>
+                      <th>Status</th>
+                      <th class="text-end">Settle Tab</th>
+                    </tr>
+                  </thead>
+                  <tbody id="openTabsTableBody">
+                    <tr><td colspan="8" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading bar tabs…</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-
-      <!-- Cafe Cart -->
-      <div class="col-lg-4">
-        <div class="card border-0 shadow-sm p-3" style="height: calc(100vh - 280px); display: flex; flex-direction: column;">
-          <div class="d-flex justify-content-between align-items-center border-bottom pb-2">
-            <h5 class="fw-bold mb-0">
-              <i class="bi bi-cup-hot me-2 text-primary"></i>Order for <span id="currentTableLabel" class="text-accent font-monospace">Takeaway</span>
-            </h5>
-            <button class="btn btn-sm btn-outline-danger" onclick="clearCafeCart()"><i class="bi bi-trash3"></i></button>
-          </div>
-
-          <!-- Customer selection -->
-          <div class="mt-3">
-            <label class="form-label small fw-bold">Member / Customer</label>
-            <select class="form-select form-select-sm" id="cafeMemberSelect" onchange="updateCafeTotals()">
-              <option value="" data-discount="0">Walk-in Guest</option>
-            </select>
-          </div>
-
-          <!-- Cart items -->
-          <div class="flex-grow-1 overflow-y-auto my-3" id="cafeCartList">
-            <div class="text-center py-5 text-muted small">No items added to order</div>
-          </div>
-
-          <!-- Summary -->
-          <div class="border-top pt-3">
-            <div class="d-flex justify-content-between text-muted small mb-1">
-              <span>Subtotal</span>
-              <span id="cafeSubtotal" class="font-monospace">₹0</span>
-            </div>
-            <div class="d-flex justify-content-between text-success small mb-1">
-              <span>Member Food/Beverage Perk</span>
-              <span id="cafeDiscount" class="font-monospace">-₹0</span>
-            </div>
-            <div class="d-flex justify-content-between fw-bold fs-5 mb-3">
-              <span>Total</span>
-              <span id="cafeTotal" class="font-monospace text-primary">₹0</span>
-            </div>
-
-            <div class="d-flex gap-2">
-              <button class="btn btn-outline-primary w-50 py-2" onclick="sendToKitchen('tab')">
-                <i class="bi bi-card-checklist d-block mb-1"></i> Open Tab
-              </button>
-              <button class="btn btn-primary w-50 py-2" onclick="sendToKitchen('cash')">
-                <i class="bi bi-fire d-block mb-1"></i> Pay & Send KOT
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    </main>
   </div>
 
-  <!-- Daily Closing Modal -->
-  <div class="modal fade" id="dailyClosingModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+  <!-- ── Add / Edit Food Item Modal ───────────────────────────────────────── -->
+  <div class="modal fade" id="foodFormModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title fw-bold"><i class="bi bi-calculator text-primary me-2"></i>Day End Register Closing (Z-Report)</h5>
+          <h5 class="modal-title fw-bold d-flex align-items-center gap-2" id="foodModalTitle">
+            <i class="bi bi-cup-hot text-primary"></i> Add Food &amp; Beverage Item
+          </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <form id="dailyClosingForm">
+        <form id="foodSaveForm" novalidate>
+          <input type="hidden" id="food_id">
           <div class="modal-body">
-            <div class="alert alert-info py-2 small mb-3">
-              <i class="bi bi-info-circle me-1"></i> Closing the register reconciles expected cash from POS with physical count.
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label required" for="food_sku">SKU Code</label>
+                <div class="input-group">
+                  <input type="text" id="food_sku" name="sku" class="form-control text-uppercase" placeholder="e.g. BEV-COF-01" required>
+                  <button class="btn btn-outline-secondary btn-sm" type="button" onclick="generateFoodSku()">Auto</button>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label required" for="food_name">Item Name</label>
+                <input type="text" id="food_name" name="name" class="form-control" placeholder="e.g. Vanilla Whey Protein Shake" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label required" for="food_cat">Category</label>
+                <select id="food_cat" name="category" class="form-select" required>
+                  <option value="Beverages">Beverages &amp; Coffee</option>
+                  <option value="Snacks">Snacks &amp; Bites</option>
+                  <option value="Meals">Health Bowls &amp; Meals</option>
+                  <option value="Protein">Protein &amp; Shakes</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label required" for="food_price">Selling Price (₹)</label>
+                <input type="number" id="food_price" name="price" class="form-control" min="1" step="1" placeholder="220" required>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="food_cost">Cost Price (₹)</label>
+                <input type="number" id="food_cost" name="cost_price" class="form-control" min="0" step="1" placeholder="90">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="food_stock">Stock Quantity</label>
+                <input type="number" id="food_stock" name="stock_qty" class="form-control" min="0" value="50">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="food_active">Availability Status</label>
+                <select id="food_active" name="is_active" class="form-select">
+                  <option value="1">Active (Visible to Members)</option>
+                  <option value="0">Deactivated (Hidden / Unavailable)</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="food_img">Food Photo URL</label>
+                <div class="input-group mb-2">
+                  <input type="url" id="food_img" name="image_url" class="form-control" placeholder="https://images.unsplash.com/photo-..." oninput="previewFoodImage(this.value)">
+                  <button class="btn btn-outline-secondary" type="button" onclick="setPresetFoodPhoto()">Preset Photo</button>
+                </div>
+                <!-- Image Preview Box -->
+                <div id="foodImagePreviewBox" class="d-flex align-items-center gap-3 p-2 bg-light rounded-3 border">
+                  <img id="foodImagePreviewImg" src="" alt="Preview" style="width: 70px; height: 70px; object-fit: cover; border-radius: 8px; display: none;">
+                  <div id="foodImagePreviewPlaceholder" class="text-muted small">
+                    <i class="bi bi-image me-1"></i> Enter an image URL to preview food/drink photo.
+                  </div>
+                </div>
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="food_desc">Item Description &amp; Nutrition</label>
+                <textarea id="food_desc" name="description" class="form-control" rows="2" placeholder="e.g. 30g whey isolate, almond milk, chia seeds, low carb"></textarea>
+              </div>
             </div>
-            <div class="mb-3">
-              <label class="form-label required">Opening Cash Float</label>
-              <input type="number" class="form-control" name="opening_float" id="closingOpeningFloat" required value="2000" min="0">
-            </div>
-            <div class="mb-3">
-              <label class="form-label required">Counted Physical Cash at Close</label>
-              <input type="number" class="form-control" name="counted_cash" id="closingCountedCash" required placeholder="Enter total cash counted" min="0">
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Shift Notes / Variances</label>
-              <textarea class="form-control" name="notes" rows="2" placeholder="Any cash discrepancy explanation..."></textarea>
-            </div>
+            <div id="foodFormErr" class="alert alert-danger d-none small py-2 mt-3"></div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="submit" class="btn btn-primary">Generate Z-Report & Close Day</button>
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="saveFoodBtn">
+              <span id="saveFoodSpinner" class="spinner-border spinner-border-sm d-none me-1"></span>
+              Save Item
+            </button>
           </div>
         </form>
       </div>
     </div>
   </div>
 
+  <!-- ── Adjust Food Stock Modal ──────────────────────────────────────────── -->
+  <div class="modal fade" id="adjustFoodStockModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold d-flex align-items-center gap-2">
+            <i class="bi bi-boxes text-primary"></i> Adjust Food Item Stock
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="adj_foodId">
+          <p class="fw-bold mb-3 text-dark fs-6" id="adj_foodName"></p>
+          <div class="mb-3">
+            <label class="form-label">Adjustment Type</label>
+            <select id="adj_foodType" class="form-select">
+              <option value="restock">Kitchen Prep / Batch Restock (+)</option>
+              <option value="adjustment">Stock Count Adjustment (+/-)</option>
+              <option value="damage">Spoilage / Wastage (-)</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Quantity (+ or -)</label>
+            <input type="number" id="adj_foodQty" class="form-control" placeholder="e.g. 20 or -5" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Notes</label>
+            <input type="text" id="adj_foodNotes" class="form-control" placeholder="e.g. Daily morning kitchen prep batch">
+          </div>
+          <div id="adjFoodErr" class="alert alert-danger d-none small py-2"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="adjFoodSaveBtn">Update Stock</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Daily Closing Modal ──────────────────────────────────────────────── -->
+  <div class="modal fade" id="dailyClosingModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold"><i class="bi bi-calculator text-primary me-2"></i>Daily Register Closing</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="dailyClosingBody">
+          <div class="text-center py-3"><span class="spinner-border spinner-border-sm"></span> Loading today's totals…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="../js/api.js"></script>
-  <script src="../js/utils.js"></script>
-  <script src="../js/ui.js"></script>
-  <script src="../js/validators.js"></script>
-  <script src="../js/shell.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/utils.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/validators.js"></script>
+  <script src="/js/shell.js"></script>
   <script>
     let cafeProducts = [];
+    let foodCatalog = [];
     let cafeCart = [];
-    let selectedTable = 'Takeaway';
     let membersList = [];
-    let activeCafeTabs = [];
-    let cafeTabPoll = null;
+    let selectedTable = 'Takeaway';
+    let currentFoodView = 'list';
+    let kdsTimer = null;
 
     document.addEventListener('DOMContentLoaded', async () => {
-      await loadMembers();
-      await loadOpenCafeTabs();
       renderTableMap();
-      loadMenu();
+      await loadMembers();
+      loadCafeProducts();
+      initSearchHandlers();
 
-      document.getElementById('cafeCategoryFilter').addEventListener('change', () => loadMenu());
-      document.getElementById('cafeSearchInput').addEventListener('input', utils.debounce(() => loadMenu(), 300));
-      document.getElementById('dailyClosingForm').addEventListener('submit', handleDailyClosing);
-      cafeTabPoll = setInterval(async () => {
-        if (document.hidden) return;
-        await loadOpenCafeTabs();
-        renderTableMap();
-      }, 15000);
-      const refreshCafeTabsWhenVisible = async () => {
-        if (document.hidden) return;
-        await loadOpenCafeTabs();
-        renderTableMap();
-      };
-      document.addEventListener('visibilitychange', refreshCafeTabsWhenVisible);
-      window._shellPageCleanup = () => {
-        clearInterval(cafeTabPoll);
-        document.removeEventListener('visibilitychange', refreshCafeTabsWhenVisible);
-      };
+      document.getElementById('cafeCategoryFilter').addEventListener('change', () => loadCafeProducts());
+      document.getElementById('foodCatCategoryFilter').addEventListener('change', () => loadFoodCatalog(1));
+      document.getElementById('foodCatStatusFilter').addEventListener('change', () => loadFoodCatalog(1));
+      document.getElementById('foodSaveForm').addEventListener('submit', handleSaveFoodItem);
+      document.getElementById('adjFoodSaveBtn').addEventListener('click', handleSaveFoodStockAdjustment);
+
+      // Auto poll KDS orders every 10s
+      kdsTimer = setInterval(() => {
+        loadKitchenOrders(true);
+      }, 10000);
     });
 
-    async function loadOpenCafeTabs() {
-      try {
-        const res = await api.get('/api/orders/tabs/active');
-        activeCafeTabs = Array.isArray(res) ? res : (res.data || []);
-      } catch (err) {
-        activeCafeTabs = [];
-        console.error('Failed to load open cafe tabs', err);
-      }
+    function initSearchHandlers() {
+      utils.attachSearch({
+        input: 'cafeSearchInput',
+        clearBtn: 'cafeSearchClearBtn',
+        onSearch: () => loadCafeProducts(),
+        delay: 300
+      });
+
+      utils.attachSearch({
+        input: 'foodCatSearchInput',
+        clearBtn: 'foodCatSearchClearBtn',
+        onSearch: () => loadFoodCatalog(1),
+        delay: 300
+      });
     }
 
-    function renderTableMap() {
+    // ── Table Map (T1 - T12) ─────────────────────────────────────────────────
+    function renderTableMap(occupiedTables = []) {
       const grid = document.getElementById('tableMapGrid');
-      let html = `<div class="table-tile ${selectedTable === 'Takeaway' ? 'active-table' : ''}" onclick="selectTable('Takeaway')">
-        <div class="fw-bold">Takeaway</div>
-        <small class="text-muted">Direct</small>
-      </div>`;
+      let html = `
+        <button type="button" class="table-tile ${selectedTable === 'Takeaway' ? 'active-table' : ''}" onclick="selectTable('Takeaway')">
+          <i class="bi bi-bag mb-1"></i>
+          <span class="fw-bold small">Takeaway</span>
+        </button>
+      `;
 
       for (let i = 1; i <= 12; i++) {
         const tName = `Table ${i}`;
-        const activeTab = activeCafeTabs.find(tab => tab.tab_name === tName);
-        const customerName = activeTab?.customer_name || activeTab?.guest_name || '';
+        const isOccupied = occupiedTables.includes(tName);
+        const isActive = selectedTable === tName;
+
         html += `
-          <button type="button" class="table-tile ${selectedTable === tName ? 'active-table' : ''} ${activeTab ? 'occupied-table' : ''}" onclick="selectTable('${tName}')" id="tableTile_${i}" aria-label="${utils.escapeHtml(tName)}${activeTab ? ` occupied by ${utils.escapeHtml(customerName)}` : ', free'}">
-            <div class="fw-bold font-monospace">T-${i}</div>
-            <small class="${activeTab ? 'text-danger fw-semibold' : 'text-muted'}">${activeTab ? utils.escapeHtml(customerName || 'Open tab') : 'Free'}</small>
+          <button type="button" class="table-tile ${isActive ? 'active-table' : ''} ${isOccupied ? 'occupied-table' : ''}" onclick="selectTable('${tName}')">
+            <i class="bi bi-cup mb-1"></i>
+            <span class="fw-bold small">${tName}</span>
+            <span class="small" style="font-size:0.7rem;">${isOccupied ? 'Tab Open' : 'Free'}</span>
           </button>
         `;
       }
       grid.innerHTML = html;
     }
 
-    function selectTable(tableName) {
-      selectedTable = tableName;
-      const activeTab = activeCafeTabs.find(tab => tab.tab_name === tableName);
-      const customerName = activeTab?.customer_name || activeTab?.guest_name;
-      document.getElementById('currentTableLabel').textContent = customerName ? `${tableName} · ${customerName}` : tableName;
-      if (activeTab?.member_id) {
-        document.getElementById('cafeMemberSelect').value = activeTab.member_id;
-        updateCafeTotals();
-      }
+    function selectTable(name) {
+      selectedTable = name;
+      document.getElementById('currentSelectedTableLabel').textContent = name;
       renderTableMap();
     }
 
@@ -299,71 +757,97 @@
       try {
         const res = await api.get('/api/members', { limit: 200 });
         membersList = res.data || [];
-        const select = document.getElementById('cafeMemberSelect');
-        select.innerHTML = '<option value="" data-discount="0">Walk-in Guest</option>' +
-          membersList.map(m => `<option value="${m.id}" data-discount="${m.discount_bar || 0}">${utils.escapeHtml(m.name)} (${m.member_code}) - ${m.discount_bar || 0}% Off</option>`).join('');
+        const sel = document.getElementById('cafeMemberSelect');
+        const opts = membersList.map(m => 
+          `<option value="${m.id}" data-discount="${m.discount_bar || 0}">
+            ${utils.escapeHtml(m.name)} (${m.member_code}) · ${m.discount_bar || 0}% Off F&amp;B
+          </option>`
+        ).join('');
+        sel.innerHTML = '<option value="" data-discount="0">Walk-in Guest (No F&amp;B Discount)</option>' + opts;
       } catch (err) {
-        console.error(err);
+        console.error('Failed to load members', err);
       }
     }
 
-    async function loadMenu() {
+    // ══════════════════════════════════════════════════════════════════════════
+    // TAB 1: POS REGISTER
+    // ══════════════════════════════════════════════════════════════════════════
+    async function loadCafeProducts() {
       const q = document.getElementById('cafeSearchInput').value.trim();
       const category = document.getElementById('cafeCategoryFilter').value;
-      const grid = document.getElementById('cafeMenuGrid');
+      const grid = document.getElementById('cafeProductsGrid');
 
       try {
+        // Staff POS loads active products
         const res = await api.get('/api/products', { department: 'bar', q, category, limit: 100 });
         cafeProducts = res.data || [];
-        renderMenu();
+        renderCafeProducts();
       } catch (err) {
         grid.innerHTML = `<div class="text-danger small">${err.message}</div>`;
       }
     }
 
-    function renderMenu() {
-      const grid = document.getElementById('cafeMenuGrid');
+    function renderCafeProducts() {
+      const grid = document.getElementById('cafeProductsGrid');
       if (!cafeProducts.length) {
-        grid.innerHTML = '<div class="text-muted small py-4 col-12">No menu items found.</div>';
+        grid.innerHTML = '<div class="col-12 text-muted small py-4 text-center">No menu items found.</div>';
         return;
       }
 
-      grid.innerHTML = cafeProducts.map(p => `
-        <div class="col-sm-6 col-md-4 col-xl-3">
-          <div class="menu-item-tile" onclick="addToCafeCart(${p.id})">
+      grid.innerHTML = cafeProducts.map(p => {
+        const isOutOfStock = p.track_stock && p.stock_quantity <= 0;
+        return `
+          <div class="menu-item-tile ${isOutOfStock ? 'opacity-50' : ''}" onclick="${isOutOfStock ? '' : `addToCafeCart(${p.id})`}">
             <div>
-              <div class="fw-semibold mb-1">${utils.escapeHtml(p.name)}</div>
-              <small class="text-muted d-block">${utils.escapeHtml(p.category || 'Cafe')}</small>
+              ${p.image_url ? `
+                <img src="${utils.escapeHtml(p.image_url)}" alt="${utils.escapeHtml(p.name)}" class="menu-item-img" onerror="this.outerHTML='<div class=\\'menu-item-img-fallback\\'><i class=\\'bi bi-cup-hot\\'></i></div>'">
+              ` : `
+                <div class="menu-item-img-fallback"><i class="bi bi-cup-hot"></i></div>
+              `}
+              <div class="d-flex justify-content-between align-items-start mb-1">
+                <span class="badge bg-light text-dark border small">${utils.escapeHtml(p.category || 'Cafe')}</span>
+                ${p.track_stock ? `<span class="badge ${p.stock_quantity <= 5 ? 'bg-danger' : 'bg-success'} small mono">${p.stock_quantity} left</span>` : ''}
+              </div>
+              <div class="fw-semibold text-truncate text-dark mb-1" title="${utils.escapeHtml(p.name)}">${utils.escapeHtml(p.name)}</div>
             </div>
-            <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
-              <span class="fw-bold font-monospace text-primary">${utils.formatINR(p.price)}</span>
-              <span class="btn btn-sm btn-primary rounded-circle" style="width:28px;height:28px;padding:0;display:flex;align-items:center;justify-content:center;">+</span>
+            <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
+              <span class="fw-bold mono text-primary">${utils.formatINR(p.price)}</span>
+              <button class="btn btn-sm btn-primary rounded-circle" ${isOutOfStock ? 'disabled' : ''} style="width:30px;height:30px;padding:0;">
+                <i class="bi bi-plus-lg"></i>
+              </button>
             </div>
           </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
-    function addToCafeCart(id) {
-      const item = cafeProducts.find(p => p.id === id);
-      if (!item) return;
+    function addToCafeCart(productId) {
+      const p = cafeProducts.find(item => item.id === productId);
+      if (!p) return;
 
-      const existing = cafeCart.find(i => i.id === id);
+      const existing = cafeCart.find(item => item.id === productId);
       if (existing) {
-        existing.qty += 1;
+        if (!p.track_stock || existing.qty < p.stock_quantity) {
+          existing.qty += 1;
+        } else {
+          ui.toast('Maximum available stock reached', 'warning');
+        }
       } else {
-        cafeCart.push({ id: item.id, name: item.name, price: Number(item.price), qty: 1 });
+        cafeCart.push({ id: p.id, name: p.name, price: Number(p.price), qty: 1, maxStock: p.track_stock ? p.stock_quantity : 999 });
       }
       renderCafeCart();
     }
 
-    function updateCafeQty(id, delta) {
-      const item = cafeCart.find(i => i.id === id);
+    function updateCafeCartQty(productId, delta) {
+      const item = cafeCart.find(i => i.id === productId);
       if (!item) return;
 
       item.qty += delta;
       if (item.qty <= 0) {
-        cafeCart = cafeCart.filter(i => i.id !== id);
+        cafeCart = cafeCart.filter(i => i.id !== productId);
+      } else if (item.qty > item.maxStock) {
+        item.qty = item.maxStock;
+        ui.toast('Stock limit reached', 'warning');
       }
       renderCafeCart();
     }
@@ -374,35 +858,42 @@
     }
 
     function renderCafeCart() {
-      const list = document.getElementById('cafeCartList');
+      const container = document.getElementById('cafeCartContainer');
       if (!cafeCart.length) {
-        list.innerHTML = '<div class="text-center py-5 text-muted small">No items added to order</div>';
-        updateCafeTotals();
+        container.innerHTML = `
+          <div class="text-center py-5 text-muted">
+            <i class="bi bi-cup-straw fs-1 d-block mb-2 text-secondary"></i>
+            Order is empty.<br>Click menu items to add to order.
+          </div>
+        `;
+        updateCafeCartTotals();
         return;
       }
 
-      list.innerHTML = cafeCart.map(i => `
-        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-          <div style="max-width:140px;">
-            <div class="fw-semibold small text-truncate">${utils.escapeHtml(i.name)}</div>
-            <small class="text-muted font-monospace">${utils.formatINR(i.price)}</small>
+      container.innerHTML = cafeCart.map(item => `
+        <div class="cart-item-row">
+          <div style="max-width: 140px;">
+            <div class="fw-semibold small text-truncate text-dark">${utils.escapeHtml(item.name)}</div>
+            <small class="text-muted mono">${utils.formatINR(item.price)}</small>
           </div>
           <div class="d-flex align-items-center gap-1">
-            <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="updateCafeQty(${i.id}, -1)">-</button>
-            <span class="font-monospace small px-1">${i.qty}</span>
-            <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="updateCafeQty(${i.id}, 1)">+</button>
+            <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="updateCafeCartQty(${item.id}, -1)">-</button>
+            <span class="mono small px-1">${item.qty}</span>
+            <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="updateCafeCartQty(${item.id}, 1)">+</button>
           </div>
-          <div class="font-monospace fw-semibold small">${utils.formatINR(i.price * i.qty)}</div>
+          <div class="mono fw-semibold small text-dark">
+            ${utils.formatINR(item.price * item.qty)}
+          </div>
         </div>
       `).join('');
 
-      updateCafeTotals();
+      updateCafeCartTotals();
     }
 
-    function updateCafeTotals() {
+    function updateCafeCartTotals() {
       const subtotal = cafeCart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-      const opt = document.querySelector('#cafeMemberSelect option:checked');
-      const discountPercent = opt ? Number(opt.dataset.discount) || 0 : 0;
+      const selectedOption = document.querySelector('#cafeMemberSelect option:checked');
+      const discountPercent = selectedOption ? Number(selectedOption.dataset.discount) || 0 : 0;
       const discountAmount = (subtotal * discountPercent) / 100;
       const total = Math.max(0, subtotal - discountAmount);
 
@@ -411,75 +902,574 @@
       document.getElementById('cafeTotal').textContent = utils.formatINR(total);
     }
 
-    async function sendToKitchen(paymentMode) {
+    async function processCafeSale(paymentMethod) {
       if (!cafeCart.length) {
-        ui.toast('Add items before creating order', 'warning');
+        ui.toast('Cart is empty. Add menu items to order.', 'warning');
         return;
       }
 
-      const selectedMemberId = document.getElementById('cafeMemberSelect').value || null;
-      let activeTab = activeCafeTabs.find(tab => tab.tab_name === selectedTable);
-      let memberId = selectedMemberId || activeTab?.member_id || null;
-      let tabId = null;
-
-      if (paymentMode === 'tab') {
-        if (!activeTab) {
-          const tab = await api.post('/api/orders/tabs/open', {
-            tab_name: selectedTable,
-            member_id: memberId,
-            guest_name: memberId ? undefined : `Walk-in at ${selectedTable}`
-          });
-          tabId = tab.id;
-        } else {
-          tabId = activeTab.id;
-        }
-      }
-
+      const memberId = document.getElementById('cafeMemberSelect').value || null;
       const payload = {
         department: 'bar',
-        channel: selectedTable === 'Takeaway' ? 'counter' : 'table',
-        table_no: selectedTable === 'Takeaway' ? undefined : selectedTable,
-        tab_id: tabId,
+        channel: 'counter',
+        table_no: selectedTable !== 'Takeaway' ? selectedTable : null,
         member_id: memberId,
-        guest_name: memberId ? undefined : `Walk-in at ${selectedTable}`,
-        guest_phone: memberId ? undefined : '9876500000',
-        payment_method: 'cash',
+        payment_method: paymentMethod,
         items: cafeCart.map(i => ({ product_id: i.id, quantity: i.qty }))
       };
 
       try {
         const res = await api.post('/api/orders', payload);
-        ui.toast(`Order #${res.data.order_code} sent to kitchen display!`, 'success');
+        ui.toast(`Order placed & sent to kitchen! Order: ${res.data.order_code}`, 'success');
         clearCafeCart();
-        if (tabId) {
-          await loadOpenCafeTabs();
-          renderTableMap();
-        }
+        loadCafeProducts();
+        loadKitchenOrders();
       } catch (err) {
-        ui.toast(err.message || 'Order dispatch failed', 'error');
+        ui.toast(err.message || 'Order failed', 'error');
       }
     }
 
-    function openDailyClosingModal() {
-      document.getElementById('dailyClosingForm').reset();
-      ui.openModal('dailyClosingModal');
-    }
+    async function openMemberTab() {
+      if (!cafeCart.length) {
+        ui.toast('Cart is empty. Add menu items to tab.', 'warning');
+        return;
+      }
 
-    async function handleDailyClosing(e) {
-      e.preventDefault();
-      const form = e.target;
+      const memberId = document.getElementById('cafeMemberSelect').value;
+      if (!memberId && selectedTable === 'Takeaway') {
+        ui.toast('Please select a member or assigned table to open a bar tab.', 'warning');
+        return;
+      }
+
       const payload = {
-        opening_float: Number(form.opening_float.value),
-        counted_cash: Number(form.counted_cash.value),
-        notes: form.notes.value.trim()
+        department: 'bar',
+        channel: 'table',
+        table_no: selectedTable,
+        member_id: memberId || null,
+        items: cafeCart.map(i => ({ product_id: i.id, quantity: i.qty }))
       };
 
       try {
-        const res = await api.post('/api/orders/daily-closing', payload);
-        ui.closeModal('dailyClosingModal');
-        ui.toast('Z-Report generated & register closed for the day', 'success');
+        const res = await api.post('/api/orders', payload);
+        ui.toast(`Added to ${selectedTable} bar tab!`, 'success');
+        clearCafeCart();
+        loadActiveTabs();
+        loadKitchenOrders();
       } catch (err) {
-        ui.toast(err.message || 'Daily closing failed', 'error');
+        ui.toast(err.message || 'Tab creation failed', 'error');
+      }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // TAB 2: FOOD & BEVERAGE MENU CATALOG & ITEMS
+    // ══════════════════════════════════════════════════════════════════════════
+    function setFoodView(view) {
+      currentFoodView = view;
+      const listContainer = document.getElementById('foodListContainer');
+      const kanbanContainer = document.getElementById('foodKanbanContainer');
+      const listBtn = document.getElementById('foodListViewBtn');
+      const kanbanBtn = document.getElementById('foodKanbanViewBtn');
+
+      if (view === 'kanban') {
+        listContainer.classList.add('d-none');
+        kanbanContainer.classList.remove('d-none');
+        listBtn.classList.remove('active');
+        kanbanBtn.classList.add('active');
+      } else {
+        kanbanContainer.classList.add('d-none');
+        listContainer.classList.remove('d-none');
+        kanbanBtn.classList.remove('active');
+        listBtn.classList.add('active');
+      }
+      renderFoodViews();
+    }
+
+    async function loadFoodCatalog(page = 1) {
+      const q = document.getElementById('foodCatSearchInput').value.trim();
+      const category = document.getElementById('foodCatCategoryFilter').value;
+      const status = document.getElementById('foodCatStatusFilter').value;
+
+      try {
+        const res = await api.get('/api/products', { department: 'bar', q, category, status, include_inactive: true, page, limit: 50 });
+        foodCatalog = res.data || [];
+        renderFoodViews();
+      } catch (err) {
+        document.getElementById('foodCatalogTableBody').innerHTML = `<tr><td colspan="8" class="text-danger text-center py-4">${err.message}</td></tr>`;
+      }
+    }
+
+    function renderFoodViews() {
+      renderFoodList();
+      renderFoodKanban();
+    }
+
+    function renderFoodList() {
+      const tbody = document.getElementById('foodCatalogTableBody');
+      if (!foodCatalog.length) {
+        tbody.innerHTML = `<tr><td colspan="8">${ui.emptyState({ headline: 'No menu items', message: 'No food/drink items match your filter criteria.' })}</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = foodCatalog.map(p => {
+        const isActive = p.is_active === 1 || p.is_active === true;
+        return `
+          <tr>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                ${p.image_url ? `
+                  <img src="${utils.escapeHtml(p.image_url)}" alt="${utils.escapeHtml(p.name)}" style="width:44px; height:44px; object-fit:cover; border-radius:8px;" onerror="this.style.display='none'">
+                ` : `
+                  <div style="width:44px; height:44px; border-radius:8px; background:#f1f5f9; display:flex; align-items:center; justify-content:center; color:#0d9488;">
+                    <i class="bi bi-cup-hot"></i>
+                  </div>
+                `}
+                <div>
+                  <div class="fw-bold text-dark">${utils.escapeHtml(p.name)}</div>
+                  <small class="text-muted text-truncate d-block" style="max-width:220px;">${utils.escapeHtml(p.description || '')}</small>
+                </div>
+              </div>
+            </td>
+            <td><span class="mono fw-semibold">${p.sku}</span></td>
+            <td><span class="badge bg-light text-dark border">${utils.escapeHtml(p.category || 'Cafe')}</span></td>
+            <td><span class="mono fw-bold text-primary">${utils.formatINR(p.price)}</span></td>
+            <td><span class="mono text-muted">${utils.formatINR(p.cost_price || 0)}</span></td>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <span class="mono fw-semibold">${p.stock_quantity || 0}</span>
+                <button class="btn btn-xs btn-outline-secondary py-0 px-1" onclick="openFoodStockModal(${p.id}, '${utils.escapeHtml(p.name)}', ${p.stock_quantity})" title="Adjust Stock">
+                  <i class="bi bi-plus-slash-minus"></i>
+                </button>
+              </div>
+            </td>
+            <td>
+              <span class="badge ${isActive ? 'bg-success' : 'bg-danger'}">
+                ${isActive ? 'Active' : 'Deactivated'}
+              </span>
+            </td>
+            <td class="text-end">
+              <div class="d-flex justify-content-end gap-1">
+                <button class="btn btn-sm ${isActive ? 'btn-outline-warning' : 'btn-outline-success'}" onclick="toggleFoodActive(${p.id}, '${utils.escapeHtml(p.name)}', ${isActive})" title="${isActive ? 'Deactivate' : 'Activate'} Item">
+                  <i class="bi ${isActive ? 'bi-toggle-on' : 'bi-toggle-off'}"></i> ${isActive ? 'Deactivate' : 'Activate'}
+                </button>
+                <button class="btn btn-sm btn-outline-primary" onclick="openEditFoodModal(${p.id})" title="Edit Item">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteFoodAction(${p.id}, '${utils.escapeHtml(p.name)}')" title="Delete Item">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderFoodKanban() {
+      const grid = document.getElementById('foodKanbanGrid');
+      if (!foodCatalog.length) {
+        grid.innerHTML = '<div class="col-12 text-center py-5 text-muted">No menu items found.</div>';
+        return;
+      }
+
+      grid.innerHTML = foodCatalog.map(p => {
+        const isActive = p.is_active === 1 || p.is_active === true;
+        return `
+          <div class="kanban-cafe-card ${!isActive ? 'opacity-75' : ''}">
+            <div class="kanban-img-wrap">
+              ${p.image_url ? `
+                <img src="${utils.escapeHtml(p.image_url)}" alt="${utils.escapeHtml(p.name)}" class="kanban-img" onerror="this.outerHTML='<div class=\\'kanban-img-fallback\\'><i class=\\'bi bi-cup-hot\\'></i></div>'">
+              ` : `
+                <div class="kanban-img-fallback"><i class="bi bi-cup-hot"></i></div>
+              `}
+              <span class="position-absolute top-0 end-0 m-2 badge ${isActive ? 'bg-success' : 'bg-danger'}">
+                ${isActive ? 'Active' : 'Deactivated'}
+              </span>
+            </div>
+            <div class="p-3 d-flex flex-column justify-content-between flex-grow-1">
+              <div>
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="badge bg-light text-dark border small">${utils.escapeHtml(p.category || 'Cafe')}</span>
+                  <span class="mono text-muted small">${p.sku}</span>
+                </div>
+                <h6 class="fw-bold text-dark text-truncate mb-1" title="${utils.escapeHtml(p.name)}">${utils.escapeHtml(p.name)}</h6>
+                <div class="small text-muted text-truncate mb-2">${utils.escapeHtml(p.description || 'Cafeteria item')}</div>
+              </div>
+
+              <div class="pt-2 border-top mt-2">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="mono fw-bold text-primary fs-5">${utils.formatINR(p.price)}</span>
+                  <span class="small text-muted mono">Stock: ${p.stock_quantity || 0}</span>
+                </div>
+                <div class="d-flex gap-1 w-100">
+                  <button class="btn btn-sm ${isActive ? 'btn-outline-warning' : 'btn-outline-success'} w-50" onclick="toggleFoodActive(${p.id}, '${utils.escapeHtml(p.name)}', ${isActive})">
+                    <i class="bi ${isActive ? 'bi-toggle-on' : 'bi-toggle-off'} me-1"></i> ${isActive ? 'Disable' : 'Enable'}
+                  </button>
+                  <button class="btn btn-sm btn-outline-primary w-50" onclick="openEditFoodModal(${p.id})">
+                    <i class="bi bi-pencil me-1"></i> Edit
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ── Food Item CRUD & Toggle Handlers ─────────────────────────────────────
+    function openAddFoodModal() {
+      document.getElementById('foodSaveForm').reset();
+      document.getElementById('food_id').value = '';
+      document.getElementById('foodModalTitle').innerHTML = '<i class="bi bi-cup-hot text-primary"></i> Add Food &amp; Beverage Item';
+      document.getElementById('foodFormErr').classList.add('d-none');
+      previewFoodImage('');
+      generateFoodSku();
+      const modal = new bootstrap.Modal(document.getElementById('foodFormModal'));
+      modal.show();
+    }
+
+    async function openEditFoodModal(id) {
+      const p = foodCatalog.find(item => item.id === id);
+      if (!p) return;
+
+      document.getElementById('food_id').value = p.id;
+      document.getElementById('food_sku').value = p.sku;
+      document.getElementById('food_name').value = p.name;
+      document.getElementById('food_cat').value = p.category || 'Beverages';
+      document.getElementById('food_price').value = p.price;
+      document.getElementById('food_cost').value = p.cost_price || '';
+      document.getElementById('food_stock').value = p.stock_quantity || 0;
+      document.getElementById('food_active').value = (p.is_active === 1 || p.is_active === true) ? '1' : '0';
+      document.getElementById('food_img').value = p.image_url || '';
+      document.getElementById('food_desc').value = p.description || '';
+
+      document.getElementById('foodModalTitle').innerHTML = '<i class="bi bi-pencil-square text-primary"></i> Edit Food Item';
+      document.getElementById('foodFormErr').classList.add('d-none');
+      previewFoodImage(p.image_url || '');
+
+      const modal = new bootstrap.Modal(document.getElementById('foodFormModal'));
+      modal.show();
+    }
+
+    function generateFoodSku() {
+      const cat = document.getElementById('food_cat').value || 'BEV';
+      const prefix = cat.slice(0, 3).toUpperCase();
+      const rand = Math.floor(100 + Math.random() * 900);
+      document.getElementById('food_sku').value = `${prefix}-${rand}`;
+    }
+
+    function previewFoodImage(url) {
+      const img = document.getElementById('foodImagePreviewImg');
+      const placeholder = document.getElementById('foodImagePreviewPlaceholder');
+      if (url && (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/'))) {
+        img.src = url;
+        img.style.display = 'block';
+        placeholder.style.display = 'none';
+      } else {
+        img.style.display = 'none';
+        placeholder.style.display = 'block';
+      }
+    }
+
+    function setPresetFoodPhoto() {
+      const presets = [
+        'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?w=600&auto=format&fit=crop', // Coffee
+        'https://images.unsplash.com/photo-1550547660-d9450f859349?w=600&auto=format&fit=crop', // Burger/Snack
+        'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&auto=format&fit=crop', // Salad bowl
+        'https://images.unsplash.com/photo-1577805947697-89e18249d767?w=600&auto=format&fit=crop'  // Protein Shake
+      ];
+      const pick = presets[Math.floor(Math.random() * presets.length)];
+      document.getElementById('food_img').value = pick;
+      previewFoodImage(pick);
+    }
+
+    async function handleSaveFoodItem(e) {
+      e.preventDefault();
+      const form = e.target;
+      const errBox = document.getElementById('foodFormErr');
+      const saveBtn = document.getElementById('saveFoodBtn');
+      const spinner = document.getElementById('saveFoodSpinner');
+      const foodId = document.getElementById('food_id').value;
+
+      errBox.classList.add('d-none');
+      saveBtn.disabled = true;
+      spinner.classList.remove('d-none');
+
+      const payload = {
+        sku: form.sku.value.trim().toUpperCase(),
+        name: form.name.value.trim(),
+        department: 'bar',
+        category: form.category.value,
+        price: Number(form.price.value),
+        cost_price: Number(form.cost_price.value) || 0,
+        stock_qty: Number(form.stock_qty.value) || 0,
+        is_active: Number(form.is_active.value),
+        image_url: form.image_url.value.trim() || null,
+        description: form.description.value.trim() || null
+      };
+
+      try {
+        if (foodId) {
+          await api.put(`/api/products/${foodId}`, payload);
+          ui.toast('Food item updated successfully.', 'success');
+        } else {
+          await api.post('/api/products', payload);
+          ui.toast('Food item created successfully.', 'success');
+        }
+        bootstrap.Modal.getInstance(document.getElementById('foodFormModal')).hide();
+        loadFoodCatalog(1);
+        loadCafeProducts();
+      } catch (err) {
+        errBox.textContent = err.message || 'Failed to save food item';
+        errBox.classList.remove('d-none');
+      } finally {
+        saveBtn.disabled = false;
+        spinner.classList.add('d-none');
+      }
+    }
+
+    async function toggleFoodActive(id, name, currentStatus) {
+      try {
+        const res = await api.put(`/api/products/${id}/toggle-active`);
+        const statusText = res.is_active ? 'Activated (Visible to Members)' : 'Deactivated (Hidden from Members)';
+        ui.toast(`"${name}" is now ${statusText}.`, 'info');
+        loadFoodCatalog(1);
+        loadCafeProducts();
+      } catch (err) {
+        ui.toast(err.message || 'Failed to toggle status', 'error');
+      }
+    }
+
+    async function deleteFoodAction(id, name) {
+      const confirmed = await ui.confirmDialog({
+        title: 'Delete Item',
+        message: `Are you sure you want to delete "${name}" from the cafeteria menu?`,
+        confirmText: 'Delete Item',
+        danger: true
+      });
+      if (!confirmed) return;
+
+      try {
+        await api.delete(`/api/products/${id}`);
+        ui.toast(`"${name}" removed.`, 'success');
+        loadFoodCatalog(1);
+        loadCafeProducts();
+      } catch (err) {
+        ui.toast(err.message, 'error');
+      }
+    }
+
+    function openFoodStockModal(id, name, curStock) {
+      document.getElementById('adj_foodId').value = id;
+      document.getElementById('adj_foodName').textContent = `${name} (Current Stock: ${curStock})`;
+      document.getElementById('adj_foodQty').value = '';
+      document.getElementById('adj_foodNotes').value = '';
+      document.getElementById('adjFoodErr').classList.add('d-none');
+      const modal = new bootstrap.Modal(document.getElementById('adjustFoodStockModal'));
+      modal.show();
+    }
+
+    async function handleSaveFoodStockAdjustment() {
+      const id = document.getElementById('adj_foodId').value;
+      const type = document.getElementById('adj_foodType').value;
+      const qty = parseInt(document.getElementById('adj_foodQty').value, 10);
+      const notes = document.getElementById('adj_foodNotes').value.trim();
+      const errBox = document.getElementById('adjFoodErr');
+
+      if (isNaN(qty) || qty === 0) {
+        errBox.textContent = 'Please enter a valid non-zero adjustment quantity.';
+        errBox.classList.remove('d-none');
+        return;
+      }
+
+      try {
+        await api.post(`/api/products/${id}/stock`, {
+          quantity_delta: qty,
+          movement_type: type,
+          notes: notes || `Cafeteria prep / stock adjustment (${type})`
+        });
+        ui.toast('Stock updated successfully.', 'success');
+        bootstrap.Modal.getInstance(document.getElementById('adjustFoodStockModal')).hide();
+        loadFoodCatalog(1);
+        loadCafeProducts();
+      } catch (err) {
+        errBox.textContent = err.message || 'Failed to adjust stock';
+        errBox.classList.remove('d-none');
+      }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // TAB 3: KITCHEN DISPLAY SYSTEM (KDS)
+    // ══════════════════════════════════════════════════════════════════════════
+    async function loadKitchenOrders(silent = false) {
+      const board = document.getElementById('kotBoard');
+      const badge = document.getElementById('kotBadgeCount');
+
+      try {
+        const items = await api.get('/api/orders/kitchen/live');
+        if (badge) badge.textContent = items.length;
+
+        if (!items.length) {
+          if (!silent) {
+            board.innerHTML = '<div class="col-12 text-center py-5 text-muted"><i class="bi bi-check-circle fs-1 text-success d-block mb-2"></i>All kitchen orders completed! No active tickets in queue.</div>';
+          }
+          return;
+        }
+
+        // Group by Order Code
+        const orderMap = new Map();
+        items.forEach(it => {
+          if (!orderMap.has(it.order_code)) {
+            orderMap.set(it.order_code, {
+              order_code: it.order_code,
+              table_no: it.table_no || 'Takeaway',
+              customer_name: it.customer_name || 'Guest',
+              elapsed_minutes: it.elapsed_minutes || 0,
+              items: []
+            });
+          }
+          orderMap.get(it.order_code).items.push(it);
+        });
+
+        board.innerHTML = Array.from(orderMap.values()).map(kot => {
+          const isUrgent = kot.elapsed_minutes > 15;
+          return `
+            <div class="kot-card">
+              <div class="kot-header ${isUrgent ? 'bg-danger text-white' : 'new-kot'}">
+                <div>
+                  <div class="fw-bold font-monospace">${kot.order_code}</div>
+                  <small class="${isUrgent ? 'text-white-50' : 'text-muted'}">${utils.escapeHtml(kot.customer_name)}</small>
+                </div>
+                <div class="text-end">
+                  <span class="badge ${isUrgent ? 'bg-light text-danger' : 'bg-dark text-white'}">${kot.table_no}</span>
+                  <div class="small fw-semibold mt-1"><i class="bi bi-stopwatch me-1"></i>${kot.elapsed_minutes}m ago</div>
+                </div>
+              </div>
+              <div class="p-3 flex-grow-1">
+                ${kot.items.map(it => `
+                  <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <div>
+                      <strong class="text-dark">${it.quantity}x ${utils.escapeHtml(it.product_name)}</strong>
+                      ${it.notes ? `<div class="small text-danger fst-italic">${utils.escapeHtml(it.notes)}</div>` : ''}
+                    </div>
+                    <select class="form-select form-select-sm d-inline-block" style="width:120px;" onchange="updateKitchenItemStatus(${it.id}, this.value)">
+                      <option value="new" ${it.kitchen_status === 'new' ? 'selected' : ''}>New</option>
+                      <option value="preparing" ${it.kitchen_status === 'preparing' ? 'selected' : ''}>Preparing</option>
+                      <option value="ready" ${it.kitchen_status === 'ready' ? 'selected' : ''}>Ready</option>
+                      <option value="served" ${it.kitchen_status === 'served' ? 'selected' : ''}>Served</option>
+                    </select>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        if (!silent) board.innerHTML = `<div class="col-12 alert alert-danger">${err.message}</div>`;
+      }
+    }
+
+    async function updateKitchenItemStatus(itemId, status) {
+      try {
+        await api.put(`/api/orders/kitchen/${itemId}/status`, { status });
+        ui.toast(`Kitchen item status updated to: ${status}`, 'success');
+        loadKitchenOrders();
+      } catch (err) {
+        ui.toast(err.message || 'Status update failed', 'error');
+      }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // TAB 4: ACTIVE BAR TABS
+    // ══════════════════════════════════════════════════════════════════════════
+    async function loadActiveTabs() {
+      const tbody = document.getElementById('openTabsTableBody');
+      const badge = document.getElementById('tabBadgeCount');
+
+      try {
+        const tabs = await api.get('/api/orders/tabs/active');
+        if (badge) badge.textContent = tabs.length;
+
+        // Update occupied tables on Floor map
+        const occupied = tabs.map(t => t.tab_name).filter(Boolean);
+        renderTableMap(occupied);
+
+        if (!tabs.length) {
+          tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">No open bar tabs currently active.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = tabs.map(t => `
+          <tr>
+            <td><span class="mono fw-bold text-dark">${utils.escapeHtml(t.tab_name || 'TAB-' + t.id)}</span></td>
+            <td>${utils.escapeHtml(t.customer_name || t.guest_name || 'Guest')}</td>
+            <td><span class="badge bg-light text-dark border">${utils.escapeHtml(t.tab_name || 'Floor')}</span></td>
+            <td><span class="small text-muted mono">${utils.formatDate(t.opened_at)}</span></td>
+            <td><span class="mono">${t.order_count || 1} orders</span></td>
+            <td><span class="mono fw-bold text-primary">${utils.formatINR(t.tab_total)}</span></td>
+            <td><span class="badge bg-warning text-dark">Open Tab</span></td>
+            <td class="text-end">
+              <button class="btn btn-sm btn-primary" onclick="settleTabAction(${t.id}, '${utils.escapeHtml(t.tab_name)}', ${t.tab_total})">
+                <i class="bi bi-credit-card me-1"></i> Settle Tab
+              </button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-danger text-center py-4">${err.message}</td></tr>`;
+      }
+    }
+
+    async function settleTabAction(tabId, tabName, total) {
+      const confirmed = await ui.confirmDialog({
+        title: 'Settle Bar Tab',
+        message: `Settle running total ${utils.formatINR(total)} for ${tabName}? This will close the tab and mark associated orders completed.`,
+        confirmText: 'Settle & Close Tab',
+        danger: false
+      });
+      if (!confirmed) return;
+
+      try {
+        await api.post(`/api/orders/tabs/${tabId}/close`, { payment_method: 'cash' });
+        ui.toast(`Tab ${tabName} settled successfully!`, 'success');
+        loadActiveTabs();
+      } catch (err) {
+        ui.toast(err.message || 'Failed to settle tab', 'error');
+      }
+    }
+
+    async function openDailyClosingModal() {
+      const body = document.getElementById('dailyClosingBody');
+      const modal = new bootstrap.Modal(document.getElementById('dailyClosingModal'));
+      modal.show();
+
+      try {
+        const res = await api.get('/api/orders/reports/closing');
+        const d = res.data || res;
+        body.innerHTML = `
+          <div class="p-2">
+            <div class="d-flex justify-content-between py-2 border-bottom">
+              <span class="text-muted">Total Orders Today</span>
+              <span class="fw-bold mono">${d.order_count || 0}</span>
+            </div>
+            <div class="d-flex justify-content-between py-2 border-bottom">
+              <span class="text-muted">Gross Sales</span>
+              <span class="fw-bold mono">${utils.formatINR(d.gross_sales || 0)}</span>
+            </div>
+            <div class="d-flex justify-content-between py-2 border-bottom">
+              <span class="text-muted">Member Discounts Given</span>
+              <span class="fw-bold mono text-success">-${utils.formatINR(d.total_discounts || 0)}</span>
+            </div>
+            <div class="d-flex justify-content-between py-2 fs-5 fw-bold text-primary border-bottom">
+              <span>Net Revenue</span>
+              <span class="mono">${utils.formatINR(d.net_sales || d.gross_sales || 0)}</span>
+            </div>
+            <button class="btn btn-primary w-100 mt-3" data-bs-dismiss="modal">
+              <i class="bi bi-check-circle me-1"></i> Acknowledge Register Totals
+            </button>
+          </div>
+        `;
+      } catch (err) {
+        body.innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
       }
     }
   </script>

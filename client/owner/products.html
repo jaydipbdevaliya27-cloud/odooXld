@@ -247,6 +247,9 @@
                   <button class="icon-btn" onclick="openEditProductModal(${p.id})" title="Edit Product">
                     <i class="bi bi-pencil"></i>
                   </button>
+                  <button class="icon-btn text-danger" onclick="deleteProduct(${p.id}, '${utils.escapeHtml(p.name)}')" title="Delete Product">
+                    <i class="bi bi-trash"></i>
+                  </button>
                 </div>
               </td>
             </tr>
@@ -264,6 +267,24 @@
         if (err.name !== 'AbortError') {
           tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger">${utils.escapeHtml(err.message)}</td></tr>`;
         }
+      }
+    }
+
+    async function deleteProduct(id, name) {
+      const confirmed = await ui.confirmDialog({
+        title: 'Delete Product',
+        message: `Are you sure you want to delete product "${name}"?`,
+        confirmText: 'Delete Product',
+        danger: true
+      });
+      if (!confirmed) return;
+
+      try {
+        await api.delete(`/api/products/${id}?force=true`);
+        ui.toast(`Product "${name}" deleted successfully.`, 'success');
+        loadProducts(1);
+      } catch (err) {
+        ui.toast(err.message, 'error');
       }
     }
 
@@ -402,24 +423,25 @@
       }
     });
 
-    const searchInput = document.getElementById('searchInput');
-    const searchClearBtn = document.getElementById('searchClearBtn');
-
-    searchInput.addEventListener('input', utils.debounce((e) => {
-      searchClearBtn.classList.toggle('d-none', !e.target.value);
-      loadProducts(1);
-    }, 300));
-
-    searchClearBtn.addEventListener('click', () => {
-      searchInput.value = '';
-      searchClearBtn.classList.add('d-none');
-      loadProducts(1);
+    utils.attachSearch({
+      input: 'searchInput',
+      clearBtn: 'searchClearBtn',
+      onSearch: () => loadProducts(1),
+      delay: 300
     });
 
     document.getElementById('deptFilter').addEventListener('change', () => loadProducts(1));
     document.getElementById('stockFilter').addEventListener('change', () => loadProducts(1));
 
-    document.addEventListener('DOMContentLoaded', () => loadProducts(1));
+    document.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const initialQ = urlParams.get('q');
+      if (initialQ) {
+        document.getElementById('searchInput').value = initialQ;
+        document.getElementById('searchClearBtn')?.classList.remove('d-none');
+      }
+      loadProducts(1);
+    });
   </script>
 </body>
 </html>

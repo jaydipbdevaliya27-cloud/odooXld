@@ -95,6 +95,10 @@ const api = {
 
   del(url, body = {}, options = {}) {
     return this.request(url, { method: 'DELETE', body, ...options });
+  },
+
+  delete(url, body = {}, options = {}) {
+    return this.request(url, { method: 'DELETE', body, ...options });
   }
 };
 

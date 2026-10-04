@@ -313,6 +313,13 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       initSearch();
+      const urlParams = new URLSearchParams(window.location.search);
+      const initialQ = urlParams.get('q');
+      if (initialQ) {
+        document.getElementById('leadSearchInput').value = initialQ;
+        const clearBtn = document.getElementById('leadSearchClear');
+        if (clearBtn) clearBtn.style.display = 'block';
+      }
       loadLeads();
       loadLeadStats();
       loadApprovalPlans();
@@ -339,29 +346,18 @@
     }
 
     function initSearch() {
-      const input = document.getElementById('leadSearchInput');
-      const clearBtn = document.getElementById('leadSearchClear');
       let abortController = null;
 
-      const performSearch = utils.debounce(async (q) => {
-        if (abortController) abortController.abort();
-        abortController = new AbortController();
-
-        leadPage = 1;
-        await loadLeads(q, abortController.signal);
-      }, 300);
-
-      input.addEventListener('input', (e) => {
-        const val = e.target.value.trim();
-        clearBtn.style.display = val ? 'block' : 'none';
-        performSearch(val);
-      });
-
-      clearBtn.addEventListener('click', () => {
-        input.value = '';
-        clearBtn.style.display = 'none';
-        leadPage = 1;
-        loadLeads('');
+      utils.attachSearch({
+        input: 'leadSearchInput',
+        clearBtn: 'leadSearchClear',
+        onSearch: async (q) => {
+          if (abortController) abortController.abort();
+          abortController = new AbortController();
+          leadPage = 1;
+          await loadLeads(q, abortController.signal);
+        },
+        delay: 300
       });
     }
 
@@ -479,8 +475,11 @@
           <td><small class="text-muted text-capitalize">${(lead.source || 'Direct').replace('_', ' ')}</small></td>
           <td><small class="text-muted">${utils.formatDate(lead.created_at)}</small></td>
           <td class="text-end">
-            <button class="btn btn-sm btn-outline-secondary" onclick="openLeadDrawer(${lead.id})" title="View Details">
+            <button class="btn btn-sm btn-outline-secondary me-1" onclick="openLeadDrawer(${lead.id})" title="View Details">
               <i class="bi bi-eye"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-danger" onclick="deleteLeadAction(${lead.id}, '${utils.escapeHtml(lead.name)}')" title="Delete Lead">
+              <i class="bi bi-trash"></i>
             </button>
           </td>
         </tr>
@@ -588,6 +587,11 @@
                 </div>
               `).join('') || '<div class="text-muted small">No follow-ups recorded yet.</div>'}
             </div>
+
+            <hr class="my-3">
+            <button class="btn btn-sm btn-outline-danger w-100" onclick="deleteLeadAction(${lead.id}, '${utils.escapeHtml(lead.name)}')">
+              <i class="bi bi-trash me-1"></i> Delete Lead
+            </button>
           </div>
         `;
       } catch (err) {
@@ -651,6 +655,27 @@
         loadLeadStats();
       } catch (err) {
         ui.toast(err.message || 'Failed to convert lead', 'error');
+      }
+    }
+
+    async function deleteLeadAction(leadId, leadName) {
+      const confirmed = await ui.confirmDialog({
+        title: 'Delete Lead',
+        message: `Are you sure you want to permanently delete lead "${leadName}"? All associated notes and follow-ups will also be removed.`,
+        confirmText: 'Delete Lead',
+        danger: true
+      });
+      if (!confirmed) return;
+
+      try {
+        await api.delete(`/api/leads/${leadId}`);
+        ui.toast('Lead deleted successfully', 'success');
+        const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('leadDrawer'));
+        if (offcanvas) offcanvas.hide();
+        loadLeads();
+        loadLeadStats();
+      } catch (err) {
+        ui.toast(err.message || 'Failed to delete lead', 'error');
       }
     }
   </script>

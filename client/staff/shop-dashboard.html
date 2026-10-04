@@ -3,255 +3,621 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pro Shop POS & Orders - Champions Club</title>
+  <title>Pro Shop Operations &amp; Inventory – Champions Club</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="/css/main.css">
   <style>
+    /* ── Pro Shop Custom Styling ─────────────────────────────────────────── */
     .pos-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
       gap: 1rem;
       max-height: calc(100vh - 280px);
       overflow-y: auto;
-      padding-right: 0.5rem;
+      padding-right: 0.35rem;
     }
     .product-pos-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-md);
-      padding: 0.85rem;
+      background: var(--surface, #ffffff);
+      border: 1.5px solid var(--border, #e2e8f0);
+      border-radius: 12px;
+      padding: 0.9rem;
       cursor: pointer;
       transition: all 0.2s ease;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      height: 100%;
+      min-height: 210px;
     }
     .product-pos-card:hover {
-      border-color: var(--accent);
+      border-color: #0d9488;
       transform: translateY(-2px);
-      box-shadow: var(--shadow-md);
+      box-shadow: 0 4px 14px rgba(13, 148, 136, 0.12);
     }
     .product-pos-img {
-      height: 100px;
+      height: 90px;
+      width: 100%;
       object-fit: cover;
-      border-radius: var(--radius-sm);
+      border-radius: 8px;
       margin-bottom: 0.5rem;
-      background: var(--surface-alt);
+      background: #f1f5f9;
     }
+    .product-pos-img-fallback {
+      height: 90px;
+      width: 100%;
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #f0fdfa 0%, #e2e8f0 100%);
+      color: #0d9488;
+      font-size: 1.8rem;
+    }
+
+    /* Cart Sidebar */
     .cart-sidebar {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 14px;
       padding: 1.25rem;
-      height: calc(100vh - 200px);
+      min-height: calc(100vh - 220px);
       display: flex;
       flex-direction: column;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
     }
     .cart-items-scroll {
       flex: 1;
       overflow-y: auto;
       margin: 1rem 0;
+      max-height: 320px;
     }
     .cart-item-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 0.5rem 0;
-      border-bottom: 1px dashed var(--border);
+      padding: 0.6rem 0;
+      border-bottom: 1px dashed #e2e8f0;
+    }
+
+    /* Kanban Card Form */
+    .kanban-product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1.25rem;
+    }
+    .kanban-product-card {
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 14px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+    }
+    .kanban-product-card:hover {
+      transform: translateY(-3px);
+      border-color: #0d9488;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+    }
+    .kanban-img-wrap {
+      position: relative;
+      height: 140px;
+      background: #f8fafc;
+      overflow: hidden;
+    }
+    .kanban-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+    .kanban-product-card:hover .kanban-img {
+      transform: scale(1.05);
+    }
+    .kanban-img-fallback {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #f0fdfa, #f1f5f9);
+      color: #0d9488;
+      font-size: 2.5rem;
+    }
+
+    /* Tab Switcher */
+    .nav-pills-custom .nav-link {
+      color: #475569;
+      font-weight: 600;
+      border-radius: 10px;
+      padding: 0.6rem 1.1rem;
+      transition: all 0.2s ease;
+    }
+    .nav-pills-custom .nav-link.active {
+      background: #0f172a;
+      color: #ffffff;
+      box-shadow: 0 4px 10px rgba(15, 23, 42, 0.2);
+    }
+
+    .table-responsive {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
     }
   </style>
 </head>
 <body>
-  <div id="app-shell"></div>
+  <div class="app-layout">
+    <div id="app-shell"></div>
 
-  <div class="content-container">
-    <!-- Nav Tabs -->
-    <ul class="nav nav-pills mb-4 gap-2" id="shopTabs" role="tablist">
-      <li class="nav-item">
-        <button class="nav-link active fw-semibold" id="pos-tab" data-bs-toggle="pill" data-bs-target="#posPane" type="button">
-          <i class="bi bi-cart3 me-1"></i> Shop POS & Register
-        </button>
-      </li>
-      <li class="nav-item">
-        <button class="nav-link fw-semibold" id="orders-tab" data-bs-toggle="pill" data-bs-target="#ordersPane" type="button" onclick="loadShopOrders()">
-          <i class="bi bi-box-seam me-1"></i> Fulfilment Queue
-        </button>
-      </li>
-      <li class="nav-item">
-        <button class="nav-link fw-semibold" id="services-tab" data-bs-toggle="pill" data-bs-target="#servicesPane" type="button" onclick="loadServiceJobs()">
-          <i class="bi bi-tools me-1"></i> Stringing & Services
-        </button>
-      </li>
-    </ul>
+    <main class="app-main">
+      <!-- Main Content Container -->
+      <div class="container-fluid p-3 p-md-4">
+        <!-- Top Title & Navigation Tabs -->
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-3">
+          <div>
+            <h4 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+              <i class="bi bi-shop text-primary"></i> Pro Shop Operations
+            </h4>
+            <p class="text-muted small mb-0">POS Terminal, Online Order Fulfilment, Catalog Inventory &amp; Restringing Services</p>
+          </div>
 
-    <div class="tab-content">
-      <!-- POS Pane -->
-      <div class="tab-pane fade show active" id="posPane">
-        <div class="row g-3">
-          <!-- Left: Product Catalog -->
-          <div class="col-lg-8">
-            <div class="card shadow-sm border-0 p-3 mb-3">
-              <div class="row g-2 align-items-center">
-                <div class="col-md-7">
-                  <div class="search-input-wrap">
-                    <i class="bi bi-search search-icon"></i>
-                    <input type="search" class="form-control" id="productSearchInput" placeholder="Search by product name, SKU, brand..." aria-label="Search products">
+          <ul class="nav nav-pills nav-pills-custom gap-2" id="shopTabs" role="tablist">
+            <li class="nav-item">
+              <button class="nav-link active" id="pos-tab" data-bs-toggle="pill" data-bs-target="#posPane" type="button">
+                <i class="bi bi-cart3 me-1"></i> POS Register
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" id="orders-tab" data-bs-toggle="pill" data-bs-target="#ordersPane" type="button" onclick="loadShopOrders(1)">
+                <i class="bi bi-box-seam me-1"></i> Fulfilment Queue
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" id="products-tab" data-bs-toggle="pill" data-bs-target="#productsPane" type="button" onclick="loadCatalogProducts(1)">
+                <i class="bi bi-boxes me-1"></i> Products &amp; Stock
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" id="services-tab" data-bs-toggle="pill" data-bs-target="#servicesPane" type="button" onclick="loadServiceJobs(1)">
+                <i class="bi bi-tools me-1"></i> Stringing &amp; Services
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <div class="tab-content">
+          <!-- ════════════════════════════════════════════════════════════════ -->
+          <!-- TAB 1: POS REGISTER & CHECKOUT                                   -->
+          <!-- ════════════════════════════════════════════════════════════════ -->
+          <div class="tab-pane fade show active" id="posPane">
+            <div class="row g-3">
+              <!-- Left: Product Catalog Selection -->
+              <div class="col-lg-8">
+                <div class="card border shadow-sm p-3 mb-3 bg-white rounded-3">
+                  <div class="row g-2 align-items-center">
+                    <div class="col-md-7">
+                      <div class="search-input-group">
+                        <i class="bi bi-search search-leading-icon"></i>
+                        <input type="text" id="posSearchInput" placeholder="Search by gear name, SKU, brand..." aria-label="Search POS products">
+                        <button type="button" class="search-clear-btn d-none" id="posSearchClearBtn"><i class="bi bi-x"></i></button>
+                      </div>
+                    </div>
+                    <div class="col-md-5">
+                      <select class="form-select form-select-sm" id="posCategoryFilter">
+                        <option value="">All Categories</option>
+                        <option value="Rackets">Rackets</option>
+                        <option value="Footwear">Footwear</option>
+                        <option value="Apparel">Apparel</option>
+                        <option value="Accessories">Accessories</option>
+                        <option value="Strings">Strings &amp; Grips</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
-                <div class="col-md-5">
-                  <select class="form-select" id="productCategoryFilter">
+
+                <div class="pos-grid" id="posProductsGrid">
+                  <!-- Injected via JS -->
+                </div>
+              </div>
+
+              <!-- Right: Cart & Checkout -->
+              <div class="col-lg-4">
+                <div class="cart-sidebar">
+                  <div class="d-flex justify-content-between align-items-center border-bottom pb-2">
+                    <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-receipt me-2 text-primary"></i>Current Sale</h5>
+                    <button class="btn btn-sm btn-outline-danger" onclick="clearCart()" title="Clear Cart">
+                      <i class="bi bi-trash3"></i> Clear
+                    </button>
+                  </div>
+
+                  <!-- Customer Selector -->
+                  <div class="mt-3">
+                    <label class="form-label small fw-bold text-muted text-uppercase mb-1">Customer / Member</label>
+                    <select class="form-select form-select-sm" id="posMemberSelect" onchange="updateCartTotals()">
+                      <option value="" data-discount="0">Walk-in Guest (No Discount)</option>
+                    </select>
+                  </div>
+
+                  <!-- Cart List -->
+                  <div class="cart-items-scroll" id="cartItemsContainer">
+                    <div class="text-center py-5 text-muted">
+                      <i class="bi bi-cart-x fs-1 d-block mb-2 text-secondary"></i>
+                      Cart is empty.<br>Click products to add to sale.
+                    </div>
+                  </div>
+
+                  <!-- Totals -->
+                  <div class="border-top pt-3">
+                    <div class="d-flex justify-content-between text-muted small mb-1">
+                      <span>Subtotal</span>
+                      <span id="posSubtotal" class="mono">₹0</span>
+                    </div>
+                    <div class="d-flex justify-content-between text-success small mb-1">
+                      <span>Member Discount</span>
+                      <span id="posDiscount" class="mono">-₹0</span>
+                    </div>
+                    <div class="d-flex justify-content-between fw-bold fs-5 mb-3">
+                      <span>Total Due</span>
+                      <span id="posTotal" class="mono text-primary">₹0</span>
+                    </div>
+
+                    <!-- Payment Buttons -->
+                    <div class="row g-2">
+                      <div class="col-4">
+                        <button class="btn btn-outline-secondary w-100 py-2 small fw-semibold" onclick="processSale('cash')">
+                          <i class="bi bi-cash-stack d-block mb-1"></i> Cash
+                        </button>
+                      </div>
+                      <div class="col-4">
+                        <button class="btn btn-outline-secondary w-100 py-2 small fw-semibold" onclick="processSale('upi')">
+                          <i class="bi bi-qr-code d-block mb-1"></i> UPI
+                        </button>
+                      </div>
+                      <div class="col-4">
+                        <button class="btn btn-outline-secondary w-100 py-2 small fw-semibold" onclick="processSale('card')">
+                          <i class="bi bi-credit-card d-block mb-1"></i> Card
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ════════════════════════════════════════════════════════════════ -->
+          <!-- TAB 2: FULFILMENT QUEUE                                          -->
+          <!-- ════════════════════════════════════════════════════════════════ -->
+          <div class="tab-pane fade" id="ordersPane">
+            <div class="table-card">
+              <div class="table-card-header flex-wrap gap-2">
+                <div>
+                  <h5 class="table-card-title"><i class="bi bi-box-seam text-primary"></i> Shop Orders &amp; Fulfilment</h5>
+                  <p class="table-card-subtitle">Dispatch online orders, collect store pickups and manage deliveries</p>
+                </div>
+                <button class="btn btn-sm btn-outline-secondary" onclick="loadShopOrders(1)">
+                  <i class="bi bi-arrow-clockwise me-1"></i> Refresh Queue
+                </button>
+              </div>
+
+              <!-- Toolbar -->
+              <div class="table-card-toolbar">
+                <div class="search-input-group">
+                  <i class="bi bi-search search-leading-icon"></i>
+                  <input type="text" id="orderSearchInput" placeholder="Search by order code, member name, phone..." aria-label="Search orders">
+                  <button type="button" class="search-clear-btn d-none" id="orderSearchClearBtn"><i class="bi bi-x"></i></button>
+                </div>
+
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                  <select id="orderChannelFilter" class="form-select form-select-sm" style="width: auto;">
+                    <option value="">All Channels</option>
+                    <option value="online">Online Orders</option>
+                    <option value="counter">Counter POS</option>
+                  </select>
+                  <select id="orderStatusFilter" class="form-select form-select-sm" style="width: auto;">
+                    <option value="">All Fulfilment Statuses</option>
+                    <option value="placed">Placed</option>
+                    <option value="packed">Packed</option>
+                    <option value="ready_for_pickup">Ready for Pickup</option>
+                    <option value="out_for_delivery">Out for Delivery</option>
+                    <option value="collected">Collected</option>
+                    <option value="delivered">Delivered</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="table-responsive">
+                <table class="cc-table" id="shopOrdersTable">
+                  <thead>
+                    <tr>
+                      <th>Order Code</th>
+                      <th>Customer / Member</th>
+                      <th>Channel</th>
+                      <th>Items Count</th>
+                      <th>Net Total</th>
+                      <th>Current Status</th>
+                      <th>Date</th>
+                      <th class="text-end" style="min-width: 170px;">Update Fulfilment</th>
+                    </tr>
+                  </thead>
+                  <tbody id="shopOrdersTableBody">
+                    <tr><td colspan="8" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading order queue…</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="table-footer" id="ordersPagination"></div>
+            </div>
+          </div>
+
+          <!-- ════════════════════════════════════════════════════════════════ -->
+          <!-- TAB 3: PRODUCTS CATALOG & INVENTORY (NEW TAB)                    -->
+          <!-- ════════════════════════════════════════════════════════════════ -->
+          <div class="tab-pane fade" id="productsPane">
+            <div class="table-card">
+              <div class="table-card-header flex-wrap gap-2">
+                <div>
+                  <h5 class="table-card-title"><i class="bi bi-boxes text-primary"></i> Pro Shop Catalog &amp; Live Stock</h5>
+                  <p class="table-card-subtitle">Real-time inventory levels, product catalog, photos &amp; pricing</p>
+                </div>
+                
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                  <!-- View Switcher -->
+                  <div class="btn-group btn-group-sm p-1 bg-light rounded-3 border" role="group" aria-label="Catalog View">
+                    <button type="button" class="btn btn-sm active" id="catListViewBtn" onclick="setCatalogView('list')">
+                      <i class="bi bi-list-ul me-1"></i> List Form
+                    </button>
+                    <button type="button" class="btn btn-sm" id="catKanbanViewBtn" onclick="setCatalogView('kanban')">
+                      <i class="bi bi-grid me-1"></i> Kanban Cards
+                    </button>
+                  </div>
+
+                  <!-- Add Product Button -->
+                  <button class="btn btn-primary btn-sm" onclick="openAddProductModal()">
+                    <i class="bi bi-plus-lg me-1"></i> Add New Product
+                  </button>
+                </div>
+              </div>
+
+              <!-- Toolbar -->
+              <div class="table-card-toolbar">
+                <div class="search-input-group">
+                  <i class="bi bi-search search-leading-icon"></i>
+                  <input type="text" id="catSearchInput" placeholder="Search catalog by product name, SKU, category..." aria-label="Search catalog">
+                  <button type="button" class="search-clear-btn d-none" id="catSearchClearBtn"><i class="bi bi-x"></i></button>
+                </div>
+
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                  <select id="catCategoryFilter" class="form-select form-select-sm" style="width: auto;">
                     <option value="">All Categories</option>
                     <option value="Rackets">Rackets</option>
                     <option value="Footwear">Footwear</option>
                     <option value="Apparel">Apparel</option>
                     <option value="Accessories">Accessories</option>
-                    <option value="Strings">Strings & Grips</option>
+                    <option value="Strings">Strings &amp; Grips</option>
+                  </select>
+                  <select id="catStockFilter" class="form-select form-select-sm" style="width: auto;">
+                    <option value="">All Stock Levels</option>
+                    <option value="low">Low Stock (&le; Reorder Level)</option>
+                    <option value="out">Out of Stock (0)</option>
+                    <option value="ok">Adequate Stock</option>
                   </select>
                 </div>
               </div>
-            </div>
 
-            <div class="pos-grid" id="posProductsGrid">
-              <!-- Injected via JS -->
+              <!-- List View -->
+              <div id="catalogListContainer">
+                <div class="table-responsive">
+                  <table class="cc-table" id="catalogTable">
+                    <thead>
+                      <tr>
+                        <th>Product &amp; Photo</th>
+                        <th>SKU</th>
+                        <th>Category</th>
+                        <th>Selling Price</th>
+                        <th>Cost Price</th>
+                        <th>Live Stock Level</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="catalogTableBody">
+                      <tr><td colspan="8" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading catalog…</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Kanban Cards View -->
+              <div id="catalogKanbanContainer" class="p-3 d-none">
+                <div class="kanban-product-grid" id="catalogKanbanGrid">
+                  <!-- Populated via JS -->
+                </div>
+              </div>
+
+              <div class="table-footer" id="catalogPagination"></div>
             </div>
           </div>
 
-          <!-- Right: Cart & Checkout -->
-          <div class="col-lg-4">
-            <div class="cart-sidebar shadow-sm">
-              <div class="d-flex justify-content-between align-items-center border-bottom pb-2">
-                <h5 class="fw-bold mb-0"><i class="bi bi-receipt me-2 text-primary"></i>Current Sale</h5>
-                <button class="btn btn-sm btn-outline-danger" onclick="clearCart()" title="Clear Cart">
-                  <i class="bi bi-trash3"></i>
+          <!-- ════════════════════════════════════════════════════════════════ -->
+          <!-- TAB 4: STRINGING & SERVICES                                      -->
+          <!-- ════════════════════════════════════════════════════════════════ -->
+          <div class="tab-pane fade" id="servicesPane">
+            <div class="table-card">
+              <div class="table-card-header flex-wrap gap-2">
+                <div>
+                  <h5 class="table-card-title"><i class="bi bi-tools text-primary"></i> Racket Restringing &amp; Services</h5>
+                  <p class="table-card-subtitle">Track equipment intake, string tension, customization and delivery</p>
+                </div>
+                <button class="btn btn-sm btn-primary" onclick="openNewJobModal()">
+                  <i class="bi bi-plus-lg me-1"></i> New Service Job
                 </button>
               </div>
 
-              <!-- Customer Selector -->
-              <div class="mt-3">
-                <label class="form-label small fw-bold">Customer</label>
-                <select class="form-select form-select-sm" id="posMemberSelect" onchange="updateCartTotals()">
-                  <option value="" data-discount="0">Walk-in Guest (No Discount)</option>
+              <!-- Toolbar -->
+              <div class="table-card-toolbar">
+                <div class="search-input-group">
+                  <i class="bi bi-search search-leading-icon"></i>
+                  <input type="text" id="serviceSearchInput" placeholder="Search service jobs by job code, member, racket model..." aria-label="Search service jobs">
+                  <button type="button" class="search-clear-btn d-none" id="serviceSearchClearBtn"><i class="bi bi-x"></i></button>
+                </div>
+              </div>
+
+              <div class="table-responsive">
+                <table class="cc-table" id="serviceJobsTable">
+                  <thead>
+                    <tr>
+                      <th>Job Code</th>
+                      <th>Customer / Member</th>
+                      <th>Equipment / Racket</th>
+                      <th>String &amp; Tension</th>
+                      <th>Fee</th>
+                      <th>Status</th>
+                      <th class="text-end" style="min-width: 150px;">Update Job Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="serviceJobsTableBody">
+                    <tr><td colspan="7" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading service jobs…</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ── Add / Edit Product Modal ─────────────────────────────────────────── -->
+  <div class="modal fade" id="productFormModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold d-flex align-items-center gap-2" id="productModalTitle">
+            <i class="bi bi-box-seam text-primary"></i> Add New Product
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="productSaveForm" novalidate>
+          <input type="hidden" id="prod_id">
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label required" for="prod_sku">SKU Code</label>
+                <div class="input-group">
+                  <input type="text" id="prod_sku" name="sku" class="form-control text-uppercase" placeholder="e.g. RAC-YON-01" required>
+                  <button class="btn btn-outline-secondary btn-sm" type="button" onclick="generateSku()">Auto</button>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label required" for="prod_name">Product Name</label>
+                <input type="text" id="prod_name" name="name" class="form-control" placeholder="e.g. Yonex Astrox 99 Pro" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label required" for="prod_cat">Category</label>
+                <select id="prod_cat" name="category" class="form-select" required>
+                  <option value="Rackets">Rackets</option>
+                  <option value="Footwear">Footwear</option>
+                  <option value="Apparel">Apparel</option>
+                  <option value="Accessories">Accessories</option>
+                  <option value="Strings">Strings &amp; Grips</option>
                 </select>
               </div>
-
-              <!-- Cart List -->
-              <div class="cart-items-scroll" id="cartItemsContainer">
-                <div class="text-center py-5 text-muted">
-                  <i class="bi bi-cart-x fs-1 d-block mb-2 text-dim"></i>
-                  Cart is empty.<br>Click items to add to sale.
-                </div>
+              <div class="col-md-6">
+                <label class="form-label required" for="prod_price">Selling Price (₹)</label>
+                <input type="number" id="prod_price" name="price" class="form-control" min="1" step="1" placeholder="4500" required>
               </div>
-
-              <!-- Totals -->
-              <div class="border-top pt-3">
-                <div class="d-flex justify-content-between text-muted small mb-1">
-                  <span>Subtotal</span>
-                  <span id="posSubtotal" class="font-monospace">₹0</span>
+              <div class="col-md-6">
+                <label class="form-label" for="prod_cost">Cost Price (₹)</label>
+                <input type="number" id="prod_cost" name="cost_price" class="form-control" min="0" step="1" placeholder="3200">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label" for="prod_stock">Stock Quantity</label>
+                <input type="number" id="prod_stock" name="stock_qty" class="form-control" min="0" value="10">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label" for="prod_reorder">Reorder Threshold</label>
+                <input type="number" id="prod_reorder" name="reorder_level" class="form-control" min="0" value="5">
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="prod_img">Product Photo URL</label>
+                <div class="input-group mb-2">
+                  <input type="url" id="prod_img" name="image_url" class="form-control" placeholder="https://images.unsplash.com/photo-..." oninput="previewProductImage(this.value)">
+                  <button class="btn btn-outline-secondary" type="button" onclick="setPresetPhoto()">Preset Photo</button>
                 </div>
-                <div class="d-flex justify-content-between text-success small mb-1">
-                  <span>Member Discount</span>
-                  <span id="posDiscount" class="font-monospace">-₹0</span>
-                </div>
-                <div class="d-flex justify-content-between fw-bold fs-5 mb-3">
-                  <span>Total Due</span>
-                  <span id="posTotal" class="font-monospace text-primary">₹0</span>
-                </div>
-
-                <!-- Payment Buttons -->
-                <div class="row g-2">
-                  <div class="col-4">
-                    <button class="btn btn-outline-secondary w-100 py-2 small" onclick="processSale('cash')">
-                      <i class="bi bi-cash-stack d-block mb-1"></i> Cash
-                    </button>
-                  </div>
-                  <div class="col-4">
-                    <button class="btn btn-outline-secondary w-100 py-2 small" onclick="processSale('upi')">
-                      <i class="bi bi-qr-code d-block mb-1"></i> UPI
-                    </button>
-                  </div>
-                  <div class="col-4">
-                    <button class="btn btn-outline-secondary w-100 py-2 small" onclick="processSale('card')">
-                      <i class="bi bi-credit-card d-block mb-1"></i> Card
-                    </button>
+                <!-- Image Preview Box -->
+                <div id="imagePreviewContainer" class="d-flex align-items-center gap-3 p-2 bg-light rounded-3 border">
+                  <img id="imagePreviewImg" src="" alt="Preview" style="width: 70px; height: 70px; object-fit: cover; border-radius: 8px; display: none;">
+                  <div id="imagePreviewPlaceholder" class="text-muted small">
+                    <i class="bi bi-image me-1"></i> Enter a valid image URL to preview photo.
                   </div>
                 </div>
               </div>
+              <div class="col-12">
+                <label class="form-label" for="prod_desc">Description</label>
+                <textarea id="prod_desc" name="description" class="form-control" rows="2" placeholder="Product details, material, specifications..."></textarea>
+              </div>
             </div>
+            <div id="productFormErr" class="alert alert-danger d-none small py-2 mt-3"></div>
           </div>
-        </div>
-      </div>
-
-      <!-- Fulfilment Pane -->
-      <div class="tab-pane fade" id="ordersPane">
-        <div class="table-card">
-          <div class="table-card-header">
-            <div>
-              <h5 class="table-card-title">Shop Orders & Fulfilment</h5>
-              <p class="table-card-subtitle">Dispatch online orders, collect store pickups and manage deliveries</p>
-            </div>
-          </div>
-          <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-              <thead>
-                <tr>
-                  <th>Order Code</th>
-                  <th>Customer</th>
-                  <th>Channel</th>
-                  <th>Items</th>
-                  <th>Total</th>
-                  <th>Status</th>
-                  <th class="text-end">Update Status</th>
-                </tr>
-              </thead>
-              <tbody id="shopOrdersTableBody">
-                <!-- Injected via JS -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <!-- Service Jobs Pane -->
-      <div class="tab-pane fade" id="servicesPane">
-        <div class="table-card">
-          <div class="table-card-header">
-            <div>
-              <h5 class="table-card-title">Racket Restringing & Service Jobs</h5>
-              <p class="table-card-subtitle">Track intake, string tension, customization and delivery</p>
-            </div>
-            <button class="btn btn-sm btn-primary" onclick="openNewJobModal()">
-              <i class="bi bi-plus-lg me-1"></i> New Service Job
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="saveProductBtn">
+              <span id="saveProductSpinner" class="spinner-border spinner-border-sm d-none me-1"></span>
+              Save Product
             </button>
           </div>
-          <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-              <thead>
-                <tr>
-                  <th>Job Code</th>
-                  <th>Customer</th>
-                  <th>Equipment / Racket</th>
-                  <th>String & Tension</th>
-                  <th>Fee</th>
-                  <th>Status</th>
-                  <th class="text-end">Actions</th>
-                </tr>
-              </thead>
-              <tbody id="serviceJobsTableBody">
-                <!-- Injected via JS -->
-              </tbody>
-            </table>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Adjust Stock Modal ───────────────────────────────────────────────── -->
+  <div class="modal fade" id="adjustStockModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold d-flex align-items-center gap-2">
+            <i class="bi bi-boxes text-primary"></i> Adjust Inventory Stock
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="adj_prodId">
+          <p class="fw-bold mb-3 text-dark fs-6" id="adj_prodName"></p>
+          <div class="mb-3">
+            <label class="form-label">Adjustment Type</label>
+            <select id="adj_type" class="form-select">
+              <option value="restock">Restock / Shipment Received (+)</option>
+              <option value="adjustment">Count Adjustment (+/-)</option>
+              <option value="damage">Damaged / Defective (-)</option>
+            </select>
           </div>
+          <div class="mb-3">
+            <label class="form-label">Quantity (+ or -)</label>
+            <input type="number" id="adj_qty" class="form-control" placeholder="e.g. 10 or -2" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Notes / Reference</label>
+            <input type="text" id="adj_notes" class="form-control" placeholder="e.g. Weekly vendor delivery">
+          </div>
+          <div id="adjErr" class="alert alert-danger d-none small py-2"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="adjSaveBtn">Update Stock</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- New Service Job Modal -->
+  <!-- ── New Service Job Modal ────────────────────────────────────────────── -->
   <div class="modal fade" id="newJobModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -283,7 +649,7 @@
             </div>
             <div class="row g-2 mb-3">
               <div class="col-6">
-                <label class="form-label required">Service Fee</label>
+                <label class="form-label required">Service Fee (₹)</label>
                 <input type="number" class="form-control" name="fee" required placeholder="e.g. 350" min="0">
               </div>
               <div class="col-6">
@@ -302,38 +668,66 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="../js/api.js"></script>
-  <script src="../js/utils.js"></script>
-  <script src="../js/ui.js"></script>
-  <script src="../js/validators.js"></script>
-  <script src="../js/shell.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/utils.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/validators.js"></script>
+  <script src="/js/shell.js"></script>
   <script>
-    let productsList = [];
+    let posProducts = [];
+    let catalogProducts = [];
     let cart = [];
     let membersList = [];
+    let currentCatalogView = 'list';
 
     document.addEventListener('DOMContentLoaded', async () => {
-      initSearch();
       await loadMembers();
-      loadProducts();
+      loadPosProducts();
+      initSearchHandlers();
 
-      document.getElementById('productCategoryFilter').addEventListener('change', () => loadProducts());
+      document.getElementById('posCategoryFilter').addEventListener('change', () => loadPosProducts());
+      document.getElementById('catCategoryFilter').addEventListener('change', () => loadCatalogProducts(1));
+      document.getElementById('catStockFilter').addEventListener('change', () => loadCatalogProducts(1));
+      document.getElementById('orderChannelFilter').addEventListener('change', () => loadShopOrders(1));
+      document.getElementById('orderStatusFilter').addEventListener('change', () => loadShopOrders(1));
+      
+      document.getElementById('productSaveForm').addEventListener('submit', handleSaveProduct);
+      document.getElementById('adjSaveBtn').addEventListener('click', handleSaveStockAdjustment);
       document.getElementById('newJobForm').addEventListener('submit', handleCreateJob);
     });
 
-    function initSearch() {
-      const input = document.getElementById('productSearchInput');
-      let abortController = null;
+    // ── Debounced Search Attachments with Bounce ─────────────────────────────
+    function initSearchHandlers() {
+      utils.attachSearch({
+        input: 'posSearchInput',
+        clearBtn: 'posSearchClearBtn',
+        onSearch: () => loadPosProducts(),
+        delay: 300
+      });
 
-      const performSearch = utils.debounce(async (q) => {
-        if (abortController) abortController.abort();
-        abortController = new AbortController();
-        await loadProducts(q, abortController.signal);
-      }, 300);
+      utils.attachSearch({
+        input: 'orderSearchInput',
+        clearBtn: 'orderSearchClearBtn',
+        onSearch: () => loadShopOrders(1),
+        delay: 300
+      });
 
-      input.addEventListener('input', (e) => performSearch(e.target.value.trim()));
+      utils.attachSearch({
+        input: 'catSearchInput',
+        clearBtn: 'catSearchClearBtn',
+        onSearch: () => loadCatalogProducts(1),
+        delay: 300
+      });
+
+      utils.attachSearch({
+        input: 'serviceSearchInput',
+        clearBtn: 'serviceSearchClearBtn',
+        onSearch: () => loadServiceJobs(1),
+        delay: 300
+      });
     }
 
+    // ── Load Members for POS & Job Selector ──────────────────────────────────
     async function loadMembers() {
       try {
         const res = await api.get('/api/members', { limit: 200 });
@@ -343,7 +737,7 @@
 
         const opts = membersList.map(m => 
           `<option value="${m.id}" data-discount="${m.discount_pro_shop || 0}">
-            ${utils.escapeHtml(m.name)} (${m.member_code}) - ${m.discount_pro_shop || 0}% Off
+            ${utils.escapeHtml(m.name)} (${m.member_code}) · ${m.discount_pro_shop || 0}% Off
           </option>`
         ).join('');
 
@@ -354,45 +748,51 @@
       }
     }
 
-    async function loadProducts(searchQuery = '', signal = null) {
-      const q = searchQuery !== '' ? searchQuery : document.getElementById('productSearchInput').value.trim();
-      const category = document.getElementById('productCategoryFilter').value;
+    // ══════════════════════════════════════════════════════════════════════════
+    // TAB 1: POS REGISTER
+    // ══════════════════════════════════════════════════════════════════════════
+    async function loadPosProducts() {
+      const q = document.getElementById('posSearchInput').value.trim();
+      const category = document.getElementById('posCategoryFilter').value;
       const grid = document.getElementById('posProductsGrid');
 
       try {
-        const res = await api.get('/api/products', { department: 'shop', q, category, limit: 100 }, { signal });
-        productsList = res.data || [];
-        renderProducts();
+        const res = await api.get('/api/products', { department: 'shop', q, category, limit: 100 });
+        posProducts = res.data || [];
+        renderPosProducts();
       } catch (err) {
-        if (err.name !== 'AbortError') {
-          grid.innerHTML = `<div class="text-danger small">${err.message || 'Failed to load products'}</div>`;
-        }
+        grid.innerHTML = `<div class="text-danger small">${err.message || 'Failed to load products'}</div>`;
       }
     }
 
-    function renderProducts() {
+    function renderPosProducts() {
       const grid = document.getElementById('posProductsGrid');
-      if (!productsList.length) {
-        grid.innerHTML = '<div class="text-muted small py-4">No products found matching criteria.</div>';
+      if (!posProducts.length) {
+        grid.innerHTML = '<div class="col-12 text-muted small py-4 text-center">No products found matching criteria.</div>';
         return;
       }
 
-      grid.innerHTML = productsList.map(p => {
+      grid.innerHTML = posProducts.map(p => {
         const isOutOfStock = p.stock_quantity <= 0;
         return `
           <div class="product-pos-card ${isOutOfStock ? 'opacity-50' : ''}" onclick="${isOutOfStock ? '' : `addToCart(${p.id})`}">
             <div>
+              ${p.image_url ? `
+                <img src="${utils.escapeHtml(p.image_url)}" alt="${utils.escapeHtml(p.name)}" class="product-pos-img" onerror="this.outerHTML='<div class=\\'product-pos-img-fallback\\'><i class=\\'bi bi-bag\\'></i></div>'">
+              ` : `
+                <div class="product-pos-img-fallback"><i class="bi bi-bag"></i></div>
+              `}
               <div class="d-flex justify-content-between align-items-start mb-1">
-                <span class="badge ${p.stock_quantity <= 5 ? 'bg-danger' : 'bg-light text-dark border'} small font-monospace">
+                <span class="badge ${p.stock_quantity <= 5 ? (p.stock_quantity === 0 ? 'bg-danger' : 'bg-warning text-dark') : 'bg-success'} small mono">
                   ${p.stock_quantity} in stock
                 </span>
                 <small class="text-muted">${utils.escapeHtml(p.category || 'Shop')}</small>
               </div>
-              <div class="fw-semibold text-truncate mb-1" title="${utils.escapeHtml(p.name)}">${utils.escapeHtml(p.name)}</div>
-              <small class="text-muted d-block font-monospace mb-2">${p.sku}</small>
+              <div class="fw-semibold text-truncate mb-1 text-dark" title="${utils.escapeHtml(p.name)}">${utils.escapeHtml(p.name)}</div>
+              <small class="text-muted d-block mono small mb-2">${p.sku}</small>
             </div>
             <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
-              <span class="fw-bold font-monospace text-primary">${utils.formatINR(p.price)}</span>
+              <span class="fw-bold mono text-primary">${utils.formatINR(p.price)}</span>
               <button class="btn btn-sm btn-primary rounded-circle" ${isOutOfStock ? 'disabled' : ''} style="width:32px;height:32px;padding:0;">
                 <i class="bi bi-plus-lg"></i>
               </button>
@@ -403,7 +803,7 @@
     }
 
     function addToCart(productId) {
-      const p = productsList.find(item => item.id === productId);
+      const p = posProducts.find(item => item.id === productId);
       if (!p || p.stock_quantity <= 0) return;
 
       const existing = cart.find(item => item.id === productId);
@@ -443,7 +843,7 @@
       if (!cart.length) {
         container.innerHTML = `
           <div class="text-center py-5 text-muted">
-            <i class="bi bi-cart-x fs-1 d-block mb-2 text-dim"></i>
+            <i class="bi bi-cart-x fs-1 d-block mb-2 text-secondary"></i>
             Cart is empty.<br>Click items to add to sale.
           </div>
         `;
@@ -454,15 +854,15 @@
       container.innerHTML = cart.map(item => `
         <div class="cart-item-row">
           <div style="max-width: 140px;">
-            <div class="fw-semibold small text-truncate">${utils.escapeHtml(item.name)}</div>
-            <small class="text-muted font-monospace">${utils.formatINR(item.price)}</small>
+            <div class="fw-semibold small text-truncate text-dark">${utils.escapeHtml(item.name)}</div>
+            <small class="text-muted mono">${utils.formatINR(item.price)}</small>
           </div>
           <div class="d-flex align-items-center gap-1">
             <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="updateCartQty(${item.id}, -1)">-</button>
-            <span class="font-monospace small px-1">${item.qty}</span>
+            <span class="mono small px-1">${item.qty}</span>
             <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="updateCartQty(${item.id}, 1)">+</button>
           </div>
-          <div class="font-monospace fw-semibold small">
+          <div class="mono fw-semibold small text-dark">
             ${utils.formatINR(item.price * item.qty)}
           </div>
         </div>
@@ -502,90 +902,482 @@
         const res = await api.post('/api/orders', payload);
         ui.toast(`Sale completed! Receipt: ${res.data.order_code}`, 'success');
         clearCart();
-        loadProducts();
+        loadPosProducts();
+        loadCatalogProducts(1);
       } catch (err) {
         ui.toast(err.message || 'Sale failed', 'error');
       }
     }
 
-    async function loadShopOrders() {
+    // ══════════════════════════════════════════════════════════════════════════
+    // TAB 2: FULFILMENT QUEUE
+    // ══════════════════════════════════════════════════════════════════════════
+    async function loadShopOrders(page = 1) {
       const tbody = document.getElementById('shopOrdersTableBody');
+      const q = document.getElementById('orderSearchInput').value.trim();
+      const channel = document.getElementById('orderChannelFilter').value;
+      const status = document.getElementById('orderStatusFilter').value;
+
       try {
-        const res = await api.get('/api/orders', { department: 'shop', limit: 20 });
+        const res = await api.get('/api/orders', { department: 'shop', q, channel, fulfilment_status: status, page, limit: 15 });
         const orders = res.data || [];
+        const meta = res.meta || { page, total: 0, totalPages: 1 };
 
         if (!orders.length) {
-          tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No online orders in queue.</td></tr>';
+          tbody.innerHTML = `<tr><td colspan="8">${ui.emptyState({ headline: 'No orders in queue', message: 'No orders match your filter criteria.' })}</td></tr>`;
+          document.getElementById('ordersPagination').innerHTML = '';
           return;
         }
 
-        tbody.innerHTML = orders.map(o => `
-          <tr>
-            <td><div class="fw-bold font-monospace">${o.order_code}</div></td>
-            <td>${utils.escapeHtml(o.customer_name || o.guest_name || 'Walk-in')}</td>
-            <td><span class="badge bg-light text-dark border text-uppercase">${o.channel || 'POS'}</span></td>
-            <td>${o.item_count || 1} items</td>
-            <td class="font-monospace fw-semibold">${utils.formatINR(o.total)}</td>
-            <td>${utils.statusChip(o.fulfilment_status || o.status)}</td>
-            <td class="text-end">
-              <select class="form-select form-select-sm d-inline-block" style="width:auto;" onchange="updateOrderStatus(${o.id}, this.value)" ${['completed', 'cancelled'].includes(o.status) ? 'disabled' : ''}>
-                <option value="placed" ${o.fulfilment_status === 'placed' ? 'selected' : ''}>Placed</option>
-                <option value="packed" ${o.fulfilment_status === 'packed' ? 'selected' : ''}>Packed</option>
-                <option value="ready_for_pickup" ${o.fulfilment_status === 'ready_for_pickup' ? 'selected' : ''}>Ready for Pickup</option>
-                <option value="out_for_delivery" ${o.fulfilment_status === 'out_for_delivery' ? 'selected' : ''}>Out for Delivery</option>
-                <option value="collected" ${o.fulfilment_status === 'collected' ? 'selected' : ''}>Collected</option>
-                <option value="delivered" ${o.fulfilment_status === 'delivered' ? 'selected' : ''}>Delivered</option>
-                <option value="cancelled" ${o.fulfilment_status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
-              </select>
-            </td>
-          </tr>
-        `).join('');
+        tbody.innerHTML = orders.map(o => {
+          const isFinished = ['completed', 'cancelled'].includes(o.status);
+          const currentF = o.fulfilment_status || 'placed';
+
+          return `
+            <tr>
+              <td>
+                <span class="mono fw-bold text-dark">${utils.escapeHtml(o.order_code)}</span>
+              </td>
+              <td>
+                <div class="fw-semibold text-dark">${utils.escapeHtml(o.customer_name || o.guest_name || 'Walk-in Customer')}</div>
+                <div class="small text-muted">${utils.escapeHtml(o.customer_phone || '—')}</div>
+              </td>
+              <td>
+                <span class="badge ${o.channel === 'online' ? 'bg-info text-dark' : 'bg-light text-dark border'} text-capitalize">
+                  ${utils.escapeHtml(o.channel || 'POS')}
+                </span>
+              </td>
+              <td>
+                <span class="mono">${o.item_count || 1} items</span>
+              </td>
+              <td>
+                <span class="mono fw-bold text-dark">${utils.formatINR(o.total)}</span>
+              </td>
+              <td>
+                ${utils.statusChip(currentF)}
+              </td>
+              <td>
+                <span class="small text-muted mono">${utils.formatDate(o.created_at)}</span>
+              </td>
+              <td class="text-end">
+                <select class="form-select form-select-sm d-inline-block" style="width:160px;" onchange="updateOrderStatus(${o.id}, this.value)" ${isFinished ? 'disabled' : ''}>
+                  <option value="placed" ${currentF === 'placed' ? 'selected' : ''}>Placed</option>
+                  <option value="packed" ${currentF === 'packed' ? 'selected' : ''}>Packed</option>
+                  <option value="ready_for_pickup" ${currentF === 'ready_for_pickup' ? 'selected' : ''}>Ready for Pickup</option>
+                  <option value="out_for_delivery" ${currentF === 'out_for_delivery' ? 'selected' : ''}>Out for Delivery</option>
+                  <option value="collected" ${currentF === 'collected' ? 'selected' : ''}>Collected</option>
+                  <option value="delivered" ${currentF === 'delivered' ? 'selected' : ''}>Delivered</option>
+                  <option value="cancelled" ${currentF === 'cancelled' ? 'selected' : ''}>Cancel &amp; Restock</option>
+                </select>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        document.getElementById('ordersPagination').innerHTML = ui.renderPagination({
+          page: meta.page,
+          totalPages: meta.totalPages,
+          total: meta.total,
+          limit: meta.limit,
+          onPageChange: 'loadShopOrders'
+        });
       } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-danger">${err.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="text-danger text-center py-4">${err.message}</td></tr>`;
       }
     }
 
     async function updateOrderStatus(orderId, newStatus) {
       try {
         await api.put(`/api/orders/${orderId}/fulfilment`, { fulfilment_status: newStatus });
-        ui.toast('Order status updated', 'success');
-        loadShopOrders();
+        ui.toast(`Order status updated to: ${newStatus.replace(/_/g, ' ')}`, 'success');
+        loadShopOrders(1);
+        loadPosProducts();
+        loadCatalogProducts(1);
       } catch (err) {
-        ui.toast(err.message || 'Failed to update order', 'error');
+        ui.toast(err.message || 'Failed to update order status', 'error');
       }
     }
 
-    async function loadServiceJobs() {
+    // ══════════════════════════════════════════════════════════════════════════
+    // TAB 3: PRODUCTS CATALOG & INVENTORY MANAGEMENT
+    // ══════════════════════════════════════════════════════════════════════════
+    function setCatalogView(view) {
+      currentCatalogView = view;
+      const listContainer = document.getElementById('catalogListContainer');
+      const kanbanContainer = document.getElementById('catalogKanbanContainer');
+      const listBtn = document.getElementById('catListViewBtn');
+      const kanbanBtn = document.getElementById('catKanbanViewBtn');
+
+      if (view === 'kanban') {
+        listContainer.classList.add('d-none');
+        kanbanContainer.classList.remove('d-none');
+        listBtn.classList.remove('active');
+        kanbanBtn.classList.add('active');
+      } else {
+        kanbanContainer.classList.add('d-none');
+        listContainer.classList.remove('d-none');
+        kanbanBtn.classList.remove('active');
+        listBtn.classList.add('active');
+      }
+      renderCatalogViews();
+    }
+
+    async function loadCatalogProducts(page = 1) {
+      const q = document.getElementById('catSearchInput').value.trim();
+      const category = document.getElementById('catCategoryFilter').value;
+      const stock = document.getElementById('catStockFilter').value;
+
+      try {
+        const res = await api.get('/api/products', { department: 'shop', q, category, stock, page, limit: 50 });
+        catalogProducts = res.data || [];
+        renderCatalogViews();
+      } catch (err) {
+        document.getElementById('catalogTableBody').innerHTML = `<tr><td colspan="8" class="text-danger text-center py-4">${err.message}</td></tr>`;
+      }
+    }
+
+    function renderCatalogViews() {
+      renderCatalogList();
+      renderCatalogKanban();
+    }
+
+    function renderCatalogList() {
+      const tbody = document.getElementById('catalogTableBody');
+      if (!catalogProducts.length) {
+        tbody.innerHTML = `<tr><td colspan="8">${ui.emptyState({ headline: 'No products in catalog', message: 'No gear items match your filter criteria.' })}</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = catalogProducts.map(p => {
+        const isOut = p.stock_quantity <= 0;
+        const isLow = p.stock_quantity <= (p.reorder_level || 5) && !isOut;
+
+        return `
+          <tr>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                ${p.image_url ? `
+                  <img src="${utils.escapeHtml(p.image_url)}" alt="${utils.escapeHtml(p.name)}" style="width:44px; height:44px; object-fit:cover; border-radius:8px;" onerror="this.style.display='none'">
+                ` : `
+                  <div style="width:44px; height:44px; border-radius:8px; background:#f1f5f9; display:flex; align-items:center; justify-content:center; color:#0d9488;">
+                    <i class="bi bi-box"></i>
+                  </div>
+                `}
+                <div>
+                  <div class="fw-bold text-dark">${utils.escapeHtml(p.name)}</div>
+                  <small class="text-muted text-truncate d-block" style="max-width:200px;">${utils.escapeHtml(p.description || '')}</small>
+                </div>
+              </div>
+            </td>
+            <td><span class="mono fw-semibold">${p.sku}</span></td>
+            <td><span class="badge bg-light text-dark border">${utils.escapeHtml(p.category || 'Gear')}</span></td>
+            <td><span class="mono fw-bold text-primary">${utils.formatINR(p.price)}</span></td>
+            <td><span class="mono text-muted">${utils.formatINR(p.cost_price || 0)}</span></td>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <span class="mono fw-bold ${isOut ? 'text-danger' : isLow ? 'text-warning' : 'text-success'}">
+                  ${p.stock_quantity} units
+                </span>
+                <button class="btn btn-xs btn-outline-secondary py-0 px-1" onclick="openStockModal(${p.id}, '${utils.escapeHtml(p.name)}', ${p.stock_quantity})" title="Adjust Stock">
+                  <i class="bi bi-plus-slash-minus"></i>
+                </button>
+              </div>
+            </td>
+            <td>
+              <span class="badge ${isOut ? 'bg-danger' : isLow ? 'bg-warning text-dark' : 'bg-success'}">
+                ${isOut ? 'Out of Stock' : isLow ? 'Low Stock' : 'In Stock'}
+              </span>
+            </td>
+            <td class="text-end">
+              <div class="d-flex justify-content-end gap-1">
+                <button class="btn btn-sm btn-outline-primary" onclick="openEditProductModal(${p.id})" title="Edit Product">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteProductAction(${p.id}, '${utils.escapeHtml(p.name)}')" title="Delete Product">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderCatalogKanban() {
+      const grid = document.getElementById('catalogKanbanGrid');
+      if (!catalogProducts.length) {
+        grid.innerHTML = '<div class="col-12 text-center py-5 text-muted">No products available in this view.</div>';
+        return;
+      }
+
+      grid.innerHTML = catalogProducts.map(p => {
+        const isOut = p.stock_quantity <= 0;
+        const isLow = p.stock_quantity <= (p.reorder_level || 5) && !isOut;
+
+        return `
+          <div class="kanban-product-card">
+            <div class="kanban-img-wrap">
+              ${p.image_url ? `
+                <img src="${utils.escapeHtml(p.image_url)}" alt="${utils.escapeHtml(p.name)}" class="kanban-img" onerror="this.outerHTML='<div class=\\'kanban-img-fallback\\'><i class=\\'bi bi-bag\\'></i></div>'">
+              ` : `
+                <div class="kanban-img-fallback"><i class="bi bi-bag"></i></div>
+              `}
+              <span class="position-absolute top-0 end-0 m-2 badge ${isOut ? 'bg-danger' : isLow ? 'bg-warning text-dark' : 'bg-success'}">
+                ${isOut ? 'Out of Stock' : `${p.stock_quantity} in stock`}
+              </span>
+            </div>
+            <div class="p-3 d-flex flex-column justify-content-between flex-grow-1">
+              <div>
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="badge bg-light text-dark border small">${utils.escapeHtml(p.category || 'Gear')}</span>
+                  <span class="mono text-muted small">${p.sku}</span>
+                </div>
+                <h6 class="fw-bold text-dark text-truncate mb-1" title="${utils.escapeHtml(p.name)}">${utils.escapeHtml(p.name)}</h6>
+                <div class="small text-muted text-truncate mb-2">${utils.escapeHtml(p.description || 'Pro gear')}</div>
+              </div>
+
+              <div class="pt-2 border-top mt-2">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="mono fw-bold text-primary fs-5">${utils.formatINR(p.price)}</span>
+                  <span class="small text-muted mono">Cost: ${utils.formatINR(p.cost_price || 0)}</span>
+                </div>
+                <div class="d-flex gap-1 w-100">
+                  <button class="btn btn-sm btn-outline-secondary w-50" onclick="openStockModal(${p.id}, '${utils.escapeHtml(p.name)}', ${p.stock_quantity})">
+                    <i class="bi bi-boxes me-1"></i> Stock
+                  </button>
+                  <button class="btn btn-sm btn-outline-primary w-50" onclick="openEditProductModal(${p.id})">
+                    <i class="bi bi-pencil me-1"></i> Edit
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ── Product CRUD Handlers ────────────────────────────────────────────────
+    function openAddProductModal() {
+      document.getElementById('productSaveForm').reset();
+      document.getElementById('prod_id').value = '';
+      document.getElementById('productModalTitle').innerHTML = '<i class="bi bi-box-seam text-primary"></i> Add New Product';
+      document.getElementById('productFormErr').classList.add('d-none');
+      previewProductImage('');
+      generateSku();
+      const modal = new bootstrap.Modal(document.getElementById('productFormModal'));
+      modal.show();
+    }
+
+    async function openEditProductModal(id) {
+      const p = catalogProducts.find(item => item.id === id);
+      if (!p) return;
+
+      document.getElementById('prod_id').value = p.id;
+      document.getElementById('prod_sku').value = p.sku;
+      document.getElementById('prod_name').value = p.name;
+      document.getElementById('prod_cat').value = p.category || 'Rackets';
+      document.getElementById('prod_price').value = p.price;
+      document.getElementById('prod_cost').value = p.cost_price || '';
+      document.getElementById('prod_stock').value = p.stock_quantity;
+      document.getElementById('prod_reorder').value = p.reorder_level || 5;
+      document.getElementById('prod_img').value = p.image_url || '';
+      document.getElementById('prod_desc').value = p.description || '';
+
+      document.getElementById('productModalTitle').innerHTML = '<i class="bi bi-pencil-square text-primary"></i> Edit Product';
+      document.getElementById('productFormErr').classList.add('d-none');
+      previewProductImage(p.image_url || '');
+
+      const modal = new bootstrap.Modal(document.getElementById('productFormModal'));
+      modal.show();
+    }
+
+    function generateSku() {
+      const cat = document.getElementById('prod_cat').value || 'PRO';
+      const prefix = cat.slice(0, 3).toUpperCase();
+      const rand = Math.floor(100 + Math.random() * 900);
+      document.getElementById('prod_sku').value = `${prefix}-${rand}`;
+    }
+
+    function previewProductImage(url) {
+      const img = document.getElementById('imagePreviewImg');
+      const placeholder = document.getElementById('imagePreviewPlaceholder');
+      if (url && (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/'))) {
+        img.src = url;
+        img.style.display = 'block';
+        placeholder.style.display = 'none';
+      } else {
+        img.style.display = 'none';
+        placeholder.style.display = 'block';
+      }
+    }
+
+    function setPresetPhoto() {
+      const presets = [
+        'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?w=600&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1599474924187-334a4ae5bd3c?w=600&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1587280501635-68a0e82cd5ff?w=600&auto=format&fit=crop'
+      ];
+      const pick = presets[Math.floor(Math.random() * presets.length)];
+      document.getElementById('prod_img').value = pick;
+      previewProductImage(pick);
+    }
+
+    async function handleSaveProduct(e) {
+      e.preventDefault();
+      const form = e.target;
+      const errBox = document.getElementById('productFormErr');
+      const saveBtn = document.getElementById('saveProductBtn');
+      const spinner = document.getElementById('saveProductSpinner');
+      const prodId = document.getElementById('prod_id').value;
+
+      errBox.classList.add('d-none');
+      saveBtn.disabled = true;
+      spinner.classList.remove('d-none');
+
+      const payload = {
+        sku: form.sku.value.trim().toUpperCase(),
+        name: form.name.value.trim(),
+        department: 'shop',
+        category: form.category.value,
+        price: Number(form.price.value),
+        cost_price: Number(form.cost_price.value) || 0,
+        stock_qty: Number(form.stock_qty.value) || 0,
+        reorder_level: Number(form.reorder_level.value) || 5,
+        image_url: form.image_url.value.trim() || null,
+        description: form.description.value.trim() || null
+      };
+
+      try {
+        if (prodId) {
+          await api.put(`/api/products/${prodId}`, payload);
+          ui.toast('Product updated successfully.', 'success');
+        } else {
+          await api.post('/api/products', payload);
+          ui.toast('Product created successfully.', 'success');
+        }
+        bootstrap.Modal.getInstance(document.getElementById('productFormModal')).hide();
+        loadCatalogProducts(1);
+        loadPosProducts();
+      } catch (err) {
+        errBox.textContent = err.message || 'Failed to save product';
+        errBox.classList.remove('d-none');
+      } finally {
+        saveBtn.disabled = false;
+        spinner.classList.add('d-none');
+      }
+    }
+
+    async function deleteProductAction(id, name) {
+      const confirmed = await ui.confirmDialog({
+        title: 'Delete Product',
+        message: `Are you sure you want to delete "${name}" from the product catalog?`,
+        confirmText: 'Delete Product',
+        danger: true
+      });
+      if (!confirmed) return;
+
+      try {
+        await api.delete(`/api/products/${id}`);
+        ui.toast(`Product "${name}" deleted.`, 'success');
+        loadCatalogProducts(1);
+        loadPosProducts();
+      } catch (err) {
+        ui.toast(err.message, 'error');
+      }
+    }
+
+    // ── Stock Adjustment ─────────────────────────────────────────────────────
+    function openStockModal(id, name, curStock) {
+      document.getElementById('adj_prodId').value = id;
+      document.getElementById('adj_prodName').textContent = `${name} (Current Stock: ${curStock})`;
+      document.getElementById('adj_qty').value = '';
+      document.getElementById('adj_notes').value = '';
+      document.getElementById('adjErr').classList.add('d-none');
+      const modal = new bootstrap.Modal(document.getElementById('adjustStockModal'));
+      modal.show();
+    }
+
+    async function handleSaveStockAdjustment() {
+      const id = document.getElementById('adj_prodId').value;
+      const type = document.getElementById('adj_type').value;
+      const qty = parseInt(document.getElementById('adj_qty').value, 10);
+      const notes = document.getElementById('adj_notes').value.trim();
+      const errBox = document.getElementById('adjErr');
+
+      if (isNaN(qty) || qty === 0) {
+        errBox.textContent = 'Please enter a valid non-zero adjustment quantity.';
+        errBox.classList.remove('d-none');
+        return;
+      }
+
+      try {
+        await api.post(`/api/products/${id}/stock`, {
+          quantity_delta: qty,
+          movement_type: type,
+          notes: notes || `Manual stock adjustment (${type})`
+        });
+        ui.toast('Inventory stock updated successfully.', 'success');
+        bootstrap.Modal.getInstance(document.getElementById('adjustStockModal')).hide();
+        loadCatalogProducts(1);
+        loadPosProducts();
+      } catch (err) {
+        errBox.textContent = err.message || 'Failed to adjust stock';
+        errBox.classList.remove('d-none');
+      }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // TAB 4: STRINGING & SERVICES
+    // ══════════════════════════════════════════════════════════════════════════
+    async function loadServiceJobs(page = 1) {
       const tbody = document.getElementById('serviceJobsTableBody');
+      const q = document.getElementById('serviceSearchInput').value.trim().toLowerCase();
+
       try {
         const res = await api.get('/api/products/services/jobs');
-        const jobs = res.data || [];
+        let jobs = res.data || [];
+
+        if (q) {
+          jobs = jobs.filter(j => 
+            (j.job_code && j.job_code.toLowerCase().includes(q)) ||
+            (j.member_name && j.member_name.toLowerCase().includes(q)) ||
+            (j.racket_model && j.racket_model.toLowerCase().includes(q))
+          );
+        }
 
         if (!jobs.length) {
-          tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No active service jobs.</td></tr>';
+          tbody.innerHTML = `<tr><td colspan="7">${ui.emptyState({ headline: 'No service jobs', message: 'No racket restringing or repair jobs currently active.' })}</td></tr>`;
           return;
         }
 
         tbody.innerHTML = jobs.map(j => `
           <tr>
-            <td class="fw-bold font-monospace">${j.job_code || 'JOB-' + j.id}</td>
-            <td>${utils.escapeHtml(j.member_name || 'Member')}</td>
-            <td>${utils.escapeHtml(j.racket_model)}</td>
-            <td>${j.string_type ? `${utils.escapeHtml(j.string_type)}${j.tension_lbs ? ` @ ${utils.escapeHtml(j.tension_lbs)} lbs` : ''}` : 'Grip / Repair'}</td>
-            <td class="font-monospace">${utils.formatINR(j.fee)}</td>
+            <td><span class="mono fw-bold text-dark">${utils.escapeHtml(j.job_code || 'JOB-' + j.id)}</span></td>
+            <td>
+              <div class="fw-semibold text-dark">${utils.escapeHtml(j.member_name || j.customer_name || 'Member')}</div>
+              <small class="text-muted">${utils.escapeHtml(j.customer_phone || '')}</small>
+            </td>
+            <td><div class="fw-semibold">${utils.escapeHtml(j.racket_model)}</div></td>
+            <td>
+              <div>${j.string_type ? utils.escapeHtml(j.string_type) : 'Standard String'}</div>
+              <small class="text-muted mono">${j.tension_lbs ? `${j.tension_lbs} lbs` : 'Standard tension'}</small>
+            </td>
+            <td><span class="mono fw-bold text-dark">${utils.formatINR(j.fee)}</span></td>
             <td>${utils.statusChip(j.status)}</td>
             <td class="text-end">
-              <select class="form-select form-select-sm d-inline-block" style="width:auto;" onchange="updateJobStatus(${j.id}, this.value)">
+              <select class="form-select form-select-sm d-inline-block" style="width:140px;" onchange="updateJobStatus(${j.id}, this.value)">
                 <option value="received" ${j.status === 'received' ? 'selected' : ''}>Received</option>
                 <option value="in_progress" ${j.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
-                <option value="ready" ${j.status === 'ready' ? 'selected' : ''}>Ready</option>
+                <option value="ready" ${j.status === 'ready' ? 'selected' : ''}>Ready for Pickup</option>
                 <option value="delivered" ${j.status === 'delivered' ? 'selected' : ''}>Delivered</option>
+                <option value="cancelled" ${j.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
               </select>
             </td>
           </tr>
         `).join('');
       } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-danger">${err.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="text-danger text-center py-4">${err.message}</td></tr>`;
       }
     }
 
@@ -593,7 +1385,7 @@
       try {
         await api.put(`/api/products/services/jobs/${jobId}`, { status: newStatus });
         ui.toast('Service job status updated', 'success');
-        loadServiceJobs();
+        loadServiceJobs(1);
       } catch (err) {
         ui.toast(err.message || 'Failed to update job', 'error');
       }
@@ -609,7 +1401,7 @@
       e.preventDefault();
       const form = e.target;
       const payload = {
-        member_id: form.member_id.value,
+        member_id: form.member_id.value || null,
         racket_model: form.racket_model.value.trim(),
         string_type: form.string_type.value.trim(),
         tension_lbs: Number(form.tension_lbs.value),
@@ -621,7 +1413,7 @@
         await api.post('/api/products/services/jobs', payload);
         ui.closeModal('newJobModal');
         ui.toast('Service job created successfully', 'success');
-        loadServiceJobs();
+        loadServiceJobs(1);
       } catch (err) {
         ui.toast(err.message || 'Failed to create job', 'error');
       }

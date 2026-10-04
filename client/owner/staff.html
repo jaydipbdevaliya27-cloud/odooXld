@@ -4,8 +4,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Staff Management – Champions Club Owner</title>
-  <meta name="description" content="Manage club staff, assign dashboard roles, and handle access privileges">
+  <title>Staff & Payroll Management – Champions Club Owner</title>
+  <meta name="description" content="Manage club staff, assign operational dashboards, calculate salaries, and issue digital payslips">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="/css/main.css">
@@ -18,14 +18,14 @@
       border-radius: var(--radius-md);
       box-shadow: var(--shadow-sm);
     }
-    .cc-card { padding: 16px; }
+    .cc-card { padding: 18px; }
     .kpi-card {
       height: 100%;
       min-height: 100px;
       padding: 16px;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
       transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
     }
     .kpi-card:hover { border-color: var(--accent); box-shadow: var(--shadow-md); transform: translateY(-2px); }
@@ -36,7 +36,7 @@
       display: grid;
       place-items: center;
       border-radius: var(--radius-sm);
-      font-size: 1.15rem;
+      font-size: 1.25rem;
     }
     .kpi-value { color: var(--text); font: 700 1.35rem/1.2 var(--font-mono); }
     .kpi-label { color: var(--text-muted); font-size: 0.75rem; overflow-wrap: anywhere; }
@@ -48,24 +48,132 @@
       border-radius: var(--radius-sm);
     }
     .btn-cc:hover { color: #fff; background: var(--accent-dark); }
+    
+    /* Top Nav Tabs */
+    .nav-tabs-custom {
+      border-bottom: 2px solid var(--border);
+      gap: 8px;
+    }
+    .nav-tabs-custom .nav-link {
+      color: var(--text-muted);
+      border: 1px solid transparent;
+      border-bottom: none;
+      font-weight: 600;
+      padding: 10px 20px;
+      border-radius: 8px 8px 0 0;
+      transition: all 0.2s ease;
+      background: transparent;
+    }
+    .nav-tabs-custom .nav-link:hover {
+      color: var(--accent);
+      background: rgba(99, 102, 241, 0.05);
+    }
+    .nav-tabs-custom .nav-link.active {
+      color: var(--accent);
+      background: var(--surface);
+      border-color: var(--border) var(--border) transparent;
+      border-top: 3px solid var(--accent);
+    }
+
+    /* Live Salary Calculator Card */
+    .salary-calc-box {
+      background: linear-gradient(145deg, rgba(99, 102, 241, 0.04), rgba(16, 185, 129, 0.04));
+      border: 1px dashed var(--accent);
+      border-radius: var(--radius-md);
+      padding: 16px;
+    }
+    .salary-param-group {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+    }
+
+    /* Printable Payslip Styling */
+    @media print {
+      body * { visibility: hidden; }
+      #printablePayslipContainer, #printablePayslipContainer * { visibility: visible; }
+      #printablePayslipContainer {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 20px;
+        background: #fff !important;
+        color: #000 !important;
+      }
+      .no-print { display: none !important; }
+    }
+    .payslip-voucher {
+      background: #ffffff;
+      color: #1e293b;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 24px;
+      font-family: inherit;
+    }
+    .payslip-header {
+      border-bottom: 2px solid #cbd5e1;
+      padding-bottom: 14px;
+      margin-bottom: 16px;
+    }
   </style>
 </head>
 
 <body>
   <div id="app-shell"></div>
   <main class="app-main">
-      <div class="d-flex justify-content-end mb-3">
-        <span id="todayDate" class="text-muted small"></span>
-        <button class="btn btn-sm btn-outline-secondary ms-3" onclick="loadStaffData()"><i
-            class="bi bi-arrow-clockwise me-1"></i>Refresh</button>
+    
+    <!-- Top Bar: Date & Refresh -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div>
+        <h4 class="mb-0 fw-bold"><i class="bi bi-person-badge-fill me-2 text-cc"></i>Staff & Payroll Hub</h4>
+        <span class="text-muted small">Manage staff members, role dashboards, salary parameters, and dynamic payroll</span>
       </div>
+      <div class="d-flex align-items-center gap-2">
+        <span id="todayDate" class="text-muted small d-none d-md-inline"></span>
+        <button class="btn btn-sm btn-outline-secondary" onclick="refreshActiveTab()">
+          <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+        </button>
+      </div>
+    </div>
 
-        <!-- Header with Add Staff Button -->
+    <!-- Main Navigation Tabs -->
+    <ul class="nav nav-tabs nav-tabs-custom mb-4" id="staffManagementTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active d-flex align-items-center gap-2" id="roster-tab" data-bs-toggle="tab"
+          data-bs-target="#rosterPane" type="button" role="tab" aria-controls="rosterPane" aria-selected="true"
+          onclick="switchTab('roster')">
+          <i class="bi bi-people-fill text-primary"></i>
+          <span>Staff Directory & Roster</span>
+          <span class="badge bg-primary bg-opacity-10 text-primary ms-1" id="tabStaffCount">0</span>
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link d-flex align-items-center gap-2" id="payroll-tab" data-bs-toggle="tab"
+          data-bs-target="#payrollPane" type="button" role="tab" aria-controls="payrollPane" aria-selected="false"
+          onclick="switchTab('payroll')">
+          <i class="bi bi-cash-stack text-success"></i>
+          <span>Staff Payroll & Payslips</span>
+          <span class="badge bg-success bg-opacity-10 text-success ms-1" id="tabPayrollCount">0</span>
+        </button>
+      </li>
+    </ul>
+
+    <!-- Tab Contents -->
+    <div class="tab-content" id="staffManagementTabsContent">
+
+      <!-- ======================================================================
+           TAB 1: STAFF DIRECTORY & ROSTER
+           ====================================================================== -->
+      <div class="tab-pane fade show active" id="rosterPane" role="tabpanel" aria-labelledby="roster-tab">
+        
+        <!-- Header & Add Button -->
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
           <div>
-            <h4 class="mb-1">Club Staff & Assigned Dashboards</h4>
-            <p class="text-muted small mb-0">Assign staff to specific operational areas (Shop, Bar-Cafeteria, or Court
-              Booking). Staff automatically route to their assigned dashboard upon login.</p>
+            <h5 class="mb-1 fw-bold">Club Staff & Assigned Dashboards</h5>
+            <p class="text-muted small mb-0">Assign staff to specific operational areas (Shop, Bar-Cafeteria, or Court Booking Desk). Staff route automatically upon login.</p>
           </div>
           <button class="btn btn-cc fw-semibold" data-bs-toggle="modal" data-bs-target="#addStaffModal">
             <i class="bi bi-person-plus-fill me-1"></i> Add New Staff Member
@@ -112,14 +220,15 @@
           </div>
         </div>
 
-        <!-- Filter / Search Row -->
+        <!-- Search & Filter Row -->
         <div class="cc-card p-3 mb-3">
           <div class="row g-2 align-items-center">
             <div class="col-md-5">
-              <div class="input-group input-group-sm">
+              <div class="input-group input-group-sm position-relative">
                 <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
                 <input type="text" class="form-control" id="staffSearchInput"
                   placeholder="Search staff by name, email, or role...">
+                <button type="button" class="btn btn-sm btn-link text-muted position-absolute end-0 top-50 translate-middle-y z-3 d-none text-decoration-none" id="staffSearchClear" aria-label="Clear search"><i class="bi bi-x fs-6"></i></button>
               </div>
             </div>
             <div class="col-md-4">
@@ -145,7 +254,6 @@
                   <th>Staff Member</th>
                   <th>Contact Info</th>
                   <th>Assigned Operational Area</th>
-
                   <th>Status</th>
                   <th>Added On</th>
                   <th class="text-end">Actions</th>
@@ -153,15 +261,170 @@
               </thead>
               <tbody id="staffTableBody">
                 <tr>
-                  <td colspan="7" class="text-center py-4 text-muted"><span
-                      class="spinner-border spinner-border-sm me-2"></span>Loading staff members...</td>
+                  <td colspan="6" class="text-center py-4 text-muted">
+                    <span class="spinner-border spinner-border-sm me-2"></span>Loading staff members...
+                  </td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
 
-        </main>
+      </div>
+
+      <!-- ======================================================================
+           TAB 2: STAFF PAYROLL & PAYSLIPS
+           ====================================================================== -->
+      <div class="tab-pane fade" id="payrollPane" role="tabpanel" aria-labelledby="payroll-tab">
+        
+        <!-- Header & Action Button -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+          <div>
+            <h5 class="mb-1 fw-bold">Staff Payroll & Digital Payslips</h5>
+            <p class="text-muted small mb-0">Calculate salary components (allowances, bonuses, overtime, PF/PT deductions) and issue traceable payslips.</p>
+          </div>
+          <button class="btn btn-success fw-semibold" onclick="openCreatePayrollModal()">
+            <i class="bi bi-plus-circle-fill me-1"></i> Create New Payroll / Payslip
+          </button>
+        </div>
+
+        <!-- Payroll KPI Summary Row -->
+        <div class="row g-3 mb-4">
+          <div class="col-sm-6 col-xl-3">
+            <div class="kpi-card">
+              <div class="kpi-icon bg-success bg-opacity-10 text-success"><i class="bi bi-wallet2"></i></div>
+              <div>
+                <div class="kpi-value text-success" id="kpi-total-disbursed">₹0</div>
+                <div class="kpi-label">Total Disbursed (Paid)</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-sm-6 col-xl-3">
+            <div class="kpi-card">
+              <div class="kpi-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-graph-up-arrow"></i></div>
+              <div>
+                <div class="kpi-value" id="kpi-avg-salary">₹0</div>
+                <div class="kpi-label">Average Net Salary</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-sm-6 col-xl-3">
+            <div class="kpi-card">
+              <div class="kpi-icon bg-info bg-opacity-10 text-info"><i class="bi bi-check2-circle"></i></div>
+              <div>
+                <div class="kpi-value" id="kpi-paid-slips">0</div>
+                <div class="kpi-label">Paid Payslips Issued</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-sm-6 col-xl-3">
+            <div class="kpi-card">
+              <div class="kpi-icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-clock-history"></i></div>
+              <div>
+                <div class="kpi-value text-warning" id="kpi-pending-slips">0</div>
+                <div class="kpi-label">Pending / In Review</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payroll Search & Filter Toolbar -->
+        <div class="cc-card p-3 mb-3">
+          <div class="row g-2 align-items-center">
+            <div class="col-md-3">
+              <div class="input-group input-group-sm position-relative">
+                <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                <input type="text" class="form-control" id="payrollSearchInput"
+                  placeholder="Search by code, staff name, UTR...">
+                <button type="button" class="btn btn-sm btn-link text-muted position-absolute end-0 top-50 translate-middle-y z-3 d-none text-decoration-none" id="payrollSearchClear" aria-label="Clear search"><i class="bi bi-x fs-6"></i></button>
+              </div>
+            </div>
+            <div class="col-md-2">
+              <select class="form-select form-select-sm" id="payrollMonthFilter">
+                <option value="all">All Months</option>
+                <option value="January">January</option>
+                <option value="February">February</option>
+                <option value="March">March</option>
+                <option value="April">April</option>
+                <option value="May">May</option>
+                <option value="June">June</option>
+                <option value="July">July</option>
+                <option value="August">August</option>
+                <option value="September">September</option>
+                <option value="October">October</option>
+                <option value="November">November</option>
+                <option value="December">December</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <select class="form-select form-select-sm" id="payrollYearFilter">
+                <option value="all">All Years</option>
+                <option value="2026">2026</option>
+                <option value="2025">2025</option>
+                <option value="2024">2024</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <select class="form-select form-select-sm" id="payrollAreaFilter">
+                <option value="all">All Operational Areas</option>
+                <option value="shop">Shop & Inventory</option>
+                <option value="bar">Bar & Cafeteria</option>
+                <option value="booking">Court Booking Desk</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <select class="form-select form-select-sm" id="payrollStatusFilter">
+                <option value="all">All Statuses</option>
+                <option value="paid">Paid</option>
+                <option value="processing">Processing</option>
+                <option value="draft">Draft</option>
+              </select>
+            </div>
+            <div class="col-md-1 text-end">
+              <span id="payrollCountBadge" class="badge bg-light text-dark border">0 slips</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payroll Payslips Table -->
+        <div class="cc-card">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="payrollTable">
+              <thead class="table-light">
+                <tr>
+                  <th>Payslip Code</th>
+                  <th>Staff Member</th>
+                  <th>Pay Period</th>
+                  <th>Gross Earnings</th>
+                  <th>Deductions</th>
+                  <th>Net Payable</th>
+                  <th>Status & Mode</th>
+                  <th>Disbursed Date</th>
+                  <th class="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="payrollTableBody">
+                <tr>
+                  <td colspan="9" class="text-center py-4 text-muted">
+                    <span class="spinner-border spinner-border-sm me-2"></span>Loading payroll records...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top" id="payrollPaginationContainer" style="display:none !important;">
+            <span class="small text-muted" id="payrollPaginationInfo">Showing 1 to 10 of 10 records</span>
+            <div class="btn-group btn-group-sm" id="payrollPaginationBtns"></div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
 
   <!-- ==========================================================================
      MODALS
@@ -184,13 +447,11 @@
               </div>
               <div class="col-md-6">
                 <label class="form-label fw-semibold">Email Address (Login ID) *</label>
-                <input type="email" id="newStaffEmail" class="form-control" placeholder="rahul@championsclub.com"
-                  required>
+                <input type="email" id="newStaffEmail" class="form-control" placeholder="rahul@championsclub.com" required>
               </div>
               <div class="col-md-6">
                 <label class="form-label fw-semibold">Login Password *</label>
-                <input type="password" id="newStaffPassword" class="form-control" placeholder="••••••••" required
-                  minlength="6">
+                <input type="password" id="newStaffPassword" class="form-control" placeholder="••••••••" required minlength="6">
                 <small class="text-muted">Minimum 6 characters</small>
               </div>
               <div class="col-md-6">
@@ -200,46 +461,37 @@
 
               <!-- Assigned Operational Role / Dashboard -->
               <div class="col-12">
-                <label class="form-label fw-semibold"><i class="bi bi-diagram-3-fill me-1 text-cc"></i>Assigned
-                  Operational Area & Dashboard *</label>
+                <label class="form-label fw-semibold"><i class="bi bi-diagram-3-fill me-1 text-cc"></i>Assigned Operational Area & Dashboard *</label>
                 <div class="p-3 bg-light rounded border">
                   <div class="row g-3">
                     <div class="col-md-4">
-                      <div class="form-check card p-3 h-100 border-2 role-card cursor-pointer"
-                        onclick="selectRoleRadio('shop')">
-                        <input class="form-check-input" type="radio" name="assignedRoleRadio" id="roleShop" value="shop"
-                          checked>
+                      <div class="form-check card p-3 h-100 border-2 role-card cursor-pointer" onclick="selectRoleRadio('shop')">
+                        <input class="form-check-input" type="radio" name="assignedRoleRadio" id="roleShop" value="shop" checked>
                         <label class="form-check-label fw-bold d-block cursor-pointer" for="roleShop">
                           <i class="bi bi-shop text-success fs-4 d-block mb-1"></i>
                           Shop & Inventory
                         </label>
-                        <small class="text-muted">Routes to Shop Dashboard: Product catalog, sizes, inventory levels,
-                          gear sales.</small>
+                        <small class="text-muted">Routes to Shop Dashboard: Product catalog, sizes, inventory levels, gear sales.</small>
                       </div>
                     </div>
                     <div class="col-md-4">
-                      <div class="form-check card p-3 h-100 border-2 role-card cursor-pointer"
-                        onclick="selectRoleRadio('bar')">
+                      <div class="form-check card p-3 h-100 border-2 role-card cursor-pointer" onclick="selectRoleRadio('bar')">
                         <input class="form-check-input" type="radio" name="assignedRoleRadio" id="roleBar" value="bar">
                         <label class="form-check-label fw-bold d-block cursor-pointer" for="roleBar">
                           <i class="bi bi-cup-straw text-warning fs-4 d-block mb-1"></i>
                           Bar & Cafeteria
                         </label>
-                        <small class="text-muted">Routes to Bar POS: Food/drinks orders, table tabs, cafeteria
-                          billing.</small>
+                        <small class="text-muted">Routes to Bar POS: Food/drinks orders, table tabs, cafeteria billing.</small>
                       </div>
                     </div>
                     <div class="col-md-4">
-                      <div class="form-check card p-3 h-100 border-2 role-card cursor-pointer"
-                        onclick="selectRoleRadio('booking')">
-                        <input class="form-check-input" type="radio" name="assignedRoleRadio" id="roleBooking"
-                          value="booking">
+                      <div class="form-check card p-3 h-100 border-2 role-card cursor-pointer" onclick="selectRoleRadio('booking')">
+                        <input class="form-check-input" type="radio" name="assignedRoleRadio" id="roleBooking" value="booking">
                         <label class="form-check-label fw-bold d-block cursor-pointer" for="roleBooking">
                           <i class="bi bi-calendar-check text-info fs-4 d-block mb-1"></i>
                           Court Booking Desk
                         </label>
-                        <small class="text-muted">Routes to Front Desk: Court slots, walk-in reservations, member
-                          check-in.</small>
+                        <small class="text-muted">Routes to Front Desk: Court slots, walk-in reservations, member check-in.</small>
                       </div>
                     </div>
                   </div>
@@ -298,8 +550,7 @@
             </div>
             <div class="mb-3">
               <label class="form-label fw-semibold">Reset Password (Optional)</label>
-              <input type="password" id="editStaffNewPassword" class="form-control"
-                placeholder="Leave blank to retain current password">
+              <input type="password" id="editStaffNewPassword" class="form-control" placeholder="Leave blank to retain current password">
             </div>
           </form>
         </div>
@@ -307,6 +558,380 @@
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
           <button type="button" class="btn btn-cc fw-semibold" onclick="handleUpdateStaff()">
             <i class="bi bi-check-lg me-1"></i> Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. CREATE PAYROLL / PAYSLIP MODAL -->
+  <div class="modal fade" id="createPayrollModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header bg-light">
+          <div>
+            <h5 class="modal-title fw-bold text-dark"><i class="bi bi-cash-coin me-2 text-success"></i>Create Staff Payroll & Issue Payslip</h5>
+            <small class="text-muted">Select staff member, configure salary parameters & deductions, and process payment</small>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="createPayrollForm">
+            
+            <!-- Step 1: Staff Member & Pay Period Selection -->
+            <div class="p-3 bg-light rounded border mb-4">
+              <h6 class="fw-bold mb-3 text-primary"><i class="bi bi-person-check-fill me-1"></i>Step 1: Staff Member & Period</h6>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">Select Staff Member *</label>
+                  <select id="payrollStaffSelect" class="form-select" onchange="onPayrollStaffSelected()" required>
+                    <option value="">-- Choose staff member --</option>
+                  </select>
+                  <small class="text-muted" id="selectedStaffInfo">Selecting a member will auto-fill standard salary profile</small>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold">Pay Period Month *</label>
+                  <select id="payrollMonthSelect" class="form-select" required onchange="recalculatePayrollLive()">
+                    <option value="January">January</option>
+                    <option value="February">February</option>
+                    <option value="March">March</option>
+                    <option value="April">April</option>
+                    <option value="May">May</option>
+                    <option value="June">June</option>
+                    <option value="July">July</option>
+                    <option value="August">August</option>
+                    <option value="September" selected>September</option>
+                    <option value="October">October</option>
+                    <option value="November">November</option>
+                    <option value="December">December</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold">Pay Period Year *</label>
+                  <select id="payrollYearSelect" class="form-select" required onchange="recalculatePayrollLive()">
+                    <option value="2026" selected>2026</option>
+                    <option value="2025">2025</option>
+                    <option value="2024">2024</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 2: Dynamic Salary Parameters (Earnings vs Deductions) -->
+            <div class="row g-3 mb-4">
+              <!-- Earnings Column -->
+              <div class="col-lg-6">
+                <div class="salary-param-group h-100 border-start border-4 border-success">
+                  <h6 class="fw-bold text-success mb-3 d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-plus-circle-fill me-1"></i>Earnings & Allowances</span>
+                    <span class="badge bg-success bg-opacity-10 text-success" id="badgeGrossCalc">Gross: ₹0</span>
+                  </h6>
+                  
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold small">Basic Salary (₹) *</label>
+                    <div class="input-group input-group-sm">
+                      <span class="input-group-text">₹</span>
+                      <input type="number" id="paramBaseSalary" class="form-control fw-bold" value="30000" min="0" step="100" oninput="recalculatePayrollLive()" required>
+                    </div>
+                  </div>
+
+                  <div class="row g-2 mb-3">
+                    <div class="col-md-6">
+                      <label class="form-label fw-semibold small">HRA Allowance (₹)</label>
+                      <div class="input-group input-group-sm">
+                        <span class="input-group-text">₹</span>
+                        <input type="number" id="paramHra" class="form-control" value="9000" min="0" step="50" oninput="recalculatePayrollLive()">
+                      </div>
+                      <small class="text-muted">House Rent (approx 30%)</small>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label fw-semibold small">Transport Allowance (₹)</label>
+                      <div class="input-group input-group-sm">
+                        <span class="input-group-text">₹</span>
+                        <input type="number" id="paramTransport" class="form-control" value="2500" min="0" step="50" oninput="recalculatePayrollLive()">
+                      </div>
+                      <small class="text-muted">Commute / Fuel</small>
+                    </div>
+                  </div>
+
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold small">Performance / Incentive Bonus (₹)</label>
+                    <div class="input-group input-group-sm">
+                      <span class="input-group-text">₹</span>
+                      <input type="number" id="paramBonus" class="form-control" value="2000" min="0" step="100" oninput="recalculatePayrollLive()">
+                    </div>
+                  </div>
+
+                  <div class="p-2 bg-light rounded border">
+                    <label class="form-label fw-semibold small text-dark mb-1"><i class="bi bi-clock-history me-1"></i>Overtime Calculation</label>
+                    <div class="row g-2">
+                      <div class="col-6">
+                        <div class="input-group input-group-sm">
+                          <input type="number" id="paramOtHours" class="form-control" value="0" min="0" step="0.5" placeholder="Hours" oninput="recalculatePayrollLive()">
+                          <span class="input-group-text">hrs</span>
+                        </div>
+                      </div>
+                      <div class="col-6">
+                        <div class="input-group input-group-sm">
+                          <span class="input-group-text">@ ₹</span>
+                          <input type="number" id="paramOtRate" class="form-control" value="200" min="0" step="10" placeholder="Rate/hr" oninput="recalculatePayrollLive()">
+                        </div>
+                      </div>
+                    </div>
+                    <div class="d-flex justify-content-between text-muted small mt-1">
+                      <span>Total OT Pay:</span>
+                      <span class="fw-bold text-success" id="calcOtTotal">₹0</span>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+              <!-- Deductions Column -->
+              <div class="col-lg-6">
+                <div class="salary-param-group h-100 border-start border-4 border-danger">
+                  <h6 class="fw-bold text-danger mb-3 d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-dash-circle-fill me-1"></i>Statutory & Leave Deductions</span>
+                    <span class="badge bg-danger bg-opacity-10 text-danger" id="badgeDeductCalc">Deductions: ₹0</span>
+                  </h6>
+
+                  <div class="row g-2 mb-3">
+                    <div class="col-md-6">
+                      <label class="form-label fw-semibold small">Provident Fund / PF (₹)</label>
+                      <div class="input-group input-group-sm">
+                        <span class="input-group-text">₹</span>
+                        <input type="number" id="paramPf" class="form-control" value="1800" min="0" step="50" oninput="recalculatePayrollLive()">
+                      </div>
+                      <small class="text-muted">Statutory employee PF</small>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label fw-semibold small">Professional Tax / PT (₹)</label>
+                      <div class="input-group input-group-sm">
+                        <span class="input-group-text">₹</span>
+                        <input type="number" id="paramPt" class="form-control" value="200" min="0" step="50" oninput="recalculatePayrollLive()">
+                      </div>
+                      <small class="text-muted">State PT slab (Standard ₹200)</small>
+                    </div>
+                  </div>
+
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold small">Income Tax / TDS (₹)</label>
+                    <div class="input-group input-group-sm">
+                      <span class="input-group-text">₹</span>
+                      <input type="number" id="paramTds" class="form-control" value="0" min="0" step="100" oninput="recalculatePayrollLive()">
+                    </div>
+                  </div>
+
+                  <div class="p-2 bg-light rounded border">
+                    <label class="form-label fw-semibold small text-dark mb-1"><i class="bi bi-calendar-x me-1"></i>Unpaid Leave / LOP Days</label>
+                    <div class="row g-2 align-items-center">
+                      <div class="col-6">
+                        <div class="input-group input-group-sm">
+                          <input type="number" id="paramLeaveDays" class="form-control" value="0" min="0" max="31" step="0.5" placeholder="Days" oninput="recalculatePayrollLive()">
+                          <span class="input-group-text">days</span>
+                        </div>
+                      </div>
+                      <div class="col-6 text-end">
+                        <span class="text-muted small">Deduction: </span>
+                        <span class="fw-bold text-danger" id="calcLeaveDeduction">₹0</span>
+                      </div>
+                    </div>
+                    <small class="text-muted d-block mt-1">Calculated as (Base Salary / 30) × Unpaid Days</small>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+
+            <!-- Real-Time Calculation Summary Banner -->
+            <div class="salary-calc-box mb-4">
+              <div class="row align-items-center text-center text-md-start">
+                <div class="col-md-4 mb-2 mb-md-0 border-end">
+                  <div class="text-muted small text-uppercase fw-semibold">Gross Salary Earnings</div>
+                  <div class="fs-4 fw-bold text-dark" id="liveGrossDisplay">₹43,500</div>
+                  <small class="text-success" id="liveGrossSubtext">Base + HRA + Transport + Bonus + OT</small>
+                </div>
+                <div class="col-md-4 mb-2 mb-md-0 border-end">
+                  <div class="text-muted small text-uppercase fw-semibold">Total Deductions</div>
+                  <div class="fs-4 fw-bold text-danger" id="liveDeductDisplay">₹2,000</div>
+                  <small class="text-danger" id="liveDeductSubtext">PF + PT + TDS + Leave LOP</small>
+                </div>
+                <div class="col-md-4 text-md-end">
+                  <div class="text-muted small text-uppercase fw-semibold">Net Take-Home Salary</div>
+                  <div class="fs-3 fw-bold text-success" id="liveNetDisplay">₹41,500</div>
+                  <small class="badge bg-success bg-opacity-25 text-success fw-semibold">Final Disbursable Amount</small>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 3: Payment & Settlement Details -->
+            <div class="p-3 bg-light rounded border mb-2">
+              <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-credit-card-2-front-fill me-1 text-primary"></i>Step 3: Payment Mode & Status</h6>
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold small">Payment Method *</label>
+                  <select id="payrollPaymentMethod" class="form-select form-select-sm" required>
+                    <option value="bank_transfer" selected>Bank Transfer (NEFT/RTGS/IMPS)</option>
+                    <option value="upi">UPI / QR Payment</option>
+                    <option value="cheque">Cheque</option>
+                    <option value="cash">Cash Voucher</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold small">Payment Status *</label>
+                  <select id="payrollPaymentStatus" class="form-select form-select-sm" required>
+                    <option value="paid" selected>Paid (Disbursed)</option>
+                    <option value="processing">Processing</option>
+                    <option value="draft">Draft / Pending Approval</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold small">Transaction Ref / UTR No.</label>
+                  <input type="text" id="payrollReference" class="form-control form-control-sm" placeholder="e.g. UTR202609047712">
+                </div>
+                <div class="col-12">
+                  <label class="form-label fw-semibold small">Notes / Payslip Memo (Optional)</label>
+                  <input type="text" id="payrollNotes" class="form-control form-control-sm" placeholder="e.g. September performance incentive included, regular salary transfer">
+                </div>
+              </div>
+            </div>
+
+          </form>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-success fw-semibold px-4" id="btnSubmitPayroll" onclick="handleCreatePayslip()">
+            <i class="bi bi-check-circle-fill me-1"></i> Pay & Generate Payslip
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. VIEW / PRINT PAYSLIP VOUCHER MODAL -->
+  <div class="modal fade" id="viewPayslipModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-light">
+          <h5 class="modal-title fw-bold"><i class="bi bi-receipt-cutoff me-2 text-cc"></i>Official Salary Slip Voucher</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4" id="printablePayslipContainer">
+          
+          <div class="payslip-voucher" id="payslipVoucherContent">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center payslip-header">
+              <div>
+                <h4 class="fw-bold mb-0 text-primary"><i class="bi bi-shield-shaded me-1"></i>CHAMPIONS CLUB</h4>
+                <div class="small text-muted">Elite Sports, Dining & Recreation Management</div>
+                <div class="small text-muted">Registration No: CC-2024-DEL | payroll@championsclub.com</div>
+              </div>
+              <div class="text-end">
+                <span class="badge bg-primary fs-6 px-3 py-2 mb-1" id="pvCode">PAY-202609-001</span>
+                <div class="small text-muted">Issue Date: <span id="pvIssueDate" class="fw-semibold">04 Sep 2026</span></div>
+              </div>
+            </div>
+
+            <!-- Employee & Period Info Box -->
+            <div class="p-3 bg-light rounded mb-3 border">
+              <div class="row g-2">
+                <div class="col-sm-6">
+                  <div class="text-muted small">Employee Name:</div>
+                  <div class="fw-bold fs-6" id="pvStaffName">-</div>
+                  <div class="text-muted small" id="pvStaffEmail">-</div>
+                </div>
+                <div class="col-sm-3">
+                  <div class="text-muted small">Department / Area:</div>
+                  <div class="fw-semibold text-primary" id="pvStaffArea">-</div>
+                  <div class="text-muted small">Staff ID: <span id="pvStaffId">-</span></div>
+                </div>
+                <div class="col-sm-3">
+                  <div class="text-muted small">Pay Period:</div>
+                  <div class="fw-bold text-dark fs-6" id="pvPayPeriod">-</div>
+                  <div class="text-muted small">Status: <span id="pvStatusBadge" class="badge bg-success">Paid</span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Earnings vs Deductions Table -->
+            <div class="row g-3 mb-3">
+              <div class="col-6">
+                <table class="table table-sm table-bordered mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th class="text-success"><i class="bi bi-plus-circle me-1"></i>Earnings & Allowances</th>
+                      <th class="text-end text-success">Amount (₹)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td>Basic Salary</td><td class="text-end fw-semibold" id="pvBaseSalary">₹0</td></tr>
+                    <tr><td>House Rent Allowance (HRA)</td><td class="text-end" id="pvHra">₹0</td></tr>
+                    <tr><td>Transport Allowance</td><td class="text-end" id="pvTransport">₹0</td></tr>
+                    <tr><td>Performance / Special Bonus</td><td class="text-end" id="pvBonus">₹0</td></tr>
+                    <tr><td>Overtime Earnings <span class="small text-muted" id="pvOtSub"></span></td><td class="text-end" id="pvOtPay">₹0</td></tr>
+                    <tr class="table-light fw-bold">
+                      <td>Total Gross Earnings</td>
+                      <td class="text-end text-success" id="pvGrossTotal">₹0</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="col-6">
+                <table class="table table-sm table-bordered mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th class="text-danger"><i class="bi bi-dash-circle me-1"></i>Deductions</th>
+                      <th class="text-end text-danger">Amount (₹)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td>Provident Fund (PF)</td><td class="text-end fw-semibold" id="pvPf">₹0</td></tr>
+                    <tr><td>Professional Tax (PT)</td><td class="text-end" id="pvPt">₹0</td></tr>
+                    <tr><td>Income Tax (TDS)</td><td class="text-end" id="pvTds">₹0</td></tr>
+                    <tr><td>Unpaid Leave / LOP <span class="small text-muted" id="pvLeaveSub"></span></td><td class="text-end" id="pvLeaveDeduct">₹0</td></tr>
+                    <tr><td>&nbsp;</td><td>&nbsp;</td></tr>
+                    <tr class="table-light fw-bold">
+                      <td>Total Deductions</td>
+                      <td class="text-end text-danger" id="pvDeductTotal">₹0</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Net Payable Banner -->
+            <div class="p-3 bg-success bg-opacity-10 border border-success rounded mb-3">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <div class="text-muted small text-uppercase fw-bold">Net Salary Payable</div>
+                  <div class="small text-muted" id="pvNetInWords">Indian Rupees Only</div>
+                </div>
+                <div class="text-end">
+                  <span class="fs-3 fw-bold text-success" id="pvNetSalary">₹0</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Settlement & Note Footer -->
+            <div class="row g-2 text-muted small border-top pt-2">
+              <div class="col-sm-6">
+                <div>Payment Mode: <strong class="text-dark" id="pvMethod">-</strong></div>
+                <div>Transaction / UTR Ref: <strong class="text-dark" id="pvRef">-</strong></div>
+              </div>
+              <div class="col-sm-6 text-sm-end">
+                <div>Disbursed At: <span class="text-dark" id="pvPaidAt">-</span></div>
+                <div id="pvNotesContainer">Note: <span id="pvNotes" class="fst-italic">-</span></div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+        <div class="modal-footer bg-light no-print">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary fw-semibold" onclick="printPayslip()">
+            <i class="bi bi-printer me-1"></i> Print Payslip / Export PDF
           </button>
         </div>
       </div>
@@ -323,6 +948,10 @@
 
   <script>
     let STAFF_CACHE = [];
+    let PAYROLL_CACHE = [];
+    let CURRENT_PAGE = 1;
+    let TOTAL_PAGES = 1;
+    let ACTIVE_TAB = 'roster';
 
     document.addEventListener('DOMContentLoaded', async () => {
       // Session check (Owner only)
@@ -341,18 +970,76 @@
         weekday: 'long', year: 'numeric', month: 'short', day: 'numeric'
       });
 
-      document.getElementById('staffSearchInput').addEventListener('input', utils.debounce(applyStaffFilters, 300));
+      // Search & Debounce for Staff Roster
+      utils.attachSearch({
+        input: 'staffSearchInput',
+        clearBtn: 'staffSearchClear',
+        onSearch: () => applyStaffFilters(),
+        delay: 300
+      });
+
       document.getElementById('staffRoleFilter').addEventListener('change', applyStaffFilters);
 
-      await loadStaffData();
+      // Search & Debounce for Payroll & Payslips
+      utils.attachSearch({
+        input: 'payrollSearchInput',
+        clearBtn: 'payrollSearchClear',
+        onSearch: () => loadPayrollPayslips(1),
+        delay: 300
+      });
+
+      document.getElementById('payrollMonthFilter').addEventListener('change', () => loadPayrollPayslips(1));
+      document.getElementById('payrollYearFilter').addEventListener('change', () => loadPayrollPayslips(1));
+      document.getElementById('payrollAreaFilter').addEventListener('change', () => loadPayrollPayslips(1));
+      document.getElementById('payrollStatusFilter').addEventListener('change', () => loadPayrollPayslips(1));
+
+      // Check URL hash or query for initial tab
+      const hash = window.location.hash.toLowerCase();
+      const urlParams = new URLSearchParams(window.location.search);
+      const tabParam = urlParams.get('tab');
+
+      if (hash === '#payroll' || tabParam === 'payroll') {
+        const tabEl = document.querySelector('#payroll-tab');
+        if (tabEl) {
+          const bsTab = new bootstrap.Tab(tabEl);
+          bsTab.show();
+          ACTIVE_TAB = 'payroll';
+        }
+      }
+
+      // Initial Data Loading
+      await Promise.all([
+        loadStaffData(),
+        loadPayrollData()
+      ]);
     });
+
+    function switchTab(tab) {
+      ACTIVE_TAB = tab;
+      window.location.hash = tab;
+      if (tab === 'payroll') {
+        loadPayrollData();
+      } else {
+        loadStaffData();
+      }
+    }
+
+    function refreshActiveTab() {
+      if (ACTIVE_TAB === 'payroll') {
+        loadPayrollData();
+      } else {
+        loadStaffData();
+      }
+    }
 
     function selectRoleRadio(role) {
       const radio = document.querySelector(`input[name="assignedRoleRadio"][value="${role}"]`);
       if (radio) radio.checked = true;
     }
 
-    // ── Fetch Staff Data ────────────────────────────────────────────────────────
+    // ==========================================================================
+    // TAB 1: STAFF DIRECTORY & ROSTER LOGIC
+    // ==========================================================================
     async function loadStaffData() {
       try {
         const staff = await api.get('/api/staff');
@@ -364,11 +1051,12 @@
           { id: 5, email: 'booking@championsclub.com', full_name: 'David Chen', phone: '+91 98765 43212', role: 'staff', assigned_area: 'booking', is_active: 1, created_at: new Date().toISOString() }
         ];
       }
-      updateKpis();
+      updateStaffKpis();
       applyStaffFilters();
+      populatePayrollStaffDropdown();
     }
 
-    function updateKpis() {
+    function updateStaffKpis() {
       const total = STAFF_CACHE.length;
       const shopCount = STAFF_CACHE.filter(s => s.assigned_area === 'shop').length;
       const barCount = STAFF_CACHE.filter(s => s.assigned_area === 'bar').length;
@@ -378,17 +1066,19 @@
       document.getElementById('kpi-shop-staff').textContent = shopCount;
       document.getElementById('kpi-bar-staff').textContent = barCount;
       document.getElementById('kpi-booking-staff').textContent = bookingCount;
+      document.getElementById('tabStaffCount').textContent = total;
     }
 
     function applyStaffFilters() {
-      const query = document.getElementById('staffSearchInput').value.toLowerCase().trim();
-      const roleFilter = document.getElementById('staffRoleFilter').value;
+      const query = (document.getElementById('staffSearchInput')?.value || '').toLowerCase().trim();
+      const roleFilter = document.getElementById('staffRoleFilter')?.value || 'all';
 
       const filtered = STAFF_CACHE.filter(s => {
         const matchesSearch = !query ||
           (s.full_name && s.full_name.toLowerCase().includes(query)) ||
           (s.email && s.email.toLowerCase().includes(query)) ||
-          (s.phone && s.phone.includes(query));
+          (s.phone && s.phone.includes(query)) ||
+          (s.assigned_area && s.assigned_area.toLowerCase().includes(query));
 
         const matchesRole = roleFilter === 'all' || (s.assigned_area === roleFilter);
         return matchesSearch && matchesRole;
@@ -401,58 +1091,60 @@
     function renderStaffTable(staffList) {
       const tbody = document.getElementById('staffTableBody');
       if (!staffList.length) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted"><i class="bi bi-people fs-4 d-block mb-1"></i>No staff members found matching criteria.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted"><i class="bi bi-people fs-4 d-block mb-1"></i>No staff members found matching criteria.</td></tr>`;
         return;
       }
 
-      tbody.innerHTML = staffList.map(s => {
+      const areaLabels = {
+        shop: 'Shop & Inventory',
+        bar: 'Bar & Cafeteria',
+        booking: 'Court Booking Desk',
+        general: 'General Operations'
+      };
 
+      tbody.innerHTML = staffList.map(s => {
         const statusBadge = s.is_active ?
           '<span class="badge bg-success">Active</span>' :
           '<span class="badge bg-danger">Deactivated</span>';
-        const areaLabels = {
-          shop: 'Shop & Inventory',
-          bar: 'Bar & Cafeteria',
-          booking: 'Court Booking Desk',
-          general: 'General Operations'
-        };
+
         const areaBadge = `<span class="badge bg-primary bg-opacity-10 text-primary">${escHtml(areaLabels[s.assigned_area] || s.assigned_area || 'General Operations')}</span>`;
 
         return `
-      <tr>
-        <td>
-          <div class="d-flex align-items-center">
-            <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-2 fw-bold" style="width:36px; height:36px;">
-              ${escHtml((s.full_name || 'S').charAt(0))}
-            </div>
-            <div>
-              <div class="fw-bold text-dark">${escHtml(s.full_name)}</div>
-              <small class="text-muted">Staff ID: #${s.id}</small>
-            </div>
-          </div>
-        </td>
-        <td>
-          <div class="fw-semibold">${escHtml(s.email)}</div>
-          <small class="text-muted">${escHtml(s.phone || 'No phone')}</small>
-        </td>
-        <td>${areaBadge}</td>
-        
-        <td>${statusBadge}</td>
-        <td class="text-muted small">${fmtDate(s.created_at)}</td>
-        <td class="text-end">
-          <button class="btn btn-sm btn-outline-primary me-1" onclick="openEditStaff(${s.id})">
-            <i class="bi bi-pencil"></i> Edit
-          </button>
-          <button class="btn btn-sm ${s.is_active ? 'btn-outline-danger' : 'btn-outline-success'}" onclick="toggleStaffStatus(${s.id}, ${s.is_active ? 0 : 1})">
-            <i class="bi ${s.is_active ? 'bi-person-x' : 'bi-person-check'}"></i>
-          </button>
-        </td>
-      </tr>
-    `;
+          <tr>
+            <td>
+              <div class="d-flex align-items-center">
+                <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-2 fw-bold" style="width:36px; height:36px;">
+                  ${escHtml((s.full_name || 'S').charAt(0).toUpperCase())}
+                </div>
+                <div>
+                  <div class="fw-bold text-dark">${escHtml(s.full_name)}</div>
+                  <small class="text-muted">Staff ID: #${s.id}</small>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="fw-semibold">${escHtml(s.email)}</div>
+              <small class="text-muted">${escHtml(s.phone || 'No phone')}</small>
+            </td>
+            <td>${areaBadge}</td>
+            <td>${statusBadge}</td>
+            <td class="text-muted small">${fmtDate(s.created_at)}</td>
+            <td class="text-end">
+              <button class="btn btn-sm btn-outline-primary me-1" onclick="openEditStaff(${s.id})">
+                <i class="bi bi-pencil"></i> Edit
+              </button>
+              <button class="btn btn-sm ${s.is_active ? 'btn-outline-warning' : 'btn-outline-success'} me-1" onclick="toggleStaffStatus(${s.id}, ${s.is_active ? 0 : 1})" title="${s.is_active ? 'Deactivate' : 'Activate'}">
+                <i class="bi ${s.is_active ? 'bi-person-x' : 'bi-person-check'}"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-danger" onclick="deleteStaff(${s.id}, '${escHtml(s.full_name)}')" title="Delete Staff">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+        `;
       }).join('');
     }
 
-    // ── Create Staff ────────────────────────────────────────────────────────────
     async function handleCreateStaff() {
       const name = document.getElementById('newStaffName').value.trim();
       const email = document.getElementById('newStaffEmail').value.trim();
@@ -461,29 +1153,27 @@
       const assigned = document.querySelector('input[name="assignedRoleRadio"]:checked')?.value || 'shop';
 
       if (!name || !email || !password) {
-        showAlert('Please provide Name, Email, and Password.', 'danger');
+        ui.showToast('Please provide Name, Email, and Password.', 'danger');
         return;
       }
 
       try {
-        const res = await api.post('/api/staff', {
+        await api.post('/api/staff', {
           full_name: name,
           email,
           password,
           phone,
           assigned_area: assigned
         });
-        showAlert(`Staff member "${name}" registered successfully! Assigned to ${assigned.toUpperCase()}.`, 'success');
+        ui.showToast(`Staff member "${name}" registered successfully!`, 'success');
+        bootstrap.Modal.getInstance(document.getElementById('addStaffModal')).hide();
+        document.getElementById('addStaffForm').reset();
+        await loadStaffData();
       } catch (err) {
-        showAlert(err.message || 'Staff created in local session', 'success');
+        ui.showToast(err.message || 'Failed to create staff member', 'danger');
       }
-
-      bootstrap.Modal.getInstance(document.getElementById('addStaffModal')).hide();
-      document.getElementById('addStaffForm').reset();
-      await loadStaffData();
     }
 
-    // ── Edit Staff ──────────────────────────────────────────────────────────────
     function openEditStaff(staffId) {
       const s = STAFF_CACHE.find(item => item.id === staffId);
       if (!s) return;
@@ -517,27 +1207,455 @@
           is_active: isActive,
           password: newPassword || undefined
         });
-        showAlert('Staff member updated successfully!', 'success');
+        ui.showToast('Staff member updated successfully!', 'success');
+        bootstrap.Modal.getInstance(document.getElementById('editStaffModal')).hide();
+        await loadStaffData();
       } catch (err) {
-        showAlert('Staff updated!', 'success');
+        ui.showToast(err.message || 'Failed to update staff member', 'danger');
       }
-
-      bootstrap.Modal.getInstance(document.getElementById('editStaffModal')).hide();
-      await loadStaffData();
     }
 
     async function toggleStaffStatus(staffId, newStatus) {
       try {
-        if (newStatus === 0) {
-          await api.del(`/api/staff/${staffId}`);
-        } else {
-          await api.put(`/api/staff/${staffId}`, { is_active: 1 });
-        }
-        showAlert('Staff status updated!', 'success');
+        await api.put(`/api/staff/${staffId}`, { is_active: newStatus });
+        ui.showToast(`Staff member ${newStatus ? 'activated' : 'deactivated'} successfully!`, 'success');
+        await loadStaffData();
       } catch (err) {
-        showAlert('Status updated!', 'success');
+        ui.showToast(err.message || 'Status update failed', 'danger');
       }
-      await loadStaffData();
+    }
+
+    async function deleteStaff(staffId, staffName) {
+      const confirmed = await ui.confirmDialog({
+        title: 'Delete Staff Member',
+        message: `Are you sure you want to permanently delete staff member "${staffName}"? This action cannot be undone.`,
+        confirmText: 'Delete Staff',
+        danger: true
+      });
+      if (!confirmed) return;
+
+      try {
+        await api.delete(`/api/staff/${staffId}`);
+        ui.showToast('Staff member deleted successfully', 'success');
+        await loadStaffData();
+      } catch (err) {
+        ui.showToast(err.message || 'Failed to delete staff member', 'danger');
+      }
+    }
+
+
+    // ==========================================================================
+    // TAB 2: STAFF PAYROLL & PAYSLIP LOGIC
+    // ==========================================================================
+    async function loadPayrollData() {
+      await Promise.all([
+        loadPayrollSummary(),
+        loadPayrollPayslips(1)
+      ]);
+    }
+
+    async function loadPayrollSummary() {
+      try {
+        const res = await api.get('/api/staff/payroll/summary');
+        if (res) {
+          document.getElementById('kpi-total-disbursed').textContent = `₹${Number(res.total_disbursed || 0).toLocaleString('en-IN')}`;
+          document.getElementById('kpi-avg-salary').textContent = `₹${Math.round(Number(res.avg_salary || 0)).toLocaleString('en-IN')}`;
+          document.getElementById('kpi-paid-slips').textContent = res.paid_count || 0;
+          document.getElementById('kpi-pending-slips').textContent = res.pending_count || 0;
+          document.getElementById('tabPayrollCount').textContent = res.total_payslips || 0;
+        }
+      } catch (err) {
+        console.error('Payroll summary error:', err);
+      }
+    }
+
+    async function loadPayrollPayslips(page = 1) {
+      CURRENT_PAGE = page;
+      const search = document.getElementById('payrollSearchInput')?.value?.trim() || '';
+      const month = document.getElementById('payrollMonthFilter')?.value || 'all';
+      const year = document.getElementById('payrollYearFilter')?.value || 'all';
+      const area = document.getElementById('payrollAreaFilter')?.value || 'all';
+      const status = document.getElementById('payrollStatusFilter')?.value || 'all';
+
+      const queryParams = new URLSearchParams({
+        page: page,
+        limit: 15,
+        search,
+        month,
+        year,
+        area,
+        status
+      });
+
+      try {
+        const res = await api.get(`/api/staff/payroll/payslips?${queryParams.toString()}`);
+        PAYROLL_CACHE = res.payslips || [];
+        TOTAL_PAGES = res.pagination?.pages || 1;
+        document.getElementById('payrollCountBadge').textContent = `${res.pagination?.total || 0} slips`;
+        renderPayrollTable(PAYROLL_CACHE);
+      } catch (err) {
+        console.error('Error fetching payroll slips:', err);
+        renderPayrollTable([]);
+      }
+    }
+
+    function renderPayrollTable(payslips) {
+      const tbody = document.getElementById('payrollTableBody');
+      if (!payslips || !payslips.length) {
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-muted"><i class="bi bi-cash-stack fs-4 d-block mb-1"></i>No payslips found matching the filters. Click "Create New Payroll / Payslip" to issue one.</td></tr>`;
+        return;
+      }
+
+      const areaLabels = {
+        shop: 'Shop & Inventory',
+        bar: 'Bar & Cafeteria',
+        booking: 'Court Booking Desk',
+        general: 'General Operations'
+      };
+
+      const methodLabels = {
+        bank_transfer: 'Bank Transfer',
+        upi: 'UPI',
+        cheque: 'Cheque',
+        cash: 'Cash'
+      };
+
+      tbody.innerHTML = payslips.map(p => {
+        const statusBadge = p.payment_status === 'paid' ?
+          '<span class="badge bg-success"><i class="bi bi-check2-circle me-1"></i>Paid</span>' :
+          (p.payment_status === 'processing' ?
+            '<span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>Processing</span>' :
+            '<span class="badge bg-secondary">Draft</span>');
+
+        const areaName = areaLabels[p.assigned_area] || p.assigned_area || 'Operations';
+        const methodText = methodLabels[p.payment_method] || p.payment_method || 'Bank Transfer';
+
+        return `
+          <tr>
+            <td>
+              <span class="badge bg-light text-dark border font-monospace fw-bold">${escHtml(p.payslip_code || 'PAY-' + p.id)}</span>
+            </td>
+            <td>
+              <div class="d-flex align-items-center">
+                <div class="bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center me-2 fw-bold" style="width:34px; height:34px;">
+                  ${escHtml((p.staff_name || 'S').charAt(0).toUpperCase())}
+                </div>
+                <div>
+                  <div class="fw-bold text-dark">${escHtml(p.staff_name)}</div>
+                  <small class="badge bg-secondary bg-opacity-10 text-secondary">${escHtml(areaName)}</small>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="fw-semibold">${escHtml(p.pay_period_month)} ${p.pay_period_year}</div>
+            </td>
+            <td class="text-dark fw-semibold">₹${Number(p.gross_salary || 0).toLocaleString('en-IN')}</td>
+            <td class="text-danger">₹${Number(p.total_deductions || 0).toLocaleString('en-IN')}</td>
+            <td>
+              <span class="fw-bold text-success fs-6">₹${Number(p.net_salary || 0).toLocaleString('en-IN')}</span>
+            </td>
+            <td>
+              <div>${statusBadge}</div>
+              <small class="text-muted">${escHtml(methodText)}</small>
+            </td>
+            <td>
+              <div class="small text-dark">${p.paid_at ? fmtDate(p.paid_at) : 'Pending'}</div>
+              ${p.payment_reference ? `<small class="text-muted font-monospace">${escHtml(p.payment_reference)}</small>` : ''}
+            </td>
+            <td class="text-end">
+              <button class="btn btn-sm btn-outline-primary me-1" onclick="viewPayslipModal(${p.id})" title="View & Print Payslip">
+                <i class="bi bi-receipt"></i> Payslip
+              </button>
+              <button class="btn btn-sm btn-outline-danger" onclick="deletePayslipAction(${p.id}, '${escHtml(p.payslip_code)}')" title="Delete Payslip">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function populatePayrollStaffDropdown() {
+      const select = document.getElementById('payrollStaffSelect');
+      if (!select) return;
+
+      select.innerHTML = '<option value="">-- Choose staff member --</option>';
+      STAFF_CACHE.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = `${s.full_name} (${s.email}) - ${(s.assigned_area || 'Operations').toUpperCase()}`;
+        opt.dataset.area = s.assigned_area || 'shop';
+        opt.dataset.email = s.email;
+        opt.dataset.name = s.full_name;
+        select.appendChild(opt);
+      });
+    }
+
+    function openCreatePayrollModal() {
+      populatePayrollStaffDropdown();
+      document.getElementById('createPayrollForm').reset();
+
+      // Set default Month & Year to current date
+      const date = new Date();
+      const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      document.getElementById('payrollMonthSelect').value = monthNames[date.getMonth()];
+      document.getElementById('payrollYearSelect').value = date.getFullYear().toString();
+
+      // Defaults
+      document.getElementById('paramBaseSalary').value = 32000;
+      document.getElementById('paramHra').value = 9600;
+      document.getElementById('paramTransport').value = 2500;
+      document.getElementById('paramBonus').value = 1500;
+      document.getElementById('paramOtHours').value = 0;
+      document.getElementById('paramOtRate').value = 200;
+      document.getElementById('paramPf').value = 1800;
+      document.getElementById('paramPt').value = 200;
+      document.getElementById('paramTds').value = 0;
+      document.getElementById('paramLeaveDays').value = 0;
+
+      recalculatePayrollLive();
+      new bootstrap.Modal(document.getElementById('createPayrollModal')).show();
+    }
+
+    function onPayrollStaffSelected() {
+      const select = document.getElementById('payrollStaffSelect');
+      const staffId = select.value;
+      if (!staffId) return;
+
+      const staff = STAFF_CACHE.find(s => s.id == staffId);
+      if (!staff) return;
+
+      // Auto-tune base salary parameters based on assigned area
+      let base = 30000;
+      if (staff.assigned_area === 'shop') base = 35000;
+      if (staff.assigned_area === 'bar') base = 32000;
+      if (staff.assigned_area === 'booking') base = 30000;
+
+      document.getElementById('paramBaseSalary').value = base;
+      document.getElementById('paramHra').value = Math.round(base * 0.30);
+      document.getElementById('paramTransport').value = 2500;
+      document.getElementById('paramBonus').value = 2000;
+      document.getElementById('paramPf').value = Math.round(base * 0.06); // typical employee PF
+      document.getElementById('paramPt').value = 200;
+
+      document.getElementById('selectedStaffInfo').textContent = `Assigned Area: ${staff.assigned_area?.toUpperCase()} | Email: ${staff.email}`;
+      recalculatePayrollLive();
+    }
+
+    function recalculatePayrollLive() {
+      const base = Math.max(0, parseFloat(document.getElementById('paramBaseSalary')?.value) || 0);
+      const hra = Math.max(0, parseFloat(document.getElementById('paramHra')?.value) || 0);
+      const transport = Math.max(0, parseFloat(document.getElementById('paramTransport')?.value) || 0);
+      const bonus = Math.max(0, parseFloat(document.getElementById('paramBonus')?.value) || 0);
+      
+      const otHours = Math.max(0, parseFloat(document.getElementById('paramOtHours')?.value) || 0);
+      const otRate = Math.max(0, parseFloat(document.getElementById('paramOtRate')?.value) || 0);
+      const otPay = otHours * otRate;
+      
+      const gross = base + hra + transport + bonus + otPay;
+
+      // Deductions
+      const pf = Math.max(0, parseFloat(document.getElementById('paramPf')?.value) || 0);
+      const pt = Math.max(0, parseFloat(document.getElementById('paramPt')?.value) || 0);
+      const tds = Math.max(0, parseFloat(document.getElementById('paramTds')?.value) || 0);
+      
+      const leaveDays = Math.max(0, parseFloat(document.getElementById('paramLeaveDays')?.value) || 0);
+      const leaveDeduction = (base / 30) * leaveDays;
+
+      const totalDeductions = pf + pt + tds + leaveDeduction;
+      const net = Math.max(0, gross - totalDeductions);
+
+      // Update UI elements
+      document.getElementById('calcOtTotal').textContent = `₹${otPay.toLocaleString('en-IN')}`;
+      document.getElementById('calcLeaveDeduction').textContent = `₹${Math.round(leaveDeduction).toLocaleString('en-IN')}`;
+      
+      document.getElementById('badgeGrossCalc').textContent = `Gross: ₹${Math.round(gross).toLocaleString('en-IN')}`;
+      document.getElementById('badgeDeductCalc').textContent = `Deductions: ₹${Math.round(totalDeductions).toLocaleString('en-IN')}`;
+      
+      document.getElementById('liveGrossDisplay').textContent = `₹${Math.round(gross).toLocaleString('en-IN')}`;
+      document.getElementById('liveDeductDisplay').textContent = `₹${Math.round(totalDeductions).toLocaleString('en-IN')}`;
+      document.getElementById('liveNetDisplay').textContent = `₹${Math.round(net).toLocaleString('en-IN')}`;
+    }
+
+    async function handleCreatePayslip() {
+      const staffId = document.getElementById('payrollStaffSelect').value;
+      if (!staffId) {
+        ui.showToast('Please select a staff member.', 'danger');
+        return;
+      }
+
+      const staff = STAFF_CACHE.find(s => s.id == staffId);
+      const month = document.getElementById('payrollMonthSelect').value;
+      const year = parseInt(document.getElementById('payrollYearSelect').value, 10);
+
+      const baseSalary = parseFloat(document.getElementById('paramBaseSalary').value) || 0;
+      const hraAllowance = parseFloat(document.getElementById('paramHra').value) || 0;
+      const transportAllowance = parseFloat(document.getElementById('paramTransport').value) || 0;
+      const performanceBonus = parseFloat(document.getElementById('paramBonus').value) || 0;
+      const overtimeHours = parseFloat(document.getElementById('paramOtHours').value) || 0;
+      const overtimePay = overtimeHours * (parseFloat(document.getElementById('paramOtRate').value) || 0);
+
+      const providentFund = parseFloat(document.getElementById('paramPf').value) || 0;
+      const professionalTax = parseFloat(document.getElementById('paramPt').value) || 0;
+      const incomeTaxTds = parseFloat(document.getElementById('paramTds').value) || 0;
+      const leaveDays = parseFloat(document.getElementById('paramLeaveDays').value) || 0;
+
+      const paymentMethod = document.getElementById('payrollPaymentMethod').value;
+      const paymentStatus = document.getElementById('payrollPaymentStatus').value;
+      const paymentReference = document.getElementById('payrollReference').value.trim();
+      const notes = document.getElementById('payrollNotes').value.trim();
+
+      const payload = {
+        user_id: staffId,
+        staff_name: staff ? staff.full_name : 'Staff Member',
+        staff_email: staff ? staff.email : '',
+        assigned_area: staff ? staff.assigned_area : 'general',
+        pay_period_month: month,
+        pay_period_year: year,
+        base_salary: baseSalary,
+        hra_allowance: hraAllowance,
+        transport_allowance: transportAllowance,
+        performance_bonus: performanceBonus,
+        overtime_pay: overtimePay,
+        overtime_hours: overtimeHours,
+        provident_fund: providentFund,
+        professional_tax: professionalTax,
+        income_tax_tds: incomeTaxTds,
+        leave_days: leaveDays,
+        payment_method: paymentMethod,
+        payment_status: paymentStatus,
+        payment_reference: paymentReference || undefined,
+        notes: notes || undefined
+      };
+
+      const submitBtn = document.getElementById('btnSubmitPayroll');
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Processing Payout...';
+
+      try {
+        const res = await api.post('/api/staff/payroll/payslips', payload);
+        ui.showToast(`Payslip ${res.payslip_code || ''} generated & recorded successfully!`, 'success');
+        
+        bootstrap.Modal.getInstance(document.getElementById('createPayrollModal')).hide();
+        await loadPayrollData();
+
+        // Optionally open the generated slip for preview
+        if (res.id) {
+          viewPayslipModal(res.id);
+        }
+      } catch (err) {
+        ui.showToast(err.message || 'Failed to generate payslip', 'danger');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Pay & Generate Payslip';
+      }
+    }
+
+    async function viewPayslipModal(payslipId) {
+      try {
+        const p = await api.get(`/api/staff/payroll/payslips/${payslipId}`);
+        if (!p) return;
+
+        document.getElementById('pvCode').textContent = p.payslip_code || `PAY-${p.id}`;
+        document.getElementById('pvIssueDate').textContent = fmtDate(p.paid_at || p.created_at);
+        document.getElementById('pvStaffName').textContent = p.staff_name || 'Staff Member';
+        document.getElementById('pvStaffEmail').textContent = p.staff_email || '-';
+        document.getElementById('pvStaffArea').textContent = (p.assigned_area || 'Operations').toUpperCase();
+        document.getElementById('pvStaffId').textContent = `#${p.user_id}`;
+        document.getElementById('pvPayPeriod').textContent = `${p.pay_period_month} ${p.pay_period_year}`;
+
+        const isPaid = p.payment_status === 'paid';
+        document.getElementById('pvStatusBadge').className = `badge bg-${isPaid ? 'success' : 'warning text-dark'}`;
+        document.getElementById('pvStatusBadge').textContent = (p.payment_status || 'Draft').toUpperCase();
+
+        // Earnings
+        document.getElementById('pvBaseSalary').textContent = `₹${Number(p.base_salary || 0).toLocaleString('en-IN')}`;
+        document.getElementById('pvHra').textContent = `₹${Number(p.hra_allowance || 0).toLocaleString('en-IN')}`;
+        document.getElementById('pvTransport').textContent = `₹${Number(p.transport_allowance || 0).toLocaleString('en-IN')}`;
+        document.getElementById('pvBonus').textContent = `₹${Number(p.performance_bonus || 0).toLocaleString('en-IN')}`;
+        document.getElementById('pvOtPay').textContent = `₹${Number(p.overtime_pay || 0).toLocaleString('en-IN')}`;
+        document.getElementById('pvOtSub').textContent = p.overtime_hours > 0 ? `(${p.overtime_hours} hrs)` : '';
+        document.getElementById('pvGrossTotal').textContent = `₹${Number(p.gross_salary || 0).toLocaleString('en-IN')}`;
+
+        // Deductions
+        document.getElementById('pvPf').textContent = `₹${Number(p.provident_fund || 0).toLocaleString('en-IN')}`;
+        document.getElementById('pvPt').textContent = `₹${Number(p.professional_tax || 0).toLocaleString('en-IN')}`;
+        document.getElementById('pvTds').textContent = `₹${Number(p.income_tax_tds || 0).toLocaleString('en-IN')}`;
+        document.getElementById('pvLeaveDeduct').textContent = `₹${Number(p.unpaid_leave_deduction || 0).toLocaleString('en-IN')}`;
+        document.getElementById('pvLeaveSub').textContent = p.leave_days > 0 ? `(${p.leave_days} days LOP)` : '';
+        document.getElementById('pvDeductTotal').textContent = `₹${Number(p.total_deductions || 0).toLocaleString('en-IN')}`;
+
+        // Net
+        document.getElementById('pvNetSalary').textContent = `₹${Number(p.net_salary || 0).toLocaleString('en-IN')}`;
+        document.getElementById('pvNetInWords').textContent = `INR ${numberToWordsIndian(Math.round(Number(p.net_salary || 0)))} Only`;
+
+        // Footer
+        document.getElementById('pvMethod').textContent = (p.payment_method || 'Bank Transfer').toUpperCase();
+        document.getElementById('pvRef').textContent = p.payment_reference || 'N/A';
+        document.getElementById('pvPaidAt').textContent = p.paid_at ? new Date(p.paid_at).toLocaleString('en-IN') : 'Pending';
+        document.getElementById('pvNotes').textContent = p.notes || 'None';
+
+        new bootstrap.Modal(document.getElementById('viewPayslipModal')).show();
+      } catch (err) {
+        ui.showToast(err.message || 'Failed to load payslip voucher', 'danger');
+      }
+    }
+
+    function printPayslip() {
+      window.print();
+    }
+
+    async function deletePayslipAction(payslipId, code) {
+      const confirmed = await ui.confirmDialog({
+        title: 'Delete Payslip Record',
+        message: `Are you sure you want to permanently delete payslip ${code || '#' + payslipId}? This will remove it from payroll accounts.`,
+        confirmText: 'Delete Record',
+        danger: true
+      });
+      if (!confirmed) return;
+
+      try {
+        await api.delete(`/api/staff/payroll/payslips/${payslipId}`);
+        ui.showToast('Payslip record deleted successfully', 'success');
+        await loadPayrollData();
+      } catch (err) {
+        ui.showToast(err.message || 'Failed to delete payslip', 'danger');
+      }
+    }
+
+    // Number to words converter for Indian Rupee currency format
+    function numberToWordsIndian(num) {
+      if (num === 0) return 'Zero Rupees';
+      const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
+      const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+      function inWords(n) {
+        let str = '';
+        if (n > 19) {
+          str += b[Math.floor(n / 10)] + (n % 10 !== 0 ? ' ' + a[n % 10] : ' ');
+        } else {
+          str += a[n];
+        }
+        return str;
+      }
+
+      let out = '';
+      const crore = Math.floor(num / 10000000);
+      num %= 10000000;
+      const lakh = Math.floor(num / 100000);
+      num %= 100000;
+      const thousand = Math.floor(num / 1000);
+      num %= 1000;
+      const hundred = Math.floor(num / 100);
+      const rem = num % 100;
+
+      if (crore > 0) out += inWords(crore) + 'Crore ';
+      if (lakh > 0) out += inWords(lakh) + 'Lakh ';
+      if (thousand > 0) out += inWords(thousand) + 'Thousand ';
+      if (hundred > 0) out += inWords(hundred) + 'Hundred ';
+      if (rem > 0) out += (out !== '' ? 'and ' : '') + inWords(rem);
+
+      return out.trim();
     }
   </script>
 </body>

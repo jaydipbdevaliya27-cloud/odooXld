@@ -23,17 +23,39 @@ router.get('/', async (req, res, next) => {
     const category = req.query.category;
     const search = req.query.search || req.query.q;
     const low_stock = req.query.low_stock;
+    const stock = req.query.stock;
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 50;
 
-    let sql = 'SELECT * FROM products WHERE is_active = 1';
+    const includeInactive = req.query.include_inactive === 'true' || req.query.status === 'all';
+    const statusFilter = req.query.status;
+
+    let sql = 'SELECT * FROM products WHERE 1=1';
     const params = [];
+
+    if (statusFilter === 'inactive') {
+      sql += ' AND is_active = 0';
+    } else if (statusFilter === 'active') {
+      sql += ' AND is_active = 1';
+    } else if (!includeInactive) {
+      sql += ' AND is_active = 1';
+    }
+
     if (department) { sql += ' AND department = ?'; params.push(department); }
     if (category) { sql += ' AND category = ?'; params.push(category); }
     if (search && search.trim().length) {
-      sql += ' AND (name LIKE ? OR sku LIKE ? OR category LIKE ?)';
-      params.push(`%${search.trim()}%`, `%${search.trim()}%`, `%${search.trim()}%`);
+      sql += ' AND (name LIKE ? OR sku LIKE ? OR category LIKE ? OR description LIKE ?)';
+      const s = `%${search.trim()}%`;
+      params.push(s, s, s, s);
     }
-    if (low_stock === 'true' || low_stock === '1')
-      sql += ' AND track_stock=1 AND stock_qty <= reorder_level';
+    if (low_stock === 'true' || low_stock === '1' || stock === 'low') {
+      sql += ' AND track_stock = 1 AND stock_qty <= reorder_level AND stock_qty > 0';
+    } else if (stock === 'out') {
+      sql += ' AND track_stock = 1 AND stock_qty = 0';
+    } else if (stock === 'ok') {
+      sql += ' AND (track_stock = 0 OR stock_qty > reorder_level)';
+    }
+
     sql += ' ORDER BY department, category, name';
     const [rows] = await db.query(sql, params);
 
@@ -56,7 +78,15 @@ router.get('/', async (req, res, next) => {
       variants: variantMap[r.id] || []
     }));
 
-    res.json({ data: formatted });
+    res.json({
+      data: formatted,
+      meta: {
+        page,
+        limit,
+        total: formatted.length,
+        totalPages: Math.ceil(formatted.length / limit) || 1
+      }
+    });
   } catch (err) { next(err); }
 });
 
@@ -295,8 +325,19 @@ router.post('/:id/variant', requireLogin, requireRole('owner', 'staff'), async (
 // ── DELETE /api/products/:id ─────────────────────────────────────────────────
 router.delete('/:id', requireLogin, requireRole('owner', 'staff'), async (req, res, next) => {
   try {
+    const force = req.query.force === 'true';
+    if (force && req.session.user.role === 'owner') {
+      await db.transaction(async (conn) => {
+        await conn.query('DELETE FROM stock_movements WHERE product_id = ?', [req.params.id]);
+        await conn.query('DELETE FROM product_variants WHERE product_id = ?', [req.params.id]);
+        await conn.query('DELETE FROM purchase_order_items WHERE product_id = ?', [req.params.id]);
+        await conn.query('DELETE FROM order_items WHERE product_id = ?', [req.params.id]);
+        await conn.query('DELETE FROM products WHERE id = ?', [req.params.id]);
+      });
+      return res.json({ ok: true, message: 'Product permanently deleted' });
+    }
     await db.query('UPDATE products SET is_active=0 WHERE id=?', [req.params.id]);
-    res.json({ message: 'Product deactivated' });
+    res.json({ ok: true, message: 'Product deactivated' });
   } catch (err) { next(err); }
 });
 
@@ -305,6 +346,17 @@ router.delete('/:id/variant/:vid', requireLogin, requireRole('owner', 'staff'), 
   try {
     await db.query('UPDATE product_variants SET is_active=0 WHERE id=? AND product_id=?', [req.params.vid, req.params.id]);
     res.json({ message: 'Variant removed' });
+  } catch (err) { next(err); }
+});
+
+// ── PUT /api/products/:id/toggle-active ─────────────────────────────────────
+router.put('/:id/toggle-active', requireLogin, requireRole('owner', 'staff'), async (req, res, next) => {
+  try {
+    const [rows] = await db.query('SELECT id, is_active, name FROM products WHERE id = ?', [req.params.id]);
+    if (!rows.length) return res.status(404).json({ error: 'Product not found' });
+    const newActive = rows[0].is_active ? 0 : 1;
+    await db.query('UPDATE products SET is_active = ? WHERE id = ?', [newActive, req.params.id]);
+    res.json({ ok: true, id: parseInt(req.params.id, 10), is_active: newActive, name: rows[0].name });
   } catch (err) { next(err); }
 });
 

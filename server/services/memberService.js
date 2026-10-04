@@ -19,15 +19,17 @@ const HASH_ROUNDS = 10;
 const PAGE_SIZE   = 20;
 
 // ── Generate sequential member code ──────────────────────────────────────────
-// Returns "CC-0001", "CC-0002", etc. based on current max code in DB.
 async function nextMemberCode() {
-  const [rows] = await db.query(
-    "SELECT member_code FROM members ORDER BY id DESC LIMIT 1"
-  );
-  if (!rows.length) return 'CC-0001';
-  const last = rows[0].member_code;              // e.g. "CC-0042"
-  const num  = parseInt(last.split('-')[1]) + 1;
-  return `CC-${String(num).padStart(4, '0')}`;
+  const [[{ maxId }]] = await db.query("SELECT COALESCE(MAX(id), 0) AS maxId FROM members");
+  let nextNum = Number(maxId) + 1;
+  let code = `CC-${String(nextNum).padStart(4, '0')}`;
+  let [exists] = await db.query("SELECT id FROM members WHERE member_code = ?", [code]);
+  while (exists.length > 0) {
+    nextNum++;
+    code = `CC-${String(nextNum).padStart(4, '0')}`;
+    [exists] = await db.query("SELECT id FROM members WHERE member_code = ?", [code]);
+  }
+  return code;
 }
 
 // ── listMembers ───────────────────────────────────────────────────────────────

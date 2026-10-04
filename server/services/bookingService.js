@@ -11,6 +11,14 @@ const { calculateCourtPrice } = require('./pricing');
 const { todayIST, nowIST, isPastSlot, addMinutes, timeIST } = require('../utils/time');
 
 /**
+ * Helper to check if a YYYY-MM-DD date falls on a Friday.
+ */
+function isFriday(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00Z');
+  return d.getUTCDay() === 5;
+}
+
+/**
  * Helper to pad numbers to 2 digits.
  */
 function pad(num) {
@@ -120,25 +128,40 @@ async function getAvailability(dateStr, sport = null, currentUserId = null) {
           return;
         }
 
+        const isFri = isFriday(dateStr);
         const booked1 = bookedMap.has(key1);
         const booked2 = bookedMap.has(key2);
 
         if (booked1 || booked2) {
           const bookedUser = bookedMap.get(key1) || bookedMap.get(key2);
           const isMine = !!(currentUserId && bookedUser === currentUserId);
-          courtStatus[court.id] = {
-            available: false,
-            isPast: slotInPast,
-            isBlocked: false,
-            isMine,
-            reason: isMine ? 'Your Booking' : 'Booked'
-          };
+          if (isFri) {
+            // On Friday, multiple bookings are allowed on the same time slot
+            courtStatus[court.id] = {
+              available: !slotInPast,
+              isPast: slotInPast,
+              isBlocked: false,
+              isMine,
+              isFridayMulti: true,
+              reason: isMine ? 'Your Booking (Friday Open Session)' : (slotInPast ? 'Time has passed' : 'Available (Friday Open Session)')
+            };
+          } else {
+            courtStatus[court.id] = {
+              available: false,
+              isPast: slotInPast,
+              isBlocked: false,
+              isMine,
+              isFridayMulti: false,
+              reason: isMine ? 'Your Booking' : 'Booked'
+            };
+          }
         } else {
           courtStatus[court.id] = {
             available: !slotInPast,
             isPast: slotInPast,
             isBlocked: false,
             isMine: false,
+            isFridayMulti: isFri,
             reason: slotInPast ? 'Time has passed' : 'Available'
           };
         }
@@ -350,6 +373,26 @@ async function createBooking({
     const slot1End   = `${bookingDate} ${secondSlotTime}:00`;
     const slot2Start = `${bookingDate} ${secondSlotTime}:00`;
     const slot2End   = `${bookingDate} ${endTime}:00`;
+
+    // 5. On non-Friday days, strictly prevent double-booking on same court & time slot
+    const fridayBooking = isFriday(bookingDate);
+    if (!fridayBooking) {
+      const [existingSlots] = await conn.query(
+        `SELECT bs.id FROM booking_slots bs
+         JOIN bookings b ON bs.booking_id = b.id
+         WHERE bs.court_id = ? AND bs.slot_date = ?
+           AND b.status = 'confirmed'
+           AND (bs.slot_start = ? OR bs.slot_start = ?)
+         FOR UPDATE`,
+        [courtId, bookingDate, slot1Start, slot2Start]
+      );
+      if (existingSlots.length > 0) {
+        const err = new Error('The selected court and time slot was just booked by another player.');
+        err.code = 'SLOT_TAKEN';
+        err.status = 409;
+        throw err;
+      }
+    }
 
     try {
       await conn.query(

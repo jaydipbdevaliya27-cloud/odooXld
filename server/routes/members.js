@@ -83,7 +83,7 @@ router.get('/', requireLogin, requireRole('staff', 'owner'), async (req, res, ne
     const params = [];
 
     // Search query
-    if (q && q.trim().length >= 2) {
+    if (q && q.trim()) {
       const s = `%${q.trim().replace(/[%_]/g, '\\$&')}%`;
       where += ` AND (
         u.full_name LIKE ? OR
@@ -291,6 +291,7 @@ router.post(
       const {
         full_name,
         email,
+        password,
         phone,
         date_of_birth,
         plan_id,
@@ -306,6 +307,14 @@ router.post(
 
       const cleanEmail = email.trim().toLowerCase();
       const cleanPhone = phone ? phone.replace(/[\s\-+]/g, '').slice(-10) : null;
+
+      if (password && password.trim() && password.trim().length < 6) {
+        return res.status(400).json({
+          error: 'Password must be at least 6 characters long.',
+          code: 'VALIDATION_ERROR',
+          fields: { password: 'Password must be at least 6 characters' }
+        });
+      }
 
       // Validate plan by id or code
       let planQuery = 'SELECT * FROM plans WHERE is_active = 1 AND ';
@@ -382,21 +391,29 @@ router.post(
         let userId;
         const [existingUsers] = await conn.query('SELECT id FROM users WHERE email = ?', [cleanEmail]);
 
+        const hasCustomPassword = password && password.trim();
+        const memberPassword = hasCustomPassword ? password.trim() : `Pass@${crypto.randomBytes(3).toString('hex')}`;
+        const mustChange = hasCustomPassword ? 0 : 1;
+        const hash = await bcrypt.hash(memberPassword, 10);
+
         if (existingUsers.length) {
           userId = existingUsers[0].id;
-          await conn.query(
-            `UPDATE users SET full_name = ?, phone = COALESCE(?, phone), role = 'member' WHERE id = ?`,
-            [full_name.trim(), cleanPhone, userId]
-          );
+          if (hasCustomPassword) {
+            await conn.query(
+              `UPDATE users SET full_name = ?, phone = COALESCE(?, phone), password_hash = ?, must_change_password = 0, role = 'member' WHERE id = ?`,
+              [full_name.trim(), cleanPhone, hash, userId]
+            );
+          } else {
+            await conn.query(
+              `UPDATE users SET full_name = ?, phone = COALESCE(?, phone), role = 'member' WHERE id = ?`,
+              [full_name.trim(), cleanPhone, userId]
+            );
+          }
         } else {
-          // Generate temporary password
-          const tempPassword = `Pass@${crypto.randomBytes(3).toString('hex')}`;
-          const hash = await bcrypt.hash(tempPassword, 10);
-
           const [insUser] = await conn.query(
             `INSERT INTO users (email, password_hash, role, full_name, phone, must_change_password, is_active)
-             VALUES (?, ?, 'member', ?, ?, 1, 1)`,
-            [cleanEmail, hash, full_name.trim(), cleanPhone]
+             VALUES (?, ?, 'member', ?, ?, ?, 1)`,
+            [cleanEmail, hash, full_name.trim(), cleanPhone, mustChange]
           );
           userId = insUser.insertId;
         }
@@ -507,6 +524,7 @@ router.put('/:id', requireLogin, requireRole('staff', 'owner'), async (req, res,
       full_name,
       email,
       phone,
+      password,
       status,
       notes,
       emergency_contact_name,
@@ -518,6 +536,22 @@ router.put('/:id', requireLogin, requireRole('staff', 'owner'), async (req, res,
     const [mRows] = await db.query('SELECT * FROM members WHERE id = ?', [memberId]);
     if (!mRows.length) return res.status(404).json({ error: 'Member not found' });
     const member = mRows[0];
+
+    // Update password if provided
+    if (password && password.trim()) {
+      if (password.trim().length < 6) {
+        return res.status(400).json({
+          error: 'Password must be at least 6 characters long.',
+          code: 'VALIDATION_ERROR',
+          fields: { password: 'Password must be at least 6 characters' }
+        });
+      }
+      const hash = await bcrypt.hash(password.trim(), 10);
+      await db.query(
+        `UPDATE users SET password_hash = ?, must_change_password = 0 WHERE id = ?`,
+        [hash, member.user_id]
+      );
+    }
 
     // Update user info
     if (full_name || email || phone) {
@@ -660,6 +694,35 @@ router.post('/:id/checkin', requireLogin, requireRole('staff', 'owner'), async (
       message: `Check-in recorded for ${member.full_name} (${member.member_code})`,
       checkinTime: new Date()
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── DELETE /api/members/:id ──────────────────────────────────────────────────
+router.delete('/:id', requireLogin, requireRole('owner'), async (req, res, next) => {
+  try {
+    const memberId = parseInt(req.params.id, 10);
+    const [mRows] = await db.query('SELECT * FROM members WHERE id = ?', [memberId]);
+    if (!mRows.length) {
+      return res.status(404).json({ error: 'Member not found', code: 'MEMBER_NOT_FOUND' });
+    }
+    const member = mRows[0];
+
+    await db.transaction(async (conn) => {
+      await conn.query('DELETE FROM member_guardians WHERE member_id = ?', [memberId]);
+      await conn.query('DELETE FROM member_checkins WHERE member_id = ?', [memberId]);
+      await conn.query('DELETE FROM membership_history WHERE member_id = ?', [memberId]);
+      await conn.query('DELETE FROM booking_slots WHERE booking_id IN (SELECT id FROM bookings WHERE member_id = ?)', [memberId]);
+      await conn.query('DELETE FROM bookings WHERE member_id = ?', [memberId]);
+      await conn.query('DELETE FROM payments WHERE user_id = ? OR (source = "membership" AND reference_id = ?)', [member.user_id, memberId]);
+      await conn.query('DELETE FROM members WHERE id = ?', [memberId]);
+      if (member.user_id) {
+        await conn.query('DELETE FROM users WHERE id = ? AND role = "member"', [member.user_id]);
+      }
+    });
+
+    res.json({ ok: true, message: 'Member account deleted successfully' });
   } catch (err) {
     next(err);
   }

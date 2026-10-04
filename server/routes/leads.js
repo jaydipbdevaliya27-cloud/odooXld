@@ -101,7 +101,7 @@ router.get('/', requireLogin, requireRole('staff', 'owner'), async (req, res, ne
     let where = '1=1';
     const params = [];
 
-    if (q && q.trim().length >= 2) {
+    if (q && q.trim()) {
       const s = `%${q.trim().replace(/[%_]/g, '\\$&')}%`;
       where += ' AND (l.name LIKE ? OR l.email LIKE ? OR l.phone LIKE ? OR l.message LIKE ?)';
       params.push(s, s, s, s);
@@ -361,5 +361,24 @@ router.post(
     }
   }
 );
+
+// ── DELETE /api/leads/:id ───────────────────────────────────────────────────
+router.delete('/:id', requireLogin, requireRole('staff', 'owner'), async (req, res, next) => {
+  try {
+    const leadId = parseInt(req.params.id, 10);
+    const [rows] = await db.query('SELECT * FROM leads WHERE id = ?', [leadId]);
+    if (!rows.length) return res.status(404).json({ error: 'Lead not found', code: 'NOT_FOUND' });
+
+    await db.transaction(async (conn) => {
+      await conn.query('DELETE FROM lead_followups WHERE lead_id = ?', [leadId]);
+      await conn.query('DELETE FROM lead_quotes WHERE lead_id = ?', [leadId]);
+      await conn.query('DELETE FROM leads WHERE id = ?', [leadId]);
+    });
+
+    res.json({ ok: true, message: 'Lead deleted successfully' });
+  } catch (err) {
+    next(err);
+  }
+});
 
 module.exports = router;

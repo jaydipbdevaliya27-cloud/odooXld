@@ -55,23 +55,27 @@
   </style>
 </head>
 <body>
-  <div id="app-shell"></div>
+  <div class="app-layout">
+    <div id="app-shell"></div>
 
-  <div class="content-container">
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-      <div>
-        <h2 class="fw-bold mb-1">Kitchen Display System (KDS) & Bar Tabs</h2>
-        <p class="text-muted mb-0">Live order queue for baristas/chefs and open member bar tab settlement.</p>
-      </div>
-      <div class="d-flex gap-2 align-items-center">
-        <span class="badge bg-light text-dark border p-2">
-          <i class="bi bi-arrow-repeat me-1 text-primary spin-hover" id="refreshIcon"></i> Live Auto-polling (10s)
-        </span>
-        <a href="cafeteria.html" class="btn btn-outline-secondary">
-          <i class="bi bi-grid-3x3-gap me-1"></i> Floor POS
-        </a>
-      </div>
-    </div>
+    <main class="app-main">
+      <div class="container-fluid p-3 p-md-4">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+          <div>
+            <h4 class="fw-bold mb-1 text-dark d-flex align-items-center gap-2">
+              <i class="bi bi-fire text-danger"></i> Kitchen Display System &amp; Bar Tabs
+            </h4>
+            <p class="text-muted small mb-0">Live order queue for baristas/chefs and open member bar tab settlement.</p>
+          </div>
+          <div class="d-flex gap-2 align-items-center">
+            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 p-2">
+              <span class="spinner-grow spinner-grow-sm me-1"></span> Live Auto-polling (10s)
+            </span>
+            <a href="cafeteria.html" class="btn btn-outline-secondary btn-sm">
+              <i class="bi bi-grid-3x3-gap me-1"></i> Floor POS
+            </a>
+          </div>
+        </div>
 
     <!-- Nav Tabs -->
     <ul class="nav nav-pills mb-4 gap-2" id="kdsTabs" role="tablist">
@@ -124,7 +128,7 @@
           </div>
         </div>
       </div>
-    </div>
+    </main>
   </div>
 
   <!-- Settle Tab Modal -->

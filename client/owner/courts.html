@@ -29,6 +29,7 @@
           <div class="search-input-group">
             <i class="bi bi-search search-leading-icon"></i>
             <input type="text" id="searchInput" placeholder="Search court name, surface, sport..." aria-label="Search courts">
+            <button type="button" class="search-clear-btn d-none" id="searchClearBtn"><i class="bi bi-x"></i></button>
           </div>
           <select id="sportFilter" class="form-select form-select-sm" style="width: auto;">
             <option value="">All Sports</option>
@@ -121,13 +122,20 @@
   <script src="/js/validators.js"></script>
   <script src="/js/shell.js"></script>
   <script>
+    let searchAbort = null;
+
     async function loadCourts() {
-      const q = document.getElementById('searchInput').value.trim();
-      const sport = document.getElementById('sportFilter').value;
+      const q = document.getElementById('searchInput')?.value.trim() || '';
+      const sport = document.getElementById('sportFilter')?.value || '';
       const tbody = document.querySelector('#courtsTable tbody');
 
+      if (searchAbort) searchAbort.abort();
+      searchAbort = new AbortController();
+
+      tbody.innerHTML = ui.skeleton(4, 6);
+
       try {
-        const courts = await api.get('/api/courts', { q, sport });
+        const courts = await api.get('/api/courts', { q, sport }, { signal: searchAbort.signal });
         if (!courts.length) {
           tbody.innerHTML = `<tr><td colspan="6">${ui.emptyState({ headline: 'No courts found', message: 'No courts match your search filters.' })}</td></tr>`;
           return;
@@ -144,14 +152,39 @@
             <td class="mono fw-bold">${utils.formatINR(c.base_price_per_hour)} / hr</td>
             <td>${c.is_active ? utils.statusChip('active') : utils.statusChip('suspended')}</td>
             <td class="text-end">
-              <button class="icon-btn" onclick="openEditCourtModal(${c.id}, '${utils.escapeHtml(c.name)}', '${c.sport}', '${utils.escapeHtml(c.surface_type||'')}', ${c.base_price_per_hour}, ${c.is_active})" title="Edit Court">
-                <i class="bi bi-pencil"></i>
-              </button>
+              <div class="d-flex justify-content-end gap-1">
+                <button class="icon-btn" onclick="openEditCourtModal(${c.id}, '${utils.escapeHtml(c.name)}', '${c.sport}', '${utils.escapeHtml(c.surface_type||'')}', ${c.base_price_per_hour}, ${c.is_active})" title="Edit Court">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="icon-btn text-danger" onclick="deleteCourt(${c.id}, '${utils.escapeHtml(c.name)}')" title="Delete Court">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
             </td>
           </tr>
         `).join('');
       } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger">${utils.escapeHtml(err.message)}</td></tr>`;
+        if (err.name !== 'AbortError') {
+          tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger">${utils.escapeHtml(err.message)}</td></tr>`;
+        }
+      }
+    }
+
+    async function deleteCourt(id, name) {
+      const confirmed = await ui.confirmDialog({
+        title: 'Delete Court',
+        message: `Are you sure you want to delete court "${name}"? This action cannot be undone.`,
+        confirmText: 'Delete Court',
+        danger: true
+      });
+      if (!confirmed) return;
+
+      try {
+        await api.delete(`/api/courts/${id}`);
+        ui.toast(`Court "${name}" deleted successfully.`, 'success');
+        loadCourts();
+      } catch (err) {
+        ui.toast(err.message, 'error');
       }
     }
 
@@ -223,8 +256,14 @@
       }
     });
 
-    document.getElementById('searchInput').addEventListener('input', utils.debounce(loadCourts, 300));
-    document.getElementById('sportFilter').addEventListener('change', loadCourts);
+    utils.attachSearch({
+      input: 'searchInput',
+      clearBtn: 'searchClearBtn',
+      onSearch: () => loadCourts(),
+      delay: 300
+    });
+
+    document.getElementById('sportFilter')?.addEventListener('change', () => loadCourts());
 
     document.addEventListener('DOMContentLoaded', loadCourts);
   </script>

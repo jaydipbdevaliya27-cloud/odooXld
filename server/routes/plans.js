@@ -13,12 +13,27 @@ const router = express.Router();
 // ── GET /api/plans ──────────────────────────────────────────────────────────
 router.get('/', async (req, res, next) => {
   try {
-    const { all } = req.query;
-    let sql = 'SELECT * FROM plans';
-    if (!all) sql += ' WHERE is_active = 1';
+    const { all, q, status } = req.query;
+    let sql = 'SELECT * FROM plans WHERE 1=1';
+    const params = [];
+
+    if (status === 'active') {
+      sql += ' AND is_active = 1';
+    } else if (status === 'inactive') {
+      sql += ' AND is_active = 0';
+    } else if (!all) {
+      sql += ' AND is_active = 1';
+    }
+
+    if (q && q.trim()) {
+      sql += ' AND (name LIKE ? OR code LIKE ? OR description LIKE ?)';
+      const s = `%${q.trim()}%`;
+      params.push(s, s, s);
+    }
+
     sql += ' ORDER BY annual_fee ASC';
 
-    const [rows] = await db.query(sql);
+    const [rows] = await db.query(sql, params);
     res.json(rows);
   } catch (err) {
     next(err);
@@ -133,6 +148,43 @@ router.put('/:id', requireLogin, requireRole('owner'), async (req, res, next) =>
 
     const [updated] = await db.query('SELECT * FROM plans WHERE id = ?', [req.params.id]);
     res.json(updated[0]);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── DELETE /api/plans/:id ───────────────────────────────────────────────────
+router.delete('/:id', requireLogin, requireRole('owner'), async (req, res, next) => {
+  try {
+    const planId = parseInt(req.params.id, 10);
+    const [pRows] = await db.query('SELECT * FROM plans WHERE id = ?', [planId]);
+    if (!pRows.length) return res.status(404).json({ error: 'Plan not found', code: 'NOT_FOUND' });
+
+    // Check if any active members are assigned to this plan
+    const [activeMembers] = await db.query(
+      'SELECT id FROM members WHERE plan_id = ? AND status = "active"',
+      [planId]
+    );
+    if (activeMembers.length > 0 && req.query.force !== 'true') {
+      return res.status(409).json({
+        error: `Cannot delete plan: There are ${activeMembers.length} active member(s) enrolled on this plan. Deactivate the plan instead or reassign members.`,
+        code: 'PLAN_HAS_ACTIVE_MEMBERS'
+      });
+    }
+
+    const force = req.query.force === 'true';
+    if (force) {
+      await db.transaction(async (conn) => {
+        await conn.query('DELETE FROM membership_history WHERE plan_id = ?', [planId]);
+        await conn.query('DELETE FROM leads WHERE interested_plan_id = ?', [planId]);
+        await conn.query('DELETE FROM plans WHERE id = ?', [planId]);
+      });
+      return res.json({ ok: true, message: 'Plan permanently deleted' });
+    }
+
+    // Default: deactivate plan
+    await db.query('UPDATE plans SET is_active = 0 WHERE id = ?', [planId]);
+    res.json({ ok: true, message: 'Plan deactivated successfully' });
   } catch (err) {
     next(err);
   }

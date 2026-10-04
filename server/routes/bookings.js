@@ -10,7 +10,7 @@ const db = require('../db');
 const { requireLogin, requireRole } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
 const bookingService = require('../services/bookingService');
-const { todayIST } = require('../utils/time');
+const { todayIST, isPastSlot, nowIST } = require('../utils/time');
 
 const router = express.Router();
 
@@ -46,7 +46,7 @@ router.get('/', requireLogin, async (req, res, next) => {
     }
 
     // Search query
-    if (q && q.trim().length >= 2) {
+    if (q && q.trim()) {
       const s = `%${q.trim().replace(/[%_]/g, '\\$&')}%`;
       where += ` AND (
         b.booking_code LIKE ? OR
@@ -191,6 +191,175 @@ router.get('/my', requireLogin, async (req, res, next) => {
     res.json({
       data: rows,
       meta: { page: pageNum, limit: limitNum, total, totalPages: Math.ceil(total / limitNum) || 1 }
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── GET /api/bookings/court-matrix ──────────────────────────────────────────
+router.get('/court-matrix', requireLogin, async (req, res, next) => {
+  try {
+    const courtId = parseInt(req.query.court_id, 10) || 1;
+    const dateStr = req.query.date || todayIST();
+
+    await bookingService.autoCompleteBookings();
+
+    // 1. Fetch Court details
+    const [courtRows] = await db.query(
+      'SELECT id, name, sport, surface_type, base_price_per_hour, is_active FROM courts WHERE id = ?',
+      [courtId]
+    );
+    if (!courtRows.length) {
+      return res.status(404).json({ error: 'Court not found', code: 'COURT_NOT_FOUND' });
+    }
+    const court = courtRows[0];
+
+    // 2. Fetch all courts for tabs/switcher
+    const [allCourts] = await db.query(
+      'SELECT id, name, sport, surface_type, base_price_per_hour FROM courts WHERE is_active = 1 ORDER BY sport, id'
+    );
+
+    // 3. Fetch Maintenance Blocks
+    const [blocks] = await db.query(
+      'SELECT id, start_time, end_time, reason, created_at FROM court_blocks WHERE court_id = ? AND block_date = ?',
+      [courtId, dateStr]
+    );
+
+    // 4. Fetch Bookings for this court on this date
+    const [bookingRows] = await db.query(
+      `SELECT b.*,
+              COALESCE(u.full_name, b.guest_name) AS player_name,
+              u.email AS player_email,
+              COALESCE(u.phone, b.guest_phone) AS player_phone,
+              m.member_code,
+              p.amount AS payment_amount, p.status AS payment_status, p.method AS payment_method
+       FROM bookings b
+       LEFT JOIN users u ON b.user_id = u.id
+       LEFT JOIN members m ON b.member_id = m.id
+       LEFT JOIN payments p ON p.reference_id = b.id AND p.source = 'court_booking' AND p.status = 'paid'
+       WHERE b.court_id = ? AND b.booking_date = ? AND b.status != 'cancelled'
+       ORDER BY b.start_time ASC`,
+      [courtId, dateStr]
+    );
+
+    // 5. Fetch 30-min booking slots
+    const [slotRows] = await db.query(
+      `SELECT bs.*, b.id AS booking_id
+       FROM booking_slots bs
+       JOIN bookings b ON bs.booking_id = b.id
+       WHERE bs.court_id = ? AND bs.slot_date = ? AND b.status != 'cancelled'`,
+      [courtId, dateStr]
+    );
+
+    const slotBookingMap = new Map();
+    slotRows.forEach(s => {
+      const timeParts = s.slot_start instanceof Date
+        ? `${String(s.slot_start.getHours()).padStart(2, '0')}:${String(s.slot_start.getMinutes()).padStart(2, '0')}`
+        : String(s.slot_start).slice(11, 16);
+      const bObj = bookingRows.find(b => b.id === s.booking_id);
+      if (bObj) {
+        slotBookingMap.set(timeParts, bObj);
+      }
+    });
+
+    // 6. Generate 30-min Matrix Slots from 06:00 to 22:00
+    const matrix = [];
+    let totalRevenue = 0;
+    let bookedSlotsCount = 0;
+    let blockedSlotsCount = 0;
+    let availableSlotsCount = 0;
+
+    const opening = 6;
+    const closing = 22;
+
+    for (let h = opening; h < closing; h++) {
+      for (const m of [0, 30]) {
+        const timeLabel = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        const endH = m === 30 ? h + 1 : h;
+        const endM = m === 30 ? '00' : '30';
+        const endTimeLabel = `${String(endH).padStart(2, '0')}:${endM}`;
+        const slotInPast = isPastSlot(dateStr, timeLabel);
+
+        // Check maintenance block
+        const matchingBlock = blocks.find(b => {
+          const bStart = String(b.start_time).slice(0, 5);
+          const bEnd = String(b.end_time).slice(0, 5);
+          return timeLabel >= bStart && timeLabel < bEnd;
+        });
+
+        // Check booking
+        const matchingBooking = slotBookingMap.get(timeLabel) || bookingRows.find(b => {
+          const bStart = String(b.start_time).slice(0, 5);
+          const bEnd = String(b.end_time).slice(0, 5);
+          return timeLabel >= bStart && timeLabel < bEnd;
+        });
+
+        let status = 'available';
+        if (matchingBlock) {
+          status = 'blocked';
+          blockedSlotsCount++;
+        } else if (matchingBooking) {
+          status = matchingBooking.status === 'completed' ? 'completed' : 'booked';
+          bookedSlotsCount++;
+        } else if (slotInPast) {
+          status = 'past';
+        } else {
+          availableSlotsCount++;
+        }
+
+        matrix.push({
+          time_slot: `${timeLabel} – ${endTimeLabel}`,
+          start_time: timeLabel,
+          end_time: endTimeLabel,
+          is_past: slotInPast,
+          status,
+          booking: matchingBooking ? {
+            id: matchingBooking.id,
+            booking_code: matchingBooking.booking_code,
+            player_name: matchingBooking.player_name,
+            player_phone: matchingBooking.player_phone,
+            player_email: matchingBooking.player_email,
+            member_code: matchingBooking.member_code,
+            price_charged: Number(matchingBooking.price_charged),
+            base_price: Number(matchingBooking.base_price),
+            discount_pct: Number(matchingBooking.discount_pct || 0),
+            source: matchingBooking.source,
+            status: matchingBooking.status,
+            start_time: matchingBooking.start_time,
+            end_time: matchingBooking.end_time
+          } : null,
+          block: matchingBlock ? {
+            id: matchingBlock.id,
+            reason: matchingBlock.reason,
+            start_time: matchingBlock.start_time,
+            end_time: matchingBlock.end_time
+          } : null
+        });
+      }
+    }
+
+    bookingRows.forEach(b => {
+      totalRevenue += Number(b.price_charged || 0);
+    });
+
+    const totalSlots = matrix.length;
+    const occupancyRate = totalSlots > 0 ? Math.round(((bookedSlotsCount + blockedSlotsCount) / totalSlots) * 100) : 0;
+
+    res.json({
+      court,
+      allCourts,
+      date: dateStr,
+      summary: {
+        total_slots: totalSlots,
+        booked_slots: bookedSlotsCount,
+        blocked_slots: blockedSlotsCount,
+        available_slots: availableSlotsCount,
+        occupancy_rate: occupancyRate,
+        revenue_today: totalRevenue,
+        bookings_count: bookingRows.length
+      },
+      matrix
     });
   } catch (err) {
     next(err);
@@ -476,7 +645,26 @@ const handleCancellation = async (req, res, next) => {
   }
 };
 
-router.delete('/:id', requireLogin, handleCancellation);
+router.delete('/:id', requireLogin, async (req, res, next) => {
+  try {
+    const bookingId = parseInt(req.params.id, 10);
+    const force = req.query.force === 'true' || req.body?.force === true;
+
+    if (force && req.session.user.role === 'owner') {
+      await db.transaction(async (conn) => {
+        await conn.query('DELETE FROM booking_slots WHERE booking_id = ?', [bookingId]);
+        await conn.query('DELETE FROM booking_participants WHERE booking_id = ?', [bookingId]);
+        await conn.query('DELETE FROM payments WHERE source = "court" AND reference_id = ?', [bookingId]);
+        await conn.query('DELETE FROM bookings WHERE id = ?', [bookingId]);
+      });
+      return res.json({ ok: true, message: 'Booking permanently deleted' });
+    }
+
+    return handleCancellation(req, res, next);
+  } catch (err) {
+    next(err);
+  }
+});
 router.post('/:id/cancel', requireLogin, handleCancellation);
 
 module.exports = router;

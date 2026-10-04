@@ -3,145 +3,191 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pro Shop Catalog - Champions Club</title>
+  <title>Pro Shop &amp; Gear – The Champions Club</title>
+  <meta name="description" content="Official Pro Shop: Tennis rackets, cricket bats, badmintons, footwear, apparel and club accessories.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="../css/main.css">
+  <link rel="stylesheet" href="/css/main.css">
   <style>
+    /* ── Member Pro Shop Card Styling ────────────────────────────────────── */
     .product-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(min(100%, 235px), 1fr));
-      gap: 1rem;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.5rem;
     }
     .product-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 14px;
       overflow: hidden;
       min-width: 0;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      transition: all 0.2s ease;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     }
     .product-card:hover {
-      border-color: var(--accent);
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-md);
+      border-color: #0d9488;
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(13, 148, 136, 0.12);
+    }
+    .product-img-wrap {
+      position: relative;
+      height: 190px;
+      background: #f8fafc;
+      overflow: hidden;
     }
     .product-card-img {
-      height: auto;
-      aspect-ratio: 4 / 3;
-      object-fit: cover;
-      background: var(--surface-alt);
       width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.4s ease;
+    }
+    .product-card:hover .product-card-img {
+      transform: scale(1.06);
+    }
+    .product-image-fallback {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #f0fdfa 0%, #f1f5f9 100%);
+      color: #0d9488;
+      font-size: 3rem;
     }
     .product-card-body {
-      padding: 0.9rem;
+      padding: 1.1rem;
       flex: 1;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
     }
-    .product-image-fallback {
-      aspect-ratio: 4 / 3;
-      display: grid;
-      place-items: center;
-      background: linear-gradient(135deg, var(--accent-soft), var(--surface-alt));
-      color: var(--accent);
-      font-size: 2rem;
+    .stock-badge-live {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.3rem 0.65rem;
+      border-radius: 9999px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     }
+    .discount-pill {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #059669;
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+    }
+
     @media (max-width: 575.98px) {
-      .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.65rem; }
-      .product-card-body { padding: 0.7rem; }
-      .product-card-body .fs-5 { font-size: 1rem !important; }
+      .product-grid { grid-template-columns: repeat(1, 1fr); gap: 1rem; }
     }
   </style>
 </head>
 <body>
-  <div id="app-shell"></div>
+  <div class="app-layout">
+    <div id="app-shell"></div>
 
-  <div class="content-container">
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-      <div>
-        <h2 class="fw-bold mb-1">Champions Pro Shop</h2>
-        <p class="text-muted mb-0">Rackets, footwear, apparel and accessories with member discount perks.</p>
-      </div>
-      <button class="btn btn-outline-primary position-relative" data-bs-toggle="offcanvas" data-bs-target="#cartDrawer">
-        <i class="bi bi-cart3 me-1"></i> Cart
-        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cartBadge" style="display:none;">0</span>
-      </button>
-    </div>
+    <main class="app-main">
+      <div class="container-fluid p-3 p-md-4">
+        <!-- Header Banner -->
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+          <div>
+            <h4 class="fw-bold mb-1 text-dark d-flex align-items-center gap-2">
+              <i class="bi bi-bag-check text-primary"></i> Champions Pro Shop
+            </h4>
+            <p class="text-muted small mb-0">Premium rackets, apparel, footwear, and accessories with exclusive member tier discounts.</p>
+          </div>
+          <button class="btn btn-primary position-relative d-flex align-items-center gap-2 px-3 py-2" data-bs-toggle="offcanvas" data-bs-target="#cartDrawer">
+            <i class="bi bi-cart3 fs-5"></i>
+            <span class="fw-semibold">My Cart</span>
+            <span class="badge rounded-pill bg-danger ms-1" id="cartBadge" style="display:none;">0</span>
+          </button>
+        </div>
 
-    <!-- Filters & Search Toolbar -->
-    <div class="card border-0 shadow-sm p-3 mb-4">
-      <div class="row g-2 align-items-center">
-        <div class="col-md-6">
-          <div class="search-input-wrap">
-            <i class="bi bi-search search-icon"></i>
-            <input type="search" class="form-control" id="shopSearchInput" placeholder="Search gear (Yonex, Astrox, Shoes, Grips...)" aria-label="Search pro shop">
+        <!-- Filters & Search Toolbar -->
+        <div class="card border shadow-sm p-3 mb-4 bg-white rounded-3">
+          <div class="row g-2 align-items-center">
+            <div class="col-md-6">
+              <div class="search-input-group">
+                <i class="bi bi-search search-leading-icon"></i>
+                <input type="text" id="shopSearchInput" placeholder="Search gear (Yonex, Astrox, Shoes, Grips, Bats...)" aria-label="Search pro shop">
+                <button type="button" class="search-clear-btn d-none" id="shopSearchClearBtn"><i class="bi bi-x"></i></button>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <select class="form-select form-select-sm" id="shopCategoryFilter">
+                <option value="">All Categories</option>
+                <option value="Rackets">Rackets</option>
+                <option value="Footwear">Footwear</option>
+                <option value="Apparel">Apparel</option>
+                <option value="Accessories">Accessories</option>
+                <option value="Strings">Strings &amp; Grips</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <select class="form-select form-select-sm" id="shopSortSelect">
+                <option value="featured">Featured First</option>
+                <option value="price_asc">Price: Low to High</option>
+                <option value="price_desc">Price: High to Low</option>
+              </select>
+            </div>
           </div>
         </div>
-        <div class="col-md-3">
-          <select class="form-select" id="shopCategoryFilter">
-            <option value="">All Categories</option>
-            <option value="Rackets">Rackets</option>
-            <option value="Footwear">Footwear</option>
-            <option value="Apparel">Apparel</option>
-            <option value="Accessories">Accessories</option>
-            <option value="Strings">Strings & Grips</option>
-          </select>
+
+        <!-- Live Inventory Notice -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <span class="small text-muted" id="catalogCount">Loading products…</span>
+          <span class="small text-success d-flex align-items-center gap-1">
+            <span class="spinner-grow spinner-grow-sm text-success" style="width: 8px; height: 8px;" role="status"></span>
+            Live stock connected
+          </span>
         </div>
-        <div class="col-md-3">
-          <select class="form-select" id="shopSortSelect">
-            <option value="featured">Featured First</option>
-            <option value="price_asc">Price: Low to High</option>
-            <option value="price_desc">Price: High to Low</option>
-          </select>
+
+        <!-- Products Catalog Grid -->
+        <div class="product-grid" id="productGrid">
+          <div class="col-12 text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading catalog gear…</div>
         </div>
       </div>
-    </div>
-
-    <!-- Products Catalog Grid -->
-    <div class="product-grid" id="productGrid">
-      <!-- Injected via JS -->
-    </div>
+    </main>
   </div>
 
   <!-- Cart Offcanvas Drawer -->
-  <div class="offcanvas offcanvas-end" tabindex="-1" id="cartDrawer" style="width: 420px;">
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="cartDrawer" style="width: 440px;">
     <div class="offcanvas-header border-bottom">
-      <h5 class="offcanvas-title fw-bold"><i class="bi bi-bag-check me-2 text-primary"></i>Shopping Cart</h5>
+      <h5 class="offcanvas-title fw-bold d-flex align-items-center gap-2"><i class="bi bi-bag-check text-primary"></i> Shopping Cart</h5>
       <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
-    <div class="offcanvas-body d-flex flex-column">
+    <div class="offcanvas-body d-flex flex-column p-3">
       <div class="flex-grow-1 overflow-y-auto" id="cartDrawerItems">
         <div class="text-center py-5 text-muted">
-          <i class="bi bi-cart-x fs-1 d-block mb-2 text-dim"></i>
+          <i class="bi bi-cart-x fs-1 d-block mb-2 text-secondary"></i>
           Your shopping cart is empty
         </div>
       </div>
 
       <div class="border-top pt-3 mt-auto">
         <div class="d-flex justify-content-between text-muted small mb-1">
-          <span>Subtotal</span>
-          <span id="drawerSubtotal" class="font-monospace">₹0</span>
+          <span>Catalog Subtotal</span>
+          <span id="drawerSubtotal" class="mono">₹0</span>
         </div>
         <div class="d-flex justify-content-between text-success small mb-1">
-          <span>Member Discount</span>
-          <span id="drawerDiscount" class="font-monospace">-₹0</span>
+          <span>Member Tier Discount</span>
+          <span id="drawerDiscount" class="mono">-₹0</span>
         </div>
-        <div class="d-flex justify-content-between fw-bold fs-5 mb-3">
-          <span>Total</span>
-          <span id="drawerTotal" class="font-monospace text-primary">₹0</span>
+        <div class="d-flex justify-content-between fw-bold fs-5 mb-3 pt-1 border-top">
+          <span class="text-dark">Total Payable</span>
+          <span id="drawerTotal" class="mono text-primary">₹0</span>
         </div>
 
         <div class="mb-3">
-          <label class="form-label small fw-bold">Fulfilment Method</label>
-          <div class="d-flex gap-2">
+          <label class="form-label small fw-bold text-muted text-uppercase mb-1">Fulfilment Method</label>
+          <div class="d-flex gap-3">
             <div class="form-check">
               <input class="form-check-input" type="radio" name="fulfilment" id="fulfilmentPickup" value="pickup" checked onchange="toggleDeliveryAddress()">
               <label class="form-check-label small" for="fulfilmentPickup">Club Store Pickup</label>
@@ -154,7 +200,7 @@
         </div>
 
         <div class="mb-3 d-none" id="deliveryAddressWrap">
-          <label class="form-label small fw-bold">Delivery Address</label>
+          <label class="form-label small fw-bold text-muted text-uppercase mb-1">Delivery Address</label>
           <textarea class="form-control form-control-sm" id="deliveryAddress" rows="2" placeholder="Full residential delivery address"></textarea>
         </div>
 
@@ -166,10 +212,10 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="../js/api.js"></script>
-  <script src="../js/utils.js"></script>
-  <script src="../js/ui.js"></script>
-  <script src="../js/shell.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/utils.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/shell.js"></script>
   <script>
     let productsList = [];
     let cart = [];
@@ -179,9 +225,20 @@
       await loadMemberPerk();
       loadProducts();
 
+      utils.attachSearch({
+        input: 'shopSearchInput',
+        clearBtn: 'shopSearchClearBtn',
+        onSearch: () => loadProducts(),
+        delay: 300
+      });
+
       document.getElementById('shopCategoryFilter').addEventListener('change', () => loadProducts());
       document.getElementById('shopSortSelect').addEventListener('change', () => loadProducts());
-      document.getElementById('shopSearchInput').addEventListener('input', utils.debounce(() => loadProducts(), 300));
+
+      // Live inventory polling every 30s
+      setInterval(() => {
+        loadProducts(true);
+      }, 30000);
     });
 
     async function loadMemberPerk() {
@@ -191,52 +248,84 @@
           memberPerkDiscount = res.data.discount_pro_shop || 0;
         }
       } catch (err) {
-        console.error(err);
+        console.error('Member profile error', err);
       }
     }
 
-    async function loadProducts() {
+    async function loadProducts(silent = false) {
       const q = document.getElementById('shopSearchInput').value.trim();
       const category = document.getElementById('shopCategoryFilter').value;
+      const sort = document.getElementById('shopSortSelect').value;
       const grid = document.getElementById('productGrid');
+      const countLabel = document.getElementById('catalogCount');
 
       try {
         const res = await api.get('/api/products', { department: 'shop', q, category, limit: 100 });
-        productsList = res.data || [];
+        let items = res.data || [];
+
+        if (sort === 'price_asc') {
+          items.sort((a, b) => Number(a.price) - Number(b.price));
+        } else if (sort === 'price_desc') {
+          items.sort((a, b) => Number(b.price) - Number(a.price));
+        }
+
+        productsList = items;
+        if (countLabel) countLabel.textContent = `Showing ${productsList.length} items`;
         renderProducts();
       } catch (err) {
-        grid.innerHTML = `<div class="text-danger small">${err.message}</div>`;
+        if (!silent) grid.innerHTML = `<div class="col-12 text-danger text-center py-5">${err.message}</div>`;
       }
     }
 
     function renderProducts() {
       const grid = document.getElementById('productGrid');
       if (!productsList.length) {
-        grid.innerHTML = '<div class="col-12 text-center py-5 text-muted">No gear found matching your search.</div>';
+        grid.innerHTML = '<div class="col-12 text-center py-5 text-muted">No gear found matching your search criteria.</div>';
         return;
       }
 
       grid.innerHTML = productsList.map(p => {
         const isOut = p.stock_quantity <= 0;
+        const isLow = p.stock_quantity <= (p.reorder_level || 5) && !isOut;
+        const basePrice = Number(p.price);
+        const discountedPrice = memberPerkDiscount > 0 ? Math.round(basePrice * (1 - memberPerkDiscount / 100)) : basePrice;
+
         return `
-          <div class="product-card ${isOut ? 'opacity-50' : ''}">
-            <div class="position-relative">
-              <div class="product-image-fallback" aria-hidden="true"><i class="bi bi-bag"></i></div>
-              ${p.image_url ? `<img src="${utils.escapeHtml(p.image_url)}" alt="${utils.escapeHtml(p.name)}" class="product-card-img position-absolute top-0 start-0" loading="lazy" onerror="this.remove()">` : ''}
-              <span class="position-absolute top-0 end-0 m-2 badge ${isOut ? 'bg-danger' : 'bg-light text-dark border'}">
-                ${isOut ? 'Out of Stock' : `${p.stock_quantity} available`}
+          <div class="product-card ${isOut ? 'opacity-75' : ''}">
+            <div class="product-img-wrap">
+              ${p.image_url ? `
+                <img src="${utils.escapeHtml(p.image_url)}" alt="${utils.escapeHtml(p.name)}" class="product-card-img" loading="lazy" onerror="this.outerHTML='<div class=\\'product-image-fallback\\'><i class=\\'bi bi-bag\\'></i></div>'">
+              ` : `
+                <div class="product-image-fallback"><i class="bi bi-bag"></i></div>
+              `}
+              <span class="position-absolute top-0 end-0 m-2 badge stock-badge-live ${isOut ? 'bg-danger' : isLow ? 'bg-warning text-dark' : 'bg-success'}">
+                ${isOut ? 'Out of Stock' : isLow ? `Only ${p.stock_quantity} left!` : `In Stock (${p.stock_quantity})`}
               </span>
             </div>
             <div class="product-card-body">
               <div>
-                <small class="text-muted d-block">${utils.escapeHtml(p.category || 'Gear')}</small>
-                <div class="fw-bold text-truncate mb-1" title="${utils.escapeHtml(p.name)}">${utils.escapeHtml(p.name)}</div>
-                <small class="text-muted d-block font-monospace mb-2">${p.sku}</small>
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="badge bg-light text-dark border small">${utils.escapeHtml(p.category || 'Gear')}</span>
+                  <span class="mono text-muted small">${p.sku}</span>
+                </div>
+                <h6 class="fw-bold text-dark text-truncate mb-1" title="${utils.escapeHtml(p.name)}">${utils.escapeHtml(p.name)}</h6>
+                <div class="small text-muted text-truncate mb-3">${utils.escapeHtml(p.description || 'Champions Pro Equipment')}</div>
               </div>
-              <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
-                <div class="font-monospace fw-bold text-primary fs-5">${utils.formatINR(p.price)}</div>
-                <button class="btn btn-sm btn-primary" ${isOut ? 'disabled' : ''} onclick="addToCart(${p.id})">
-                  <i class="bi bi-bag-plus"></i> Add
+
+              <div class="pt-2 border-top mt-auto">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <div>
+                    <div class="mono fw-bold text-primary fs-5">${utils.formatINR(discountedPrice)}</div>
+                    ${memberPerkDiscount > 0 ? `
+                      <div class="small text-muted">
+                        <span class="text-decoration-line-through">${utils.formatINR(basePrice)}</span>
+                        <span class="discount-pill ms-1">${memberPerkDiscount}% OFF</span>
+                      </div>
+                    ` : ''}
+                  </div>
+                </div>
+                <button class="btn btn-primary w-100 fw-semibold d-flex align-items-center justify-content-center gap-1" ${isOut ? 'disabled' : ''} onclick="addToCart(${p.id})">
+                  <i class="bi bi-bag-plus"></i> ${isOut ? 'Out of Stock' : 'Add to Cart'}
                 </button>
               </div>
             </div>
@@ -254,13 +343,13 @@
         if (existing.qty < p.stock_quantity) {
           existing.qty += 1;
         } else {
-          ui.toast('Stock limit reached for this item', 'warning');
+          ui.toast('Maximum available stock reached for this item', 'warning');
         }
       } else {
         cart.push({ id: p.id, name: p.name, price: Number(p.price), qty: 1, maxStock: p.stock_quantity });
       }
       updateCartDrawer();
-      ui.toast(`Added ${p.name} to cart`, 'info');
+      ui.toast(`Added "${p.name}" to cart`, 'info');
     }
 
     function updateCartQty(productId, delta) {
@@ -292,7 +381,7 @@
       if (!cart.length) {
         container.innerHTML = `
           <div class="text-center py-5 text-muted">
-            <i class="bi bi-cart-x fs-1 d-block mb-2 text-dim"></i>
+            <i class="bi bi-cart-x fs-1 d-block mb-2 text-secondary"></i>
             Your shopping cart is empty
           </div>
         `;
@@ -303,16 +392,16 @@
 
       container.innerHTML = cart.map(i => `
         <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-          <div style="max-width:160px;">
-            <div class="fw-semibold small text-truncate">${utils.escapeHtml(i.name)}</div>
-            <small class="text-muted font-monospace">${utils.formatINR(i.price)}</small>
+          <div style="max-width:180px;">
+            <div class="fw-semibold small text-truncate text-dark">${utils.escapeHtml(i.name)}</div>
+            <small class="text-muted mono">${utils.formatINR(i.price)}</small>
           </div>
           <div class="d-flex align-items-center gap-1">
             <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="updateCartQty(${i.id}, -1)">-</button>
-            <span class="font-monospace small px-1">${i.qty}</span>
+            <span class="mono small px-1">${i.qty}</span>
             <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="updateCartQty(${i.id}, 1)">+</button>
           </div>
-          <div class="font-monospace fw-semibold small">${utils.formatINR(i.price * i.qty)}</div>
+          <div class="mono fw-semibold small text-dark">${utils.formatINR(i.price * i.qty)}</div>
         </div>
       `).join('');
 
@@ -347,7 +436,7 @@
       const address = document.getElementById('deliveryAddress').value.trim();
 
       if (isDelivery && (!address || address.length < 10)) {
-        ui.toast('Please provide a complete delivery address (min 10 chars)', 'warning');
+        ui.toast('Please provide a complete residential delivery address (min 10 chars)', 'warning');
         return;
       }
 
@@ -361,9 +450,10 @@
 
       try {
         const res = await api.post('/api/orders', payload);
-        ui.toast(`Order placed successfully! Order Code: ${res.data.order_code}`, 'success');
+        ui.toast(`Order placed successfully! Receipt: ${res.data.order_code}`, 'success');
         cart = [];
         updateCartDrawer();
+        loadProducts();
         bootstrap.Offcanvas.getInstance(document.getElementById('cartDrawer')).hide();
       } catch (err) {
         ui.toast(err.message || 'Checkout failed', 'error');

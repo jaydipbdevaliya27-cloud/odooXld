@@ -4,14 +4,61 @@
  */
 
 /**
- * Debounce a function call.
+ * Debounce a function call with optional immediate start callback.
  */
-function debounce(fn, delay = 300) {
+function debounce(fn, delay = 300, onStart = null) {
   let timer = null;
   return function (...args) {
+    if (typeof onStart === 'function') {
+      try { onStart.apply(this, args); } catch (e) {}
+    }
     clearTimeout(timer);
     timer = setTimeout(() => fn.apply(this, args), delay);
   };
+}
+
+/**
+ * Attaches debounced and bouncing search handling to an input element.
+ */
+function attachSearch({ input, clearBtn, onSearch, delay = 300 }) {
+  const inputEl = typeof input === 'string' ? document.getElementById(input) : input;
+  if (!inputEl) return;
+  const clearEl = typeof clearBtn === 'string' ? document.getElementById(clearBtn) : (clearBtn || inputEl.parentElement?.querySelector('.search-clear-btn'));
+  const container = inputEl.closest('.search-input-group, .search-input-wrap, .global-search-box, .input-group') || inputEl;
+
+  const debouncedSearch = debounce(async (val) => {
+    try {
+      if (typeof onSearch === 'function') {
+        await onSearch(val);
+      }
+    } finally {
+      container.classList.remove('is-searching');
+      inputEl.classList.remove('is-searching');
+    }
+  }, delay, () => {
+    container.classList.add('is-searching');
+    inputEl.classList.add('is-searching');
+  });
+
+  inputEl.addEventListener('input', (e) => {
+    const val = e.target.value;
+    if (clearEl) {
+      clearEl.classList.toggle('d-none', !val);
+      clearEl.style.display = val ? 'block' : 'none';
+    }
+    debouncedSearch(val.trim());
+  });
+
+  if (clearEl) {
+    clearEl.addEventListener('click', () => {
+      inputEl.value = '';
+      clearEl.classList.add('d-none');
+      clearEl.style.display = 'none';
+      container.classList.remove('is-searching');
+      inputEl.classList.remove('is-searching');
+      if (typeof onSearch === 'function') onSearch('');
+    });
+  }
 }
 
 /**
@@ -175,6 +222,7 @@ function isPastSlot(dateStr, timeStr) {
 
 window.utils = {
   debounce,
+  attachSearch,
   formatINR,
   formatDate,
   formatDateTime,
