@@ -228,7 +228,7 @@
     </div>
 
     <!-- Upcoming Bookings Table -->
-    <div class="table-card">
+    <div class="table-card mb-4">
       <div class="table-card-header">
         <div>
           <h5 class="table-card-title"><i class="bi bi-calendar-week"></i> Upcoming Court Reservations</h5>
@@ -262,6 +262,55 @@
         <a href="bookings.html" class="btn btn-sm btn-outline-custom">View All Bookings</a>
       </div>
     </div>
+
+    <!-- My Food & Pro Shop Orders & Live Kitchen Status -->
+    <div class="table-card">
+      <div class="table-card-header flex-wrap gap-2">
+        <div>
+          <h5 class="table-card-title d-flex align-items-center gap-2">
+            <i class="bi bi-bag-check-fill text-accent"></i> My Food &amp; Pro Shop Order History
+            <span class="spinner-grow spinner-grow-sm text-success" style="width: 8px; height: 8px;" role="status" title="Live real-time status"></span>
+          </h5>
+          <p class="table-card-subtitle">Real-time status tracking for kitchen food preparation, lounge dining tables, and shop deliveries</p>
+        </div>
+        <div class="d-flex gap-2 align-items-center flex-wrap">
+          <select class="form-select form-select-sm" id="memberOrderDeptFilter" style="width: 170px;" onchange="loadMemberOrders()">
+            <option value="">All Departments</option>
+            <option value="bar">Cafe &amp; Food (KDS)</option>
+            <option value="shop">Pro Shop</option>
+          </select>
+          <button class="btn btn-sm btn-outline-custom" onclick="loadMemberOrders(true)" title="Refresh Orders">
+            <i class="bi bi-arrow-clockwise"></i> Refresh
+          </button>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="cc-table" id="memberOrdersTable">
+          <thead>
+            <tr>
+              <th>Order Code</th>
+              <th>Department</th>
+              <th>Ordered Items</th>
+              <th>Table / Delivery</th>
+              <th>Order Time</th>
+              <th>Total</th>
+              <th>Live Status</th>
+            </tr>
+          </thead>
+          <tbody id="memberOrdersTableBody">
+            <tr><td colspan="7" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading your order history…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-footer">
+        <span class="text-muted small" id="ordersFooterNote">Orders update live with kitchen display board</span>
+        <div class="d-flex gap-2">
+          <a href="cafeteria.html" class="btn btn-sm btn-outline-custom"><i class="bi bi-cup-hot me-1"></i>Order Cafe Food</a>
+          <a href="shop.html" class="btn btn-sm btn-outline-custom"><i class="bi bi-bag me-1"></i>Pro Shop</a>
+        </div>
+      </div>
+    </div>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -273,6 +322,12 @@
     document.addEventListener('DOMContentLoaded', async () => {
       await loadMemberProfile();
       await loadUpcomingBookings();
+      await loadMemberOrders();
+
+      // Auto-poll member orders every 15 seconds for live kitchen updates
+      setInterval(() => {
+        loadMemberOrders(true);
+      }, 15000);
     });
 
     async function loadMemberProfile() {
@@ -362,6 +417,93 @@
         `).join('');
       } catch (err) {
         tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger"><i class="bi bi-exclamation-triangle me-2"></i>${utils.escapeHtml(err.message)}</td></tr>`;
+      }
+    }
+
+    async function loadMemberOrders(silent = false) {
+      const tbody = document.getElementById('memberOrdersTableBody');
+      const dept = document.getElementById('memberOrderDeptFilter')?.value || '';
+      try {
+        const res = await api.get('/api/orders', { department: dept, limit: 30 });
+        const orders = res.data || [];
+
+        if (!orders.length) {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted"><i class="bi bi-receipt fs-2 d-block mb-2 opacity-50"></i>No orders placed yet. Visit the Cafe or Pro Shop to order.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = orders.map(o => {
+          const isCafe = o.department === 'bar';
+          const deptBadge = isCafe
+            ? '<span class="badge bg-warning bg-opacity-15 text-warning border border-warning border-opacity-25"><i class="bi bi-cup-hot me-1"></i>Cafe &amp; Food</span>'
+            : '<span class="badge bg-info bg-opacity-15 text-info border border-info border-opacity-25"><i class="bi bi-bag me-1"></i>Pro Shop</span>';
+
+          // Table / Channel destination
+          let destHtml = '';
+          if (isCafe) {
+            destHtml = o.table_no
+              ? `<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25"><i class="bi bi-lock-fill me-1"></i>${utils.escapeHtml(o.table_no)}</span>`
+              : '<span class="badge bg-light text-dark border">Takeaway</span>';
+          } else {
+            destHtml = o.delivery_address
+              ? `<span class="small text-muted text-truncate d-inline-block" style="max-width:140px;" title="${utils.escapeHtml(o.delivery_address)}"><i class="bi bi-truck me-1"></i>${utils.escapeHtml(o.delivery_address)}</span>`
+              : '<span class="badge bg-light text-dark border">Store Pickup</span>';
+          }
+
+          // Dynamic Live Status Badge
+          let liveStatusHtml = '';
+          if (isCafe) {
+            const kStatus = o.kitchen_summary || 'new';
+            if (o.status === 'cancelled') {
+              liveStatusHtml = '<span class="status-chip danger"><span class="dot"></span>Cancelled</span>';
+            } else if (kStatus === 'served' || o.status === 'completed') {
+              liveStatusHtml = '<span class="status-chip success"><span class="dot"></span>Served to Table</span>';
+            } else if (kStatus === 'ready') {
+              liveStatusHtml = '<span class="status-chip info"><i class="bi bi-bell-fill me-1"></i>Ready for Pickup</span>';
+            } else if (kStatus === 'preparing') {
+              liveStatusHtml = '<span class="status-chip warning"><span class="spinner-grow spinner-grow-sm me-1" style="width:7px;height:7px;"></span>Preparing in Kitchen</span>';
+            } else {
+              liveStatusHtml = '<span class="status-chip accent"><span class="dot"></span>Order Received (KDS)</span>';
+            }
+          } else {
+            const fStatus = o.fulfilment_status || 'placed';
+            if (fStatus === 'delivered' || fStatus === 'collected' || o.status === 'completed') {
+              liveStatusHtml = '<span class="status-chip success"><span class="dot"></span>Delivered / Collected</span>';
+            } else if (fStatus === 'out_for_delivery') {
+              liveStatusHtml = '<span class="status-chip info"><i class="bi bi-bicycle me-1"></i>Out for Delivery</span>';
+            } else if (fStatus === 'ready_for_pickup') {
+              liveStatusHtml = '<span class="status-chip info"><i class="bi bi-box-seam me-1"></i>Ready for Pickup</span>';
+            } else if (fStatus === 'packed') {
+              liveStatusHtml = '<span class="status-chip warning"><span class="dot"></span>Packed</span>';
+            } else if (fStatus === 'cancelled') {
+              liveStatusHtml = '<span class="status-chip danger"><span class="dot"></span>Cancelled</span>';
+            } else {
+              liveStatusHtml = '<span class="status-chip accent"><span class="dot"></span>Order Placed</span>';
+            }
+          }
+
+          return `
+            <tr>
+              <td><code class="mono fw-bold small text-accent">${utils.escapeHtml(o.order_code || '')}</code></td>
+              <td>${deptBadge}</td>
+              <td>
+                <div class="fw-semibold small text-truncate" style="max-width:240px;" title="${utils.escapeHtml(o.items_summary || '')}">
+                  ${utils.escapeHtml(o.items_summary || 'Order Items')}
+                </div>
+                <small class="text-muted">${o.item_count || o.items?.length || 1} item(s)</small>
+              </td>
+              <td>${destHtml}</td>
+              <td>
+                <div class="small">${utils.formatDate(o.created_at)}</div>
+                <div class="small text-muted mono">${utils.formatTime(o.created_at)}</div>
+              </td>
+              <td class="mono fw-semibold">${utils.formatINR(o.total || 0)}</td>
+              <td>${liveStatusHtml}</td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        if (!silent) tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger"><i class="bi bi-exclamation-triangle me-2"></i>${utils.escapeHtml(err.message)}</td></tr>`;
       }
     }
 

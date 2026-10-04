@@ -103,11 +103,18 @@
             </h4>
             <p class="text-muted small mb-0">Premium rackets, apparel, footwear, and accessories with exclusive member tier discounts.</p>
           </div>
-          <button class="btn btn-primary position-relative d-flex align-items-center gap-2 px-3 py-2" data-bs-toggle="offcanvas" data-bs-target="#cartDrawer">
-            <i class="bi bi-cart3 fs-5"></i>
-            <span class="fw-semibold">My Cart</span>
-            <span class="badge rounded-pill bg-danger ms-1" id="cartBadge" style="display:none;">0</span>
-          </button>
+          <div class="d-flex gap-2 align-items-center flex-wrap">
+            <button class="btn btn-outline-primary position-relative d-flex align-items-center gap-2 px-3 py-2" data-bs-toggle="offcanvas" data-bs-target="#myShopOrdersDrawer" onclick="loadMyShopOrders()">
+              <i class="bi bi-clock-history fs-5"></i>
+              <span class="fw-semibold">My Shop Orders</span>
+              <span class="badge rounded-pill bg-success ms-1" id="activeShopOrdersBadge" style="display:none;">0</span>
+            </button>
+            <button class="btn btn-primary position-relative d-flex align-items-center gap-2 px-3 py-2" data-bs-toggle="offcanvas" data-bs-target="#cartDrawer">
+              <i class="bi bi-cart3 fs-5"></i>
+              <span class="fw-semibold">My Cart</span>
+              <span class="badge rounded-pill bg-danger ms-1" id="cartBadge" style="display:none;">0</span>
+            </button>
+          </div>
         </div>
 
         <!-- Filters & Search Toolbar -->
@@ -155,6 +162,21 @@
         </div>
       </div>
     </main>
+  </div>
+
+  <!-- My Shop Orders History Offcanvas -->
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="myShopOrdersDrawer" style="width: 460px;">
+    <div class="offcanvas-header border-bottom">
+      <h5 class="offcanvas-title fw-bold d-flex align-items-center gap-2">
+        <i class="bi bi-clock-history text-primary"></i> My Pro Shop Orders &amp; Delivery Tracking
+      </h5>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body p-3 overflow-y-auto" id="myShopOrdersList">
+      <div class="text-center py-5 text-muted">
+        <span class="spinner-border spinner-border-sm me-2"></span>Loading your shop orders…
+      </div>
+    </div>
   </div>
 
   <!-- Cart Offcanvas Drawer -->
@@ -225,6 +247,7 @@
     document.addEventListener('DOMContentLoaded', async () => {
       await loadMemberPerk();
       loadProducts();
+      loadMyShopOrders(true);
 
       utils.attachSearch({
         input: 'shopSearchInput',
@@ -236,10 +259,11 @@
       document.getElementById('shopCategoryFilter').addEventListener('change', () => loadProducts());
       document.getElementById('shopSortSelect').addEventListener('change', () => loadProducts());
 
-      // Live inventory polling every 30s
+      // Live inventory and order polling every 15s
       setInterval(() => {
         loadProducts(true);
-      }, 30000);
+        loadMyShopOrders(true);
+      }, 15000);
     });
 
     async function loadMemberPerk() {
@@ -478,11 +502,141 @@
         updateCartDrawer();
         loadProducts();
         bootstrap.Offcanvas.getInstance(document.getElementById('cartDrawer')).hide();
+        loadMyShopOrders(true);
       } catch (err) {
         ui.toast(err.message || 'Checkout failed', 'error');
       } finally {
         checkoutBtn.disabled = false;
         checkoutBtn.innerHTML = '<i class="bi bi-credit-card me-1"></i> Place Online Order';
+      }
+    }
+
+    async function loadMyShopOrders(silent = false) {
+      const container = document.getElementById('myShopOrdersList');
+      const badge = document.getElementById('activeShopOrdersBadge');
+      if (!container) return;
+
+      try {
+        const res = await api.get('/api/orders', { department: 'shop', limit: 25 });
+        const orders = res.data || [];
+
+        const activeOrders = orders.filter(o => o.status !== 'cancelled' && o.fulfilment_status !== 'delivered' && o.fulfilment_status !== 'collected' && o.status !== 'completed');
+        if (badge) {
+          if (activeOrders.length > 0) {
+            badge.textContent = activeOrders.length;
+            badge.style.display = 'inline-block';
+          } else {
+            badge.style.display = 'none';
+          }
+        }
+
+        if (!orders.length) {
+          container.innerHTML = `
+            <div class="text-center py-5 text-muted">
+              <i class="bi bi-bag fs-1 d-block mb-2 opacity-50"></i>
+              No Pro Shop orders placed yet.
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = orders.map(o => {
+          const fStatus = o.fulfilment_status || 'placed';
+          let statusBadge = '';
+          let stepProgress = '';
+
+          if (fStatus === 'delivered' || fStatus === 'collected' || o.status === 'completed') {
+            statusBadge = '<span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>Delivered / Collected</span>';
+            stepProgress = `
+              <div class="d-flex justify-content-between text-muted small mt-2 pt-2 border-top">
+                <span class="text-success"><i class="bi bi-check-circle"></i> Placed</span>
+                <span class="text-success"><i class="bi bi-check-circle"></i> Packed</span>
+                <span class="text-success"><i class="bi bi-check-circle"></i> Out/Ready</span>
+                <span class="text-success fw-bold"><i class="bi bi-check-circle-fill"></i> Completed</span>
+              </div>
+            `;
+          } else if (fStatus === 'out_for_delivery') {
+            statusBadge = '<span class="badge bg-info text-dark"><i class="bi bi-bicycle me-1"></i>Out for Delivery</span>';
+            stepProgress = `
+              <div class="d-flex justify-content-between text-muted small mt-2 pt-2 border-top">
+                <span class="text-success"><i class="bi bi-check-circle"></i> Placed</span>
+                <span class="text-success"><i class="bi bi-check-circle"></i> Packed</span>
+                <span class="text-info fw-bold"><span class="spinner-grow spinner-grow-sm me-1"></span>On the Way</span>
+                <span class="opacity-50">Delivered</span>
+              </div>
+            `;
+          } else if (fStatus === 'ready_for_pickup') {
+            statusBadge = '<span class="badge bg-info text-dark"><i class="bi bi-box-seam me-1"></i>Ready for Pickup</span>';
+            stepProgress = `
+              <div class="d-flex justify-content-between text-muted small mt-2 pt-2 border-top">
+                <span class="text-success"><i class="bi bi-check-circle"></i> Placed</span>
+                <span class="text-success"><i class="bi bi-check-circle"></i> Packed</span>
+                <span class="text-info fw-bold"><span class="spinner-grow spinner-grow-sm me-1"></span>Ready</span>
+                <span class="opacity-50">Collected</span>
+              </div>
+            `;
+          } else if (fStatus === 'packed') {
+            statusBadge = '<span class="badge bg-warning text-dark"><i class="bi bi-box-seam me-1"></i>Packed &amp; Dispatched</span>';
+            stepProgress = `
+              <div class="d-flex justify-content-between text-muted small mt-2 pt-2 border-top">
+                <span class="text-success"><i class="bi bi-check-circle"></i> Placed</span>
+                <span class="text-warning fw-bold"><span class="spinner-grow spinner-grow-sm me-1"></span>Packed</span>
+                <span class="opacity-50">Dispatched</span>
+                <span class="opacity-50">Delivered</span>
+              </div>
+            `;
+          } else if (fStatus === 'cancelled') {
+            statusBadge = '<span class="badge bg-danger">Cancelled</span>';
+          } else {
+            statusBadge = '<span class="badge bg-primary">Order Placed</span>';
+            stepProgress = `
+              <div class="d-flex justify-content-between text-muted small mt-2 pt-2 border-top">
+                <span class="text-primary fw-bold"><span class="spinner-grow spinner-grow-sm me-1"></span>Placed</span>
+                <span class="opacity-50">Packed</span>
+                <span class="opacity-50">Dispatched</span>
+                <span class="opacity-50">Delivered</span>
+              </div>
+            `;
+          }
+
+          const itemsHtml = (o.items || []).map(it => `
+            <div class="d-flex justify-content-between small text-dark py-1">
+              <span>${utils.escapeHtml(it.product_name)} <span class="text-muted">x${it.quantity}</span></span>
+              <span class="mono">${utils.formatINR(it.line_total || it.unit_price * it.quantity)}</span>
+            </div>
+          `).join('') || `<div class="small text-muted">${utils.escapeHtml(o.items_summary || '')}</div>`;
+
+          return `
+            <div class="card border rounded-3 p-3 mb-3 shadow-sm bg-white">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <div>
+                  <code class="mono fw-bold text-primary small">${utils.escapeHtml(o.order_code)}</code>
+                  <div class="small text-muted" style="font-size:0.75rem;">${utils.formatDate(o.created_at)} at ${utils.formatTime(o.created_at)}</div>
+                </div>
+                ${statusBadge}
+              </div>
+
+              <div class="mb-2">
+                ${o.delivery_address
+                  ? `<span class="badge bg-light text-dark border small text-truncate d-inline-block" style="max-width:320px;" title="${utils.escapeHtml(o.delivery_address)}"><i class="bi bi-truck me-1"></i>${utils.escapeHtml(o.delivery_address)}</span>`
+                  : '<span class="badge bg-light text-dark border small"><i class="bi bi-shop me-1"></i>Club Store Pickup</span>'}
+              </div>
+
+              <div class="bg-light p-2 rounded-2 mb-2">
+                ${itemsHtml}
+              </div>
+
+              <div class="d-flex justify-content-between align-items-center small fw-bold pt-1">
+                <span>Total Paid</span>
+                <span class="mono text-primary fs-6">${utils.formatINR(o.total || 0)}</span>
+              </div>
+
+              ${stepProgress}
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        if (!silent) container.innerHTML = `<div class="text-danger small text-center py-4">${err.message}</div>`;
       }
     }
   </script>

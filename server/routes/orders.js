@@ -38,8 +38,8 @@ router.get('/', requireLogin, async (req, res, next) => {
 
     // Role restriction: members only see their own orders
     if (user.role === 'member') {
-      where += ' AND (o.user_id = ? OR o.member_id = ?)';
-      params.push(user.id, user.member_id || 0);
+      where += ' AND (o.user_id = ? OR o.member_id = ? OR o.member_id IN (SELECT id FROM members WHERE user_id = ?))';
+      params.push(user.id, user.member_id || 0, user.id);
     }
 
     if (q && q.trim()) {
@@ -97,6 +97,51 @@ router.get('/', requireLogin, async (req, res, next) => {
        LIMIT ? OFFSET ?`,
       [...params, limitNum, offset]
     );
+
+    // Populate order items and calculate live kitchen status for bar/cafeteria orders
+    if (rows.length > 0) {
+      const orderIds = rows.map(r => r.id);
+      const [allItems] = await db.query(
+        `SELECT oi.*, p.name AS product_name, p.image_url, p.sku
+         FROM order_items oi
+         JOIN products p ON oi.product_id = p.id
+         WHERE oi.order_id IN (?)`,
+        [orderIds]
+      );
+
+      const itemMap = {};
+      allItems.forEach(it => {
+        if (!itemMap[it.order_id]) itemMap[it.order_id] = [];
+        itemMap[it.order_id].push(it);
+      });
+
+      rows.forEach(r => {
+        r.items = itemMap[r.id] || [];
+
+        // Build human readable items summary
+        r.items_summary = r.items.map(i => `${i.product_name} (x${i.quantity})`).join(', ') || 'No items';
+
+        // Calculate kitchen_summary for bar/cafeteria orders
+        if (r.department === 'bar') {
+          const kStatuses = r.items.map(i => i.kitchen_status || 'new');
+          if (r.status === 'cancelled') {
+            r.kitchen_summary = 'cancelled';
+          } else if (kStatuses.length === 0) {
+            r.kitchen_summary = r.status === 'completed' ? 'served' : 'preparing';
+          } else if (kStatuses.every(s => s === 'served')) {
+            r.kitchen_summary = 'served';
+          } else if (kStatuses.every(s => s === 'ready' || s === 'served')) {
+            r.kitchen_summary = 'ready';
+          } else if (kStatuses.some(s => s === 'preparing')) {
+            r.kitchen_summary = 'preparing';
+          } else {
+            r.kitchen_summary = kStatuses[0] || 'new';
+          }
+        } else {
+          r.kitchen_summary = null;
+        }
+      });
+    }
 
     res.json({
       data: rows,
